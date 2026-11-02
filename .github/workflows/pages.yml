@@ -29,6 +29,7 @@ jobs:
           mkdir -p _site
           cp index.html _site/
           cp -R bottle-sea _site/
+          cp -R snow-sophia _site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

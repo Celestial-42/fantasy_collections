@@ -4,9 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0b0908" />
-<meta name="description" content="《瓶中沧海》—— 一件可交互的 WebGL 瓶中海洋藏品。玻璃瓶中的三桅帆船、灯塔小岛、昼夜四时与风暴。" />
-<title>瓶中沧海 · 总集目录</title>
+<meta name="description" content="不可能海域 · 两件可交互的 WebGL 微缩藏品：《瓶中沧海》的瓶中海，与《雪落索菲亚》的哈尔滨雪夜雪花玻璃球。" />
+<title>瓶中沧海 · 雪落索菲亚 · 总集目录</title>
 <link rel="preload" as="image" href="bottle-sea/poster.jpg" />
+<link rel="preload" as="image" href="snow-sophia/poster.jpg" />
 <style>
   :root{
     --ink:#0b0908;
@@ -427,6 +428,46 @@
   .artifact:hover ~ .seal,
   .artifact-wrap:hover .seal{transform:rotate(-4deg) scale(1.03);}
 
+  /* ---------- second piece: snow ---------- */
+  .hero-snow{
+    border-top:1px solid var(--line-soft);
+    background:
+      radial-gradient(58% 52% at 24% 38%, rgba(112,158,180,.13), transparent 70%),
+      radial-gradient(42% 38% at 82% 16%, rgba(84,128,152,.07), transparent 72%);
+  }
+  .hero.mirror{grid-template-columns:minmax(0,1.07fr) minmax(0,.93fr);}
+  .hero.mirror .copy{order:2;}
+  .hero.mirror .artifact-wrap{order:1;}
+  .eyebrow.snow{color:#a9d3e4;}
+  .eyebrow.snow::before{background:linear-gradient(90deg, rgba(169,211,228,.85), transparent);}
+  .enter.snow{
+    border-color:rgba(169,211,228,.5);
+    color:#e4f6fd;
+    background:rgba(169,211,228,.055);
+  }
+  .enter.snow:hover{
+    border-color:rgba(206,239,250,.92);
+    background:rgba(169,211,228,.14);
+    color:#f6fdff;
+  }
+  .snow-phases .phase:nth-child(1) i{background:linear-gradient(135deg,#e8f7fd,#7fa9bd);}
+  .snow-phases .phase:nth-child(2) i{background:linear-gradient(135deg,#c95148,#6fa9c9);}
+  .snow-phases .phase:nth-child(3) i{background:linear-gradient(135deg,#dff2fa,#a9c8d6);}
+  .snow-phases .phase:nth-child(4) i{background:linear-gradient(135deg,#c95148,#e0bd8a);}
+  .seal-snow{
+    left:auto;
+    right:-26px;
+    color:rgba(236,250,255,.9);
+    background:
+      radial-gradient(circle at 36% 30%, #618aa0, #345c72 52%, #1d3949 100%);
+    box-shadow:
+      0 12px 26px rgba(0,0,0,.5),
+      inset 0 1px 1px rgba(226,249,255,.28),
+      inset 0 -6px 14px rgba(6,24,33,.5);
+  }
+  .seal-snow::before{border-color:rgba(218,246,255,.24);}
+  .seal-snow::after{content:"SNOW · SOPHIA · 02";color:rgba(218,246,255,.5);}
+
   /* ---------- index ---------- */
   .index{
     padding:clamp(56px,8vh,100px) 0 clamp(44px,6vh,74px);
@@ -580,6 +621,9 @@
 
   @media (max-width:1080px){
     .hero{grid-template-columns:1fr;min-height:0;padding-top:52px;gap:52px;}
+    .hero.mirror{grid-template-columns:1fr;}
+    .hero.mirror .copy,
+    .hero.mirror .artifact-wrap{order:0;}
     .copy{max-width:720px;}
     .lede{max-width:36ch;}
     .artifact-wrap{width:min(760px,100%);}
@@ -602,6 +646,7 @@
     .enter{padding:13px 18px;gap:20px;}
     .phases{flex-wrap:wrap;gap:10px 16px;}
     .seal{width:64px;height:64px;font-size:16px;left:-16px;bottom:40px;}
+    .seal-snow{left:auto;right:-14px;}
     .seal::after{font-size:4px;bottom:10px;}
     .index-row{grid-template-columns:44px 1fr 70px;gap:12px;padding:18px 2px;}
     .index-note{display:none;}
@@ -633,7 +678,7 @@
       <span>不可能海域 · Atelier<br>Impossible Seas</span>
     </a>
     <div class="top-meta">
-      <span>总集目录</span><i aria-hidden="true"></i><span><b>No. 01</b> / 2026</span>
+      <span>总集目录</span><i aria-hidden="true"></i><span><b>No. 01—02</b> / 2026</span>
     </div>
   </header>
 
@@ -693,10 +738,64 @@
       </div>
     </section>
 
+    <section class="hero hero-snow mirror" aria-labelledby="workTitle02">
+      <div class="copy">
+        <p class="eyebrow snow">Harbin Snow Globe · Interactive Diorama</p>
+        <h1 id="workTitle02">雪落索菲亚</h1>
+        <p class="latin">Snowfall over Sophia</p>
+        <p class="lede">在零下二十度的夜里，<br>雪球比钟声先落下。</p>
+        <p class="desc">
+          一只木底玻璃雪花球，封存着雪夜里的圣索菲亚。红蓝两队的雪仗正在进行，
+          摇一摇，整场雪会下得更大；点向球心，替孩子扔出下一颗雪球。
+        </p>
+
+        <div class="cta-row">
+          <a class="enter snow" href="snow-sophia/">
+            <span>进入雪夜</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <p class="cta-note">
+            实时渲染 · 无需安装<br>
+            <b>点击玻璃球，替孩子扔一颗雪球</b>
+          </p>
+        </div>
+
+        <div class="phases snow-phases" aria-label="雪夜互动">
+          <span class="phases-label">雪夜互动</span>
+          <div class="phase-dots">
+            <span class="phase"><i aria-hidden="true"></i>落雪</span>
+            <span class="phase"><i aria-hidden="true"></i>雪仗</span>
+            <span class="phase"><i aria-hidden="true"></i>摇一摇</span>
+            <span class="phase"><i aria-hidden="true"></i>计分</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="artifact-wrap">
+        <a class="artifact" href="snow-sophia/" aria-label="进入《雪落索菲亚》交互场景">
+          <div class="plate">
+            <img src="snow-sophia/poster.jpg" width="1600" height="1000"
+                 alt="木桌上的玻璃雪花球，球内是雪夜中的圣索菲亚教堂，红蓝两队的孩子们正在打雪仗" />
+            <span class="plate-corner tl" aria-hidden="true"></span>
+            <span class="plate-corner tr" aria-hidden="true"></span>
+            <span class="plate-corner bl" aria-hidden="true"></span>
+            <span class="plate-corner br" aria-hidden="true"></span>
+            <span class="plate-no">No. 02</span>
+            <span class="enter-hint"><span>推门而入 ↗</span></span>
+          </div>
+          <div class="figcaption">
+            <span><b>雪夜</b> · 19:42</span>
+            <span>WebGL / 实时交互实景</span>
+          </div>
+        </a>
+        <span class="seal seal-snow" aria-hidden="true">雪夜</span>
+      </div>
+    </section>
+
     <section class="index" aria-labelledby="indexTitle">
       <div class="section-head">
         <h2 id="indexTitle">总集目录</h2>
-        <p>The Collection / Vol. 01</p>
+        <p>The Collection / Vol. 01—02</p>
       </div>
 
       <a class="index-row" href="bottle-sea/">
@@ -707,9 +806,17 @@
         <span class="index-go">进入 →</span>
       </a>
 
-      <div class="index-row future" aria-disabled="true">
+      <a class="index-row" href="snow-sophia/">
         <span class="index-no">02</span>
-        <span class="index-title">未命名海域<small>Untitled Waters</small></span>
+        <span class="index-title">雪落索菲亚<small>Snowfall over Sophia</small></span>
+        <span class="index-note">哈尔滨的雪夜 —— 圣索菲亚、红蓝雪仗与一只会下雪的玻璃球。</span>
+        <span class="index-tag">新入藏</span>
+        <span class="index-go">进入 →</span>
+      </a>
+
+      <div class="index-row future" aria-disabled="true">
+        <span class="index-no">03</span>
+        <span class="index-title">未命名场景<small>Untitled Diorama</small></span>
         <span class="index-note">下一件藏品正在封存。</span>
         <span class="index-tag">筹备中</span>
         <span class="index-go">—</span>
@@ -720,28 +827,28 @@
       <article class="note">
         <small>I</small>
         <h3>瓶中航行</h3>
-        <p>四向浮力让帆船随波起伏，船首破浪，尾迹与浪花在风暴里变得危险。</p>
+        <p>四向浮力让帆船随波起伏；召来风暴时，船首破浪，尾迹与飞沫一起变白。</p>
       </article>
       <article class="note">
         <small>II</small>
         <h3>昼夜四时</h3>
-        <p>太阳与月亮沿瓶内天穹移动，正午的湛蓝、黄昏的琥珀与子夜的群星依次到来。</p>
+        <p>太阳与月亮沿玻璃天穹移动，正午的湛蓝、黄昏的琥珀与子夜的群星依次落进瓶里。</p>
       </article>
       <article class="note">
         <small>III</small>
-        <h3>召来风暴</h3>
-        <p>按住空格，瓶身开始摇晃，海面翻起白色浪脊；闪电亮起时，整片海短暂失重。</p>
+        <h3>雪落玻璃</h3>
+        <p>摇一摇，球身晃过木座，雪片腾起又落下；窗里的灯始终亮着。</p>
       </article>
       <article class="note">
         <small>IV</small>
-        <h3>水下微光</h3>
-        <p>沉船宝箱、锚、双耳瓶与珊瑚栖息在水面之下；鲸鱼每隔一阵跃出潮汐。</p>
+        <h3>红蓝雪仗</h3>
+        <p>两队孩子自动开战；也可以点击球心，替其中一队扔出一颗雪球，计分牌会记住它。</p>
       </article>
     </section>
 
     <footer>
-      <span><b>Impossible Seas Atelier</b> · 以 WebGL 封装一片海</span>
-      <span>© 2026 / 第一号藏品</span>
+      <span><b>Impossible Seas Atelier</b> · 以 WebGL 封装微型世界</span>
+      <span>© 2026 / 第 01—02 号藏品</span>
       <a class="backtop" href="#workTitle">回到开始 ↑</a>
     </footer>
   </main>
@@ -749,34 +856,47 @@
 
 <script>
   (() => {
-    const wrap = document.querySelector('.artifact-wrap');
-    const card = wrap && wrap.querySelector('.artifact');
-    if (!card) return;
+    const wraps = [...document.querySelectorAll('.artifact-wrap')];
+    if (!wraps.length) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (reduce.matches || matchMedia('(pointer: coarse)').matches) return;
 
-    let raf = 0;
-    let targetX = 0, targetY = 0, curX = 0, curY = 0;
+    const cards = wraps.map((wrap) => {
+      const card = wrap.querySelector('.artifact');
+      if (!card) return null;
+      return { wrap, card, targetX: 0, targetY: 0, curX: 0, curY: 0 };
+    }).filter(Boolean);
+    if (!cards.length) return;
 
+    let raf = 0;
     function tick(){
-      curX += (targetX - curX) * .08;
-      curY += (targetY - curY) * .08;
-      card.style.transform =
-        `rotateX(${(-curY * 2.1).toFixed(3)}deg) rotateY(${(curX * 2.6).toFixed(3)}deg) translateY(${(-Math.abs(curX) * 3).toFixed(2)}px)`;
-      raf = Math.abs(targetX - curX) + Math.abs(targetY - curY) > .001
-        ? requestAnimationFrame(tick)
-        : 0;
+      let active = false;
+      for (const c of cards){
+        c.curX += (c.targetX - c.curX) * .08;
+        c.curY += (c.targetY - c.curY) * .08;
+        c.card.style.transform =
+          `rotateX(${(-c.curY * 2.1).toFixed(3)}deg) rotateY(${(c.curX * 2.6).toFixed(3)}deg) translateY(${(-Math.abs(c.curX) * 3).toFixed(2)}px)`;
+        if (Math.abs(c.targetX - c.curX) + Math.abs(c.targetY - c.curY) > .001) active = true;
+      }
+      raf = active ? requestAnimationFrame(tick) : 0;
     }
-    wrap.addEventListener('pointermove', (e) => {
-      const rect = wrap.getBoundingClientRect();
-      targetX = ((e.clientX - rect.left) / rect.width - .5) * 2;
-      targetY = ((e.clientY - rect.top) / rect.height - .5) * 2;
+    function kick(){
       if (!raf) raf = requestAnimationFrame(tick);
-    });
-    wrap.addEventListener('pointerleave', () => {
-      targetX = 0; targetY = 0;
-      if (!raf) raf = requestAnimationFrame(tick);
-    });
+    }
+
+    for (const c of cards){
+      c.wrap.addEventListener('pointermove', (e) => {
+        const rect = c.wrap.getBoundingClientRect();
+        c.targetX = ((e.clientX - rect.left) / rect.width - .5) * 2;
+        c.targetY = ((e.clientY - rect.top) / rect.height - .5) * 2;
+        kick();
+      });
+      c.wrap.addEventListener('pointerleave', () => {
+        c.targetX = 0;
+        c.targetY = 0;
+        kick();
+      });
+    }
   })();
 </script>
 </body>
