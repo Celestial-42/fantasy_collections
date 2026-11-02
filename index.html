@@ -4,10 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0b0908" />
-<meta name="description" content="不可能海域 · 两件可交互的 WebGL 微缩藏品：《瓶中沧海》的海浪与风暴，《雪落索菲亚》的哈尔滨雪夜与雪仗；均配现场合成的环境声景。" />
-<title>瓶中沧海 · 雪落索菲亚 · 总集目录</title>
+<meta name="description" content="不可能海域 · 四件可交互的 WebGL 微缩藏品：《瓶中沧海》的海浪与风暴，《雪落索菲亚》的哈尔滨雪夜，《一盏山河》的青瓷茶中山水，《灯下长安》的纸灯笼上元灯市；均配现场合成的环境声景。" />
+<title>不可能海域 · 四件可交互微缩藏品</title>
 <link rel="preload" as="image" href="bottle-sea/poster.jpg" />
 <link rel="preload" as="image" href="snow-sophia/poster.jpg" />
+<link rel="preload" as="image" href="tea-mountain/poster.jpg" />
+<link rel="preload" as="image" href="lantern-changan/poster.jpg" />
 <style>
   :root{
     --ink:#0b0908;
@@ -468,6 +470,78 @@
   .seal-snow::before{border-color:rgba(218,246,255,.24);}
   .seal-snow::after{content:"SNOW · SOPHIA · 02";color:rgba(218,246,255,.5);}
 
+  /* ---------- third piece: tea ---------- */
+  .hero-tea{
+    border-top:1px solid var(--line-soft);
+    background:
+      radial-gradient(58% 52% at 22% 36%, rgba(118,154,126,.12), transparent 70%),
+      radial-gradient(44% 38% at 84% 20%, rgba(92,126,104,.07), transparent 72%);
+  }
+  .eyebrow.tea{color:#b7d3c2;}
+  .eyebrow.tea::before{background:linear-gradient(90deg, rgba(183,211,194,.85), transparent);}
+  .enter.tea{
+    border-color:rgba(183,211,194,.46);
+    color:#e2f2e7;
+    background:rgba(183,211,194,.05);
+  }
+  .enter.tea:hover{
+    border-color:rgba(211,236,220,.9);
+    background:rgba(183,211,194,.13);
+    color:#f5fff8;
+  }
+  .tea-phases .phase:nth-child(1) i{background:linear-gradient(135deg,#7d9b86,#c6d8c2);}
+  .tea-phases .phase:nth-child(2) i{background:linear-gradient(135deg,#4d6a55,#a9bfa8);}
+  .tea-phases .phase:nth-child(3) i{background:linear-gradient(135deg,#d4dfd2,#f0e3c2);}
+  .tea-phases .phase:nth-child(4) i{background:linear-gradient(135deg,#293a30,#8fa796);}
+  .seal-tea{
+    color:rgba(236,248,238,.9);
+    background:
+      radial-gradient(circle at 36% 30%, #6f8f7c, #42604f 52%, #243a2d 100%);
+    box-shadow:
+      0 12px 26px rgba(0,0,0,.5),
+      inset 0 1px 1px rgba(230,250,238,.28),
+      inset 0 -6px 14px rgba(8,22,14,.5);
+  }
+  .seal-tea::before{border-color:rgba(222,246,232,.24);}
+  .seal-tea::after{content:"CELADON · TEA · 03";color:rgba(222,246,232,.5);}
+
+  /* ---------- fourth piece: lantern ---------- */
+  .hero-lantern{
+    border-top:1px solid var(--line-soft);
+    background:
+      radial-gradient(60% 54% at 76% 36%, rgba(186,92,44,.14), transparent 70%),
+      radial-gradient(46% 40% at 16% 16%, rgba(150,54,32,.08), transparent 72%);
+  }
+  .eyebrow.lantern{color:#f0c27b;}
+  .eyebrow.lantern::before{background:linear-gradient(90deg, rgba(240,194,123,.9), transparent);}
+  .enter.lantern{
+    border-color:rgba(240,194,123,.5);
+    color:#ffeac4;
+    background:rgba(240,194,123,.055);
+  }
+  .enter.lantern:hover{
+    border-color:rgba(255,220,164,.94);
+    background:rgba(240,194,123,.14);
+    color:#fff8ea;
+  }
+  .lantern-phases .phase:nth-child(1) i{background:linear-gradient(135deg,#6b1d15,#f0b45c);}
+  .lantern-phases .phase:nth-child(2) i{background:linear-gradient(135deg,#a8432a,#ffd394);}
+  .lantern-phases .phase:nth-child(3) i{background:linear-gradient(135deg,#5a2418,#d9954c);}
+  .lantern-phases .phase:nth-child(4) i{background:linear-gradient(135deg,#241310,#c2733a);}
+  .seal-lantern{
+    left:auto;
+    right:-26px;
+    color:rgba(255,240,216,.9);
+    background:
+      radial-gradient(circle at 36% 30%, #b96535, #8b3f22 52%, #5e2416 100%);
+    box-shadow:
+      0 12px 26px rgba(0,0,0,.5),
+      inset 0 1px 1px rgba(255,232,200,.3),
+      inset 0 -6px 14px rgba(36,10,5,.5);
+  }
+  .seal-lantern::before{border-color:rgba(255,236,206,.24);}
+  .seal-lantern::after{content:"LANTERN · CHANG'AN · 04";color:rgba(255,236,206,.5);}
+
   /* ---------- index ---------- */
   .index{
     padding:clamp(56px,8vh,100px) 0 clamp(44px,6vh,74px);
@@ -647,6 +721,7 @@
     .phases{flex-wrap:wrap;gap:10px 16px;}
     .seal{width:64px;height:64px;font-size:16px;left:-16px;bottom:40px;}
     .seal-snow{left:auto;right:-14px;}
+    .seal-lantern{left:auto;right:-14px;}
     .seal::after{font-size:4px;bottom:10px;}
     .index-row{grid-template-columns:44px 1fr 70px;gap:12px;padding:18px 2px;}
     .index-note{display:none;}
@@ -678,7 +753,7 @@
       <span>不可能海域 · Atelier<br>Impossible Seas</span>
     </a>
     <div class="top-meta">
-      <span>总集目录</span><i aria-hidden="true"></i><span><b>No. 01—02</b> / 2026</span>
+      <span>总集目录</span><i aria-hidden="true"></i><span><b>No. 01—04</b> / 2026</span>
     </div>
   </header>
 
@@ -792,10 +867,118 @@
       </div>
     </section>
 
+    <section class="hero hero-tea" aria-labelledby="workTitle03">
+      <div class="copy">
+        <p class="eyebrow tea">Celadon Diorama · Jiangnan, 16:20</p>
+        <h1 id="workTitle03">一盏山河</h1>
+        <p class="latin">A Landscape in a Teacup</p>
+        <p class="lede">把一座山，<br>养在一盏茶里。</p>
+        <p class="desc">
+          一只青瓷茶碗，盛着谷雨时节的江南。注水，山色从茶烟里显形；吹一口气，雾散开，
+          小舟还在水面上。窗外的雨、茶汤的涟漪与古琴的泛音，都是现场合成的。
+        </p>
+
+        <div class="cta-row">
+          <a class="enter tea" href="tea-mountain/">
+            <span>进入茶室</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <p class="cta-note">
+            实时渲染 · 程序化声景<br>
+            <b>建议佩戴耳机，点击注水，空格吹烟</b>
+          </p>
+        </div>
+
+        <div class="phases tea-phases" aria-label="茶事互动">
+          <span class="phases-label">茶事互动</span>
+          <div class="phase-dots">
+            <span class="phase"><i aria-hidden="true"></i>听雨</span>
+            <span class="phase"><i aria-hidden="true"></i>注水</span>
+            <span class="phase"><i aria-hidden="true"></i>吹烟</span>
+            <span class="phase"><i aria-hidden="true"></i>远山</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="artifact-wrap">
+        <a class="artifact" href="tea-mountain/" aria-label="进入《一盏山河》交互场景">
+          <div class="plate">
+            <img src="tea-mountain/poster.jpg" width="1600" height="1000"
+                 alt="青瓷茶碗里是烟雨江南的微缩山水，茶汤上有小舟、松树、亭台与远山，旁边是白瓷茶壶与茶罐" />
+            <span class="plate-corner tl" aria-hidden="true"></span>
+            <span class="plate-corner tr" aria-hidden="true"></span>
+            <span class="plate-corner bl" aria-hidden="true"></span>
+            <span class="plate-corner br" aria-hidden="true"></span>
+            <span class="plate-no">No. 03</span>
+            <span class="enter-hint"><span>推门而入 ↗</span></span>
+          </div>
+          <div class="figcaption">
+            <span><b>江南</b> · 谷雨 16:20</span>
+            <span>WebGL / 实时交互实景</span>
+          </div>
+        </a>
+        <span class="seal seal-tea" aria-hidden="true">山河</span>
+      </div>
+    </section>
+
+    <section class="hero hero-lantern mirror" aria-labelledby="workTitle04">
+      <div class="copy">
+        <p class="eyebrow lantern">Lantern Theatre · Chang'an, 19:40</p>
+        <h1 id="workTitle04">灯下长安</h1>
+        <p class="latin">Lanterns of Chang'an</p>
+        <p class="lede">把一座长安，<br>点在一盏灯里。</p>
+        <p class="desc">
+          上元夜的纸灯笼，藏着一座长安灯市。点灯，城市从纸上醒来；拖动灯笼，灯影与皮影一起转；
+          击鼓，龙灯游得更急。窗外的烟花与市声，都是现场生成的。
+        </p>
+
+        <div class="cta-row">
+          <a class="enter lantern" href="lantern-changan/">
+            <span>进入灯市</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <p class="cta-note">
+            实时渲染 · 程序化市声<br>
+            <b>建议佩戴耳机，点灯后击鼓</b>
+          </p>
+        </div>
+
+        <div class="phases lantern-phases" aria-label="灯市互动">
+          <span class="phases-label">灯市互动</span>
+          <div class="phase-dots">
+            <span class="phase"><i aria-hidden="true"></i>点灯</span>
+            <span class="phase"><i aria-hidden="true"></i>转灯</span>
+            <span class="phase"><i aria-hidden="true"></i>击鼓</span>
+            <span class="phase"><i aria-hidden="true"></i>灯影</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="artifact-wrap">
+        <a class="artifact" href="lantern-changan/" aria-label="进入《灯下长安》交互场景">
+          <div class="plate">
+            <img src="lantern-changan/poster.jpg" width="1600" height="1000"
+                 alt="上元夜的纸灯笼里是一座长安灯市，城楼、塔、摊位与人群在暖光中，桌上有小鼓与皮影屏，窗外烟花盛开" />
+            <span class="plate-corner tl" aria-hidden="true"></span>
+            <span class="plate-corner tr" aria-hidden="true"></span>
+            <span class="plate-corner bl" aria-hidden="true"></span>
+            <span class="plate-corner br" aria-hidden="true"></span>
+            <span class="plate-no">No. 04</span>
+            <span class="enter-hint"><span>推门而入 ↗</span></span>
+          </div>
+          <div class="figcaption">
+            <span><b>长安</b> · 上元 19:40</span>
+            <span>WebGL / 实时交互实景</span>
+          </div>
+        </a>
+        <span class="seal seal-lantern" aria-hidden="true">上元</span>
+      </div>
+    </section>
+
     <section class="index" aria-labelledby="indexTitle">
       <div class="section-head">
         <h2 id="indexTitle">总集目录</h2>
-        <p>The Collection / Vol. 01—02</p>
+        <p>The Collection / Vol. 01—04</p>
       </div>
 
       <a class="index-row" href="bottle-sea/">
@@ -814,13 +997,21 @@
         <span class="index-go">进入 →</span>
       </a>
 
-      <div class="index-row future" aria-disabled="true">
+      <a class="index-row" href="tea-mountain/">
         <span class="index-no">03</span>
-        <span class="index-title">未命名场景<small>Untitled Diorama</small></span>
-        <span class="index-note">下一件藏品正在封存。</span>
-        <span class="index-tag">筹备中</span>
-        <span class="index-go">—</span>
-      </div>
+        <span class="index-title">一盏山河<small>A Landscape in a Teacup</small></span>
+        <span class="index-note">青瓷茶碗里的江南山水 —— 注水显山，吹烟见舟，茶汤上还泊着一叶小舟。</span>
+        <span class="index-tag">新入藏</span>
+        <span class="index-go">进入 →</span>
+      </a>
+
+      <a class="index-row" href="lantern-changan/">
+        <span class="index-no">04</span>
+        <span class="index-title">灯下长安<small>Lanterns of Chang'an</small></span>
+        <span class="index-note">纸灯笼里的上元灯市 —— 点灯、转灯、击鼓，皮影与龙灯一起游过长安。</span>
+        <span class="index-tag">新入藏</span>
+        <span class="index-go">进入 →</span>
+      </a>
     </section>
 
     <section class="notes" aria-label="藏品细节">
@@ -844,11 +1035,21 @@
         <h3>红蓝雪仗</h3>
         <p>两队孩子自动开战；也可以点击球心，替其中一队扔出一颗雪球。每次投掷与命中都有破风声和落雪声。</p>
       </article>
+      <article class="note">
+        <small>V</small>
+        <h3>茶烟山水</h3>
+        <p>注水，山色渐显；吹一口气，茶烟散开。雨声、茶汤的涟漪与古琴从碗沿升起，小舟在茶汤上轻轻晃。</p>
+      </article>
+      <article class="note">
+        <small>VI</small>
+        <h3>走马灯影</h3>
+        <p>点亮烛火，纸灯里的长安开始旋转；拖灯换影，击鼓时龙灯游得更快，桌上的皮影也随鼓点翻身。</p>
+      </article>
     </section>
 
     <footer>
       <span><b>Impossible Seas Atelier</b> · 以 WebGL 封装微型世界</span>
-      <span>© 2026 / 第 01—02 号藏品</span>
+      <span>© 2026 / 第 01—04 号藏品</span>
       <a class="backtop" href="#workTitle">回到开始 ↑</a>
     </footer>
   </main>

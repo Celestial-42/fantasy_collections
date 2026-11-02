@@ -30,6 +30,8 @@ jobs:
           cp index.html _site/
           cp -R bottle-sea _site/
           cp -R snow-sophia _site/
+          cp -R tea-mountain _site/
+          cp -R lantern-changan _site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
