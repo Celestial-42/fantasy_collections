@@ -217,6 +217,39 @@
     background:var(--amber);
     box-shadow:0 0 8px rgba(216,166,106,.7);
   }
+  .back-index{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-top:13px;
+    padding:7px 9px;
+    border:1px solid rgba(239,229,210,.16);
+    background:rgba(10,8,8,.16);
+    color:rgba(239,229,210,.42);
+    font-family:var(--sans);
+    font-size:8px;
+    letter-spacing:.18em;
+    line-height:1;
+    text-decoration:none;
+    pointer-events:auto;
+    transition:border-color .25s ease, color .25s ease, background .25s ease;
+  }
+  .back-index .arrow{
+    font-size:11px;
+    line-height:1;
+    transition:transform .25s ease;
+  }
+  .back-index:hover{
+    border-color:rgba(216,166,106,.5);
+    color:var(--amber-hot);
+    background:rgba(216,166,106,.06);
+  }
+  .back-index:hover .arrow{transform:translateX(-3px);}
+  .back-index:focus-visible{
+    outline:1px solid var(--amber);
+    outline-offset:3px;
+  }
 
   .sideindex{
     position:fixed;
@@ -575,6 +608,10 @@
       <span>黎明</span><span>正午</span><span>黄昏</span><span>子夜</span>
     </div>
     <div class="speed-note"><i></i><span id="speedLabel">延时 ×1 · 潮汐时流</span></div>
+    <a class="back-index" href="../" aria-label="返回总集目录">
+      <span class="arrow" aria-hidden="true">←</span>
+      <span>总集目录</span>
+    </a>
   </aside>
 </header>
 
