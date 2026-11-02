@@ -182,6 +182,52 @@
     line-height:1;
     letter-spacing:.02em;
   }
+  .sound-strip{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    width:100%;
+    margin-top:9px;
+    padding:5px 0;
+    border:0;
+    border-top:1px solid rgba(189,229,241,.1);
+    border-bottom:1px solid rgba(189,229,241,.06);
+    background:transparent;
+    color:rgba(185,200,211,.55);
+    font-family:var(--sans);
+    font-size:8px;
+    letter-spacing:.16em;
+    text-align:left;
+    cursor:pointer;
+    transition:color .25s ease, border-color .25s ease;
+  }
+  .sound-strip:hover{
+    color:var(--ice-hot);
+    border-color:rgba(189,229,241,.28);
+  }
+  .sound-strip .sound-icon{
+    display:grid;
+    place-items:center;
+    width:16px;
+    color:rgba(169,217,231,.8);
+  }
+  .sound-strip .wave{display:block;}
+  .sound-strip .slash{display:none;}
+  .sound-strip:not(.on) .wave{display:none;}
+  .sound-strip:not(.on) .slash{display:block;}
+  .sound-strip .sound-state{
+    margin-left:auto;
+    color:rgba(127,149,165,.68);
+    font-size:7px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+  }
+  .sound-strip.on .sound-state{color:var(--ice);}
+  .sound-icon.hint{animation:soundPulse 2.2s ease-in-out infinite;}
+  @keyframes soundPulse{
+    0%,100%{opacity:.5;}
+    50%{opacity:1;filter:drop-shadow(0 0 6px rgba(169,217,231,.55));}
+  }
   .weather-sub{
     display:flex;
     justify-content:space-between;
@@ -512,6 +558,17 @@
       <span>小雪 / 西北风 3 级</span>
       <span>19:42</span>
     </div>
+    <button class="sound-strip" id="audioBtn" type="button" aria-label="开启环境声" aria-pressed="false" title="开启环境声">
+      <span class="sound-icon hint" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 9.3h3.4L12 5.1v13.8l-4.6-4.2H4z"/>
+          <path class="wave" d="M15.4 9.2a4.1 4.1 0 0 1 0 5.6M18 6.7a7.7 7.7 0 0 1 0 10.6"/>
+          <path class="slash" d="M5 19.5 19.5 4.5"/>
+        </svg>
+      </span>
+      <span>环境声</span>
+      <span class="sound-state" id="audioState">点击开启</span>
+    </button>
     <div class="scoreboard" aria-label="雪仗比分">
       <span class="team red"><i aria-hidden="true"></i><span>红队</span><b id="scoreRed">00</b></span>
       <span class="score-colon">:</span>
@@ -2005,6 +2062,7 @@ function spawnSnowball(kid, user = false){
     trailGeo
   });
   spawnBurst(start, 6, .32);
+  Sound.whoosh(kid.team, user);
 }
 
 const throwPhrases = ['看雪球！', '接招！', '嗖——', '走你！'];
@@ -2069,6 +2127,7 @@ function updateBattle(dt, time){
       b.trailGeo.dispose();
       balls.splice(i, 1);
       spawnBurst(b.end, 16, .7);
+      Sound.impact(b.end, b.user);
       setScore(b.team);
       if (b.user){
         showToast('啪！雪球开花', 1100);
@@ -2226,6 +2285,7 @@ function updateGlobeShake(dt, time){
 function shakeGlobe(){
   shakeT = 1;
   snowBlast = 1;
+  Sound.shake();
   for (const f of flakes){
     f.y = Math.min(GLOBE_Y + 2.4, f.y + rand(.05, .75));
     f.angle += rand(-.6, .6);
@@ -2256,11 +2316,494 @@ shakeBtn.addEventListener('click', (e) => {
 });
 
 window.addEventListener('keydown', (e) => {
+  if (e.target.closest?.('button, a')) return;
   if (e.code === 'Space' && !e.repeat){
     e.preventDefault();
     shakeGlobe();
   }
 });
+
+// -------------------------------------------------------------------------
+// Procedural snow-night soundscape (Web Audio, no external assets)
+// -------------------------------------------------------------------------
+
+const Sound = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const button = document.getElementById('audioBtn');
+  const stateEl = document.getElementById('audioState');
+  const icon = button ? button.querySelector('.sound-icon') : null;
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  const BEAT = 60 / 56;
+  const chordLen = BEAT * 8;
+  const melodyBeats = [0, .8, 1.6, 2.6, 4.2, 5.2, 6.3, 7.4];
+  const chords = [
+    { notes: [50, 53, 57], melody: [81, 77, 76, 74, 77, 81, 79, 77] },
+    { notes: [46, 50, 53], melody: [82, 77, 74, 72, 74, 77, 81, 77] },
+    { notes: [43, 46, 50], melody: [79, 82, 86, 84, 82, 81, 79, 74] },
+    { notes: [45, 49, 52], melody: [81, 85, 88, 86, 85, 83, 81, 76] }
+  ];
+
+  let ctx = null, master = null, musicBus = null, sfxBus = null, analyser = null;
+  let windGain = null, windFilter = null, noiseBuf = null;
+  let started = false, on = false, ticker = 0, suspendTimer = 0;
+  let nextChordAt = 0, chordIndex = 0, nextBellAt = 0;
+
+  function makeNoise(seconds = 4){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++){
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return buf;
+  }
+
+  function makeImpulse(seconds, decay){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++){
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++){
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+      }
+    }
+    return buf;
+  }
+
+  function build(){
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 20;
+    comp.ratio.value = 3.4;
+    comp.attack.value = .008;
+    comp.release.value = .32;
+    master.connect(comp);
+    comp.connect(ctx.destination);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    comp.connect(analyser);
+
+    const rvIn = ctx.createBiquadFilter();
+    rvIn.type = 'lowpass';
+    rvIn.frequency.value = 3200;
+    const reverb = ctx.createConvolver();
+    reverb.buffer = makeImpulse(2.6, 2.4);
+    const rvOut = ctx.createGain();
+    rvOut.gain.value = .55;
+    rvIn.connect(reverb);
+    reverb.connect(rvOut);
+    rvOut.connect(master);
+
+    musicBus = ctx.createGain();
+    musicBus.gain.value = .85;
+    musicBus.connect(master);
+    const musicWet = ctx.createGain();
+    musicWet.gain.value = .5;
+    musicBus.connect(musicWet);
+    musicWet.connect(rvIn);
+
+    sfxBus = ctx.createGain();
+    sfxBus.gain.value = .9;
+    sfxBus.connect(master);
+    const sfxWet = ctx.createGain();
+    sfxWet.gain.value = .32;
+    sfxBus.connect(sfxWet);
+    sfxWet.connect(rvIn);
+
+    noiseBuf = makeNoise(4);
+
+    const wind = ctx.createBufferSource();
+    wind.buffer = noiseBuf;
+    wind.loop = true;
+    windFilter = ctx.createBiquadFilter();
+    windFilter.type = 'lowpass';
+    windFilter.frequency.value = 360;
+    windFilter.Q.value = .5;
+    windGain = ctx.createGain();
+    windGain.gain.value = .06;
+    wind.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(master);
+    wind.start();
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = .05;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = .016;
+    lfo.connect(lfoGain);
+    lfoGain.connect(windGain.gain);
+    lfo.start();
+
+    const lfo2 = ctx.createOscillator();
+    lfo2.frequency.value = .033;
+    const lfo2Gain = ctx.createGain();
+    lfo2Gain.gain.value = 120;
+    lfo2.connect(lfo2Gain);
+    lfo2Gain.connect(windFilter.frequency);
+    lfo2.start();
+
+    started = true;
+  }
+
+  function pad(t, chord){
+    const len = chordLen;
+    chord.notes.forEach((midi, i) => {
+      const f = mtof(midi);
+      const out = ctx.createGain();
+      out.gain.setValueAtTime(.0001, t);
+      out.gain.linearRampToValueAtTime(.034, t + 2.2);
+      out.gain.setValueAtTime(.034, t + len - 1.2);
+      out.gain.exponentialRampToValueAtTime(.0006, t + len + 3.2);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 820;
+      filter.Q.value = .5;
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = (i - 1) * .25;
+      for (const [type, detune, gain] of [['sine', -4, .75], ['triangle', 5, .25]]){
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = f;
+        osc.detune.value = detune;
+        const g = ctx.createGain();
+        g.gain.value = gain;
+        osc.connect(g);
+        g.connect(filter);
+        osc.start(t);
+        osc.stop(t + len + 3.4);
+      }
+      filter.connect(out);
+      out.connect(pan);
+      pan.connect(musicBus);
+    });
+  }
+
+  function bass(t, midi){
+    for (const [note, gain] of [[midi, .08], [midi + 12, .022]]){
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = mtof(note);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 220;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.linearRampToValueAtTime(gain, t + .05);
+      g.gain.exponentialRampToValueAtTime(.0006, t + 3.2);
+      osc.connect(g);
+      g.connect(filter);
+      filter.connect(musicBus);
+      osc.start(t);
+      osc.stop(t + 3.3);
+    }
+  }
+
+  function musicBox(t, midi, vel, pan){
+    const f = mtof(midi);
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(.0001, t);
+    out.gain.linearRampToValueAtTime(vel, t + .012);
+    out.gain.exponentialRampToValueAtTime(.0005, t + 2.4);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 5200;
+    filter.Q.value = .3;
+    const p = ctx.createStereoPanner();
+    p.pan.value = clamp(pan, -.65, .65);
+    for (const [ratio, gain] of [[1, 1], [2.002, .16], [3.01, .05]]){
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f * ratio;
+      osc.detune.value = (Math.random() - .5) * 4;
+      const g = ctx.createGain();
+      g.gain.value = gain;
+      osc.connect(g);
+      g.connect(filter);
+      osc.start(t);
+      osc.stop(t + 2.6);
+    }
+    filter.connect(out);
+    out.connect(p);
+    p.connect(musicBus);
+  }
+
+  function melody(t, chord){
+    chord.melody.forEach((midi, i) => {
+      musicBox(
+        t + melodyBeats[i] * BEAT + (Math.random() - .5) * .025,
+        midi,
+        .10 + Math.random() * .026,
+        (i / 7 - .5) * .55
+      );
+    });
+  }
+
+  function bell(t){
+    const f = mtof(50);
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(.0001, t);
+    out.gain.linearRampToValueAtTime(.12, t + .02);
+    out.gain.exponentialRampToValueAtTime(.0005, t + 6.5);
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = -.25;
+    out.connect(pan);
+    pan.connect(musicBus);
+    for (const [ratio, gain] of [[1, 1], [2.01, .55], [2.42, .4], [3.02, .26], [4.18, .16], [5.43, .08]]){
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = f * ratio;
+      osc.detune.value = (Math.random() - .5) * 3;
+      const g = ctx.createGain();
+      g.gain.value = gain;
+      osc.connect(g);
+      g.connect(out);
+      osc.start(t);
+      osc.stop(t + 7);
+    }
+  }
+
+  function schedule(){
+    if (!on || !ctx) return;
+    const now = ctx.currentTime;
+    const ahead = now + .7;
+    if (nextBellAt < now - .1) nextBellAt = now + .3;
+    while (nextBellAt < ahead){
+      bell(nextBellAt);
+      nextBellAt += 28 + Math.random() * 14;
+    }
+    if (nextChordAt < now - .2) nextChordAt = now + .1;
+    while (nextChordAt < ahead){
+      const chord = chords[chordIndex % chords.length];
+      pad(nextChordAt, chord);
+      bass(nextChordAt, chord.notes[0] - 12);
+      melody(nextChordAt, chord);
+      nextChordAt += chordLen;
+      chordIndex++;
+    }
+  }
+
+  function startClock(){
+    stopClock();
+    const now = ctx.currentTime;
+    nextChordAt = now + .12;
+    chordIndex = 0;
+    nextBellAt = now + 2.4;
+    schedule();
+    ticker = window.setInterval(schedule, 180);
+  }
+
+  function stopClock(){
+    if (ticker){
+      clearInterval(ticker);
+      ticker = 0;
+    }
+  }
+
+  function setUi(){
+    if (!button) return;
+    button.classList.toggle('on', on);
+    button.classList.remove('hint');
+    if (icon) icon.classList.remove('hint');
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    button.setAttribute('aria-label', on ? '关闭环境声' : '开启环境声');
+    if (stateEl) stateEl.textContent = on ? '已开启' : (started ? '已静音' : '点击开启');
+  }
+
+  function fail(){
+    if (button){
+      button.disabled = true;
+      button.classList.remove('on', 'hint');
+      if (icon) icon.classList.remove('hint');
+      if (stateEl) stateEl.textContent = '不可用';
+    }
+  }
+
+  async function enable(){
+    if (!AC || !button) return;
+    try {
+      if (!started) build();
+      if (ctx.state === 'suspended' || ctx.state === 'interrupted') await ctx.resume();
+      clearTimeout(suspendTimer);
+      if (!on){
+        on = true;
+        startClock();
+      }
+      const t = ctx.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.setTargetAtTime(.85, t, .35);
+      setUi();
+    } catch (err){
+      fail();
+    }
+  }
+
+  function disable(){
+    if (!started) return;
+    on = false;
+    stopClock();
+    const t = ctx.currentTime;
+    master.gain.cancelScheduledValues(t);
+    master.gain.setTargetAtTime(.0001, t, .12);
+    setUi();
+    clearTimeout(suspendTimer);
+    suspendTimer = setTimeout(() => {
+      if (!on && ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
+    }, 700);
+  }
+
+  function toggle(){
+    if (on) disable();
+    else enable();
+  }
+
+  function whoosh(team, user){
+    if (!on || !ctx) return;
+    const t = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 1.2;
+    filter.frequency.setValueAtTime(650, t);
+    filter.frequency.exponentialRampToValueAtTime(1800, t + .16);
+    filter.frequency.exponentialRampToValueAtTime(700, t + .32);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(.0001, t);
+    gain.gain.linearRampToValueAtTime(user ? .07 : .045, t + .05);
+    gain.gain.exponentialRampToValueAtTime(.0005, t + .34);
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = team === 0 ? -.35 : .35;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(pan);
+    pan.connect(sfxBus);
+    src.start(t);
+    src.stop(t + .4);
+  }
+
+  function impact(pos, user){
+    if (!on || !ctx) return;
+    const t = ctx.currentTime;
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = clamp(pos.x / 2.4, -.75, .75);
+    pan.connect(sfxBus);
+
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 900;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(.0001, t);
+    gain.gain.linearRampToValueAtTime(user ? .14 : .075, t + .015);
+    gain.gain.exponentialRampToValueAtTime(.0005, t + .22);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(pan);
+    src.start(t);
+    src.stop(t + .26);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(210, t);
+    osc.frequency.exponentialRampToValueAtTime(110, t + .12);
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(user ? .06 : .035, t);
+    og.gain.exponentialRampToValueAtTime(.0005, t + .18);
+    osc.connect(og);
+    og.connect(pan);
+    osc.start(t);
+    osc.stop(t + .2);
+  }
+
+  function shake(){
+    if (!on || !ctx) return;
+    const t = ctx.currentTime;
+    windGain.gain.cancelScheduledValues(t);
+    windGain.gain.setTargetAtTime(.11, t, .12);
+    windGain.gain.setTargetAtTime(.06, t + 1.2, .9);
+
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(500, t);
+    filter.frequency.exponentialRampToValueAtTime(2200, t + .35);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(.0001, t);
+    gain.gain.linearRampToValueAtTime(.05, t + .08);
+    gain.gain.exponentialRampToValueAtTime(.0005, t + .9);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(sfxBus);
+    src.start(t);
+    src.stop(t + 1);
+
+    [88, 91, 95].forEach((midi, i) => {
+      musicBox(t + i * .045, midi, .018, (i - 1) * .3);
+    });
+  }
+
+  function level(){
+    if (!analyser) return 0;
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+    let sum = 0;
+    for (const v of data){
+      const x = (v - 128) / 128;
+      sum += x * x;
+    }
+    return Math.sqrt(sum / data.length);
+  }
+
+  if (!AC || !button){
+    fail();
+    return {
+      enable(){}, disable(){}, toggle(){}, whoosh(){}, impact(){}, shake(){}, level(){ return 0; },
+      get on(){ return false; }, get started(){ return false; }, get context(){ return null; }
+    };
+  }
+
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle();
+  });
+
+  function autoStart(e){
+    if (started || on) return;
+    if (e.target.closest?.('#audioBtn, .loading')) return;
+    const loading = document.getElementById('loading');
+    if (loading && !loading.classList.contains('done')) return;
+    enable();
+  }
+  window.addEventListener('pointerdown', autoStart, { passive: true });
+  window.addEventListener('keydown', (e) => {
+    if (started || on) return;
+    if (e.target.closest?.('#audioBtn')) return;
+    if (e.code === 'Space' || e.code === 'Enter') autoStart(e);
+  }, { passive: true });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden){
+      if (ctx.state === 'running') ctx.suspend().catch(() => {});
+    } else if (on){
+      ctx.resume().then(() => startClock()).catch(() => {});
+    }
+  });
+
+  return {
+    enable, disable, toggle, whoosh, impact, shake, level,
+    get on(){ return on; },
+    get started(){ return started; },
+    get context(){ return ctx; }
+  };
+})();
+
 
 // -------------------------------------------------------------------------
 // Camera helpers, interaction scaffolding
@@ -3106,7 +3649,7 @@ setTimeout(() => {
 
 window.__SOPHIA_DEBUG__ = {
   THREE, scene, camera, renderer, view, cameraTarget, globeRig, innerWorld,
-  kids, forts, flags, flakes, balls, battle,
+  kids, forts, flags, flakes, balls, battle, audio: Sound,
   setCamera(az, polar, dist, tx = 0, ty = 3.52, tz = 0){
     cameraTarget.set(tx, ty, tz);
     view.tAz = view.az = az;
@@ -3139,7 +3682,9 @@ window.__SOPHIA_DEBUG__ = {
       scores: battle.scores.slice(),
       balls: balls.length,
       battleActive: battle.active,
-      flakes: FLAKE_COUNT
+      flakes: FLAKE_COUNT,
+      audioOn: Sound.on,
+      audioState: Sound.context ? Sound.context.state : 'idle'
     };
   }
 };

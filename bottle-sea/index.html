@@ -341,6 +341,30 @@
     color:var(--bone);
     background:rgba(239,229,210,.14);
   }
+  .sound-btn{
+    min-width:40px;
+    padding:0 9px;
+    border:0;
+    border-left:1px solid rgba(239,229,210,.08);
+    background:transparent;
+    color:rgba(239,229,210,.45);
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    transition:color .2s ease, background .2s ease;
+  }
+  .sound-btn:hover{color:var(--bone);background:rgba(239,229,210,.04);}
+  .sound-btn.on{color:var(--amber-hot);background:rgba(216,166,106,.08);}
+  .sound-btn .wave{display:block;}
+  .sound-btn .slash{display:none;}
+  .sound-btn:not(.on) .wave{display:none;}
+  .sound-btn:not(.on) .slash{display:block;}
+  .sound-icon{display:grid;place-items:center;}
+  .sound-icon.hint{animation:audioPulse 2.2s ease-in-out infinite;}
+  @keyframes audioPulse{
+    0%,100%{opacity:.5;}
+    50%{opacity:1;filter:drop-shadow(0 0 6px rgba(240,195,140,.5));}
+  }
   .storm-control{
     pointer-events:auto;
     justify-self:end;
@@ -567,13 +591,31 @@
     <div class="hint-sub">Idle gaze resumes — 静置片刻，镜头自行巡航</div>
   </div>
 
-  <div class="console" role="group" aria-label="昼夜时间倍速">
+  <div class="console" role="group" aria-label="昼夜时流与环境声">
     <span class="console-label">潮汐时流</span>
     <div class="speed-buttons">
       <button class="speed-btn" data-speed="1" type="button">×1</button>
       <button class="speed-btn active" data-speed="4" type="button">×4</button>
       <button class="speed-btn" data-speed="12" type="button">×12</button>
       <button class="speed-btn pause" id="pauseBtn" type="button" aria-label="暂停时间">❚❚</button>
+      <button class="sound-btn" id="audioBtn" type="button" aria-label="开启环境声" aria-pressed="false" title="开启环境声">
+        <span class="sound-icon hint" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9.3h3.4L12 5.1v13.8l-4.6-4.2H4z"/>
+            <path class="wave" d="M15.4 9.2a4.1 4.1 0 0 1 0 5.6M18 6.7a7.7 7.7 0 0 1 0 10.6"/>
+            <path class="slash" d="M5 19.5 19.5 4.5"/>
+          </svg>
+        </span>
+      </button>
+      <button class="sound-btn" id="audioBtn" type="button" aria-label="开启环境声" aria-pressed="false" title="开启环境声">
+        <span class="sound-icon hint" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9.3h3.4L12 5.1v13.8l-4.6-4.2H4z"/>
+            <path class="wave" d="M15.4 9.2a4.1 4.1 0 0 1 0 5.6M18 6.7a7.7 7.7 0 0 1 0 10.6"/>
+            <path class="slash" d="M5 19.5 19.5 4.5"/>
+          </svg>
+        </span>
+      </button>
     </div>
   </div>
 
@@ -3471,6 +3513,7 @@ let activeBolt = null;
 function strikeLightning(){
   activeBolt = lightningBolts[Math.floor(Math.random()*lightningBolts.length)];
   lightningFlash = 1;
+  Sound.thunder();
   if (activeBolt) activeBolt.rotation.y = randRange(-.2,.2);
 }
 
@@ -3866,6 +3909,7 @@ window.addEventListener('pointerup', stopStorm);
 stormBtn.addEventListener('contextmenu', e => e.preventDefault());
 
 window.addEventListener('keydown', (e)=>{
+  if (e.target.closest?.('button, a')) return;
   if (e.code === 'Space' && !e.repeat){
     e.preventDefault();
     startStorm();
@@ -3881,6 +3925,540 @@ window.addEventListener('blur', stopStorm);
 document.addEventListener('visibilitychange', ()=>{
   if (document.hidden) stopStorm();
 });
+
+// -------------------------------------------------------------------------
+// Procedural sea-night soundscape (Web Audio, no external assets)
+// -------------------------------------------------------------------------
+
+const Sound = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const button = document.getElementById('audioBtn');
+  const icon = button ? button.querySelector('.sound-icon') : null;
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  const BEAT = 1;
+  const chordLen = BEAT * 4;
+  const melodyBeats = [0, .9, 1.9, 2.9, 3.6];
+  const chords = [
+    { notes: [45, 48, 52], root: 33, melody: [69, 72, 76, 74, 72] },
+    { notes: [41, 45, 48], root: 29, melody: [65, 69, 72, 76, 74] },
+    { notes: [48, 52, 55], root: 36, melody: [72, 76, 79, 76, 74] },
+    { notes: [43, 47, 50], root: 31, melody: [67, 71, 74, 79, 77] },
+    { notes: [45, 48, 52], root: 33, melody: [69, 72, 76, 79, 76] },
+    { notes: [38, 41, 45], root: 38, melody: [62, 65, 69, 74, 72] },
+    { notes: [41, 45, 48], root: 29, melody: [65, 69, 72, 77, 76] },
+    { notes: [40, 44, 47], root: 40, melody: [64, 68, 71, 76, 74] }
+  ];
+
+  let ctx = null, master = null, musicBus = null, sfxBus = null, analyser = null;
+  let seaGain = null, seaFilter = null, windGain = null, noiseBuf = null;
+  let started = false, on = false, ticker = 0, suspendTimer = 0;
+  let nextChordAt = 0, chordIndex = 0, nextGullAt = 0, nextFogAt = 0;
+  let stormLevel = 0, lastMix = 0, lastThunder = 0;
+
+  function makeNoise(seconds = 5){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++){
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return buf;
+  }
+
+  function makeImpulse(seconds, decay){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++){
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++){
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+      }
+    }
+    return buf;
+  }
+
+  function build(){
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 0;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 20;
+    comp.ratio.value = 3.2;
+    comp.attack.value = .008;
+    comp.release.value = .35;
+    master.connect(comp);
+    comp.connect(ctx.destination);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    comp.connect(analyser);
+
+    const rvIn = ctx.createBiquadFilter();
+    rvIn.type = 'lowpass';
+    rvIn.frequency.value = 2800;
+    const reverb = ctx.createConvolver();
+    reverb.buffer = makeImpulse(2.2, 2.1);
+    const rvOut = ctx.createGain();
+    rvOut.gain.value = .42;
+    rvIn.connect(reverb);
+    reverb.connect(rvOut);
+    rvOut.connect(master);
+
+    musicBus = ctx.createGain();
+    musicBus.gain.value = .8;
+    musicBus.connect(master);
+    const musicWet = ctx.createGain();
+    musicWet.gain.value = .42;
+    musicBus.connect(musicWet);
+    musicWet.connect(rvIn);
+
+    sfxBus = ctx.createGain();
+    sfxBus.gain.value = .9;
+    sfxBus.connect(master);
+    const sfxWet = ctx.createGain();
+    sfxWet.gain.value = .3;
+    sfxBus.connect(sfxWet);
+    sfxWet.connect(rvIn);
+
+    noiseBuf = makeNoise(5);
+
+    seaGain = ctx.createGain();
+    seaGain.gain.value = .045;
+    seaGain.connect(master);
+    seaFilter = ctx.createBiquadFilter();
+    seaFilter.type = 'lowpass';
+    seaFilter.frequency.value = 720;
+    seaFilter.Q.value = .5;
+    const seaA = ctx.createBufferSource();
+    seaA.buffer = noiseBuf;
+    seaA.loop = true;
+    const seaPanA = ctx.createStereoPanner();
+    seaPanA.pan.value = -.2;
+    seaA.connect(seaFilter);
+    seaFilter.connect(seaGain);
+    seaGain.connect(seaPanA);
+    seaPanA.connect(master);
+    seaA.start();
+
+    const seaB = ctx.createBufferSource();
+    seaB.buffer = noiseBuf;
+    seaB.loop = true;
+    const seaFilterB = ctx.createBiquadFilter();
+    seaFilterB.type = 'lowpass';
+    seaFilterB.frequency.value = 520;
+    const seaB2 = ctx.createGain();
+    seaB2.gain.value = .55;
+    const seaPanB = ctx.createStereoPanner();
+    seaPanB.pan.value = .25;
+    seaB.connect(seaFilterB);
+    seaFilterB.connect(seaB2);
+    seaB2.connect(seaPanB);
+    seaPanB.connect(master);
+    seaB.start(ctx.currentTime, 1.7);
+
+    const seaLfo = ctx.createOscillator();
+    seaLfo.frequency.value = .09;
+    const seaLfoGain = ctx.createGain();
+    seaLfoGain.gain.value = .012;
+    seaLfo.connect(seaLfoGain);
+    seaLfoGain.connect(seaGain.gain);
+    seaLfo.start();
+
+    const wind = ctx.createBufferSource();
+    wind.buffer = noiseBuf;
+    wind.loop = true;
+    const windFilter = ctx.createBiquadFilter();
+    windFilter.type = 'bandpass';
+    windFilter.frequency.value = 900;
+    windFilter.Q.value = .55;
+    windGain = ctx.createGain();
+    windGain.gain.value = .025;
+    const windPan = ctx.createStereoPanner();
+    windPan.pan.value = .12;
+    wind.connect(windFilter);
+    windFilter.connect(windGain);
+    windGain.connect(windPan);
+    windPan.connect(master);
+    wind.start(ctx.currentTime, .8);
+
+    const windLfo = ctx.createOscillator();
+    windLfo.frequency.value = .05;
+    const windLfoGain = ctx.createGain();
+    windLfoGain.gain.value = .006;
+    windLfo.connect(windLfoGain);
+    windLfoGain.connect(windGain.gain);
+    windLfo.start();
+
+    started = true;
+  }
+
+  function pad(t, chord){
+    chord.notes.forEach((midi, i) => {
+      const f = mtof(midi);
+      const out = ctx.createGain();
+      out.gain.setValueAtTime(.0001, t);
+      out.gain.linearRampToValueAtTime(.028, t + 1.4);
+      out.gain.setValueAtTime(.028, t + 2.4);
+      out.gain.exponentialRampToValueAtTime(.0006, t + 5.2);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 760;
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = (i - 1) * .24;
+      for (const [type, detune, gain] of [['sine', -3, .7], ['triangle', 4, .3]]){
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = f;
+        osc.detune.value = detune;
+        const g = ctx.createGain();
+        g.gain.value = gain;
+        osc.connect(g);
+        g.connect(filter);
+        osc.start(t);
+        osc.stop(t + 5.4);
+      }
+      filter.connect(out);
+      out.connect(pan);
+      pan.connect(musicBus);
+    });
+  }
+
+  function pluck(t, midi, vel, pan){
+    const f = mtof(midi);
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(.0001, t);
+    out.gain.linearRampToValueAtTime(vel, t + .012);
+    out.gain.exponentialRampToValueAtTime(.0005, t + 1.9);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2800, t);
+    filter.frequency.exponentialRampToValueAtTime(900, t + .85);
+    const p = ctx.createStereoPanner();
+    p.pan.value = clamp(pan, -.7, .7);
+    for (const [ratio, type, gain] of [[1, 'triangle', 1], [2.005, 'sine', .17], [3.008, 'sine', .05]]){
+      const osc = ctx.createOscillator();
+      osc.type = type;
+      osc.frequency.value = f * ratio;
+      osc.detune.value = (Math.random() - .5) * 5;
+      const g = ctx.createGain();
+      g.gain.value = gain;
+      osc.connect(g);
+      g.connect(filter);
+      osc.start(t);
+      osc.stop(t + 2.1);
+    }
+    const click = ctx.createBufferSource();
+    click.buffer = noiseBuf;
+    const clickFilter = ctx.createBiquadFilter();
+    clickFilter.type = 'bandpass';
+    clickFilter.frequency.value = Math.min(5200, f * 2);
+    clickFilter.Q.value = 1.5;
+    const clickGain = ctx.createGain();
+    clickGain.gain.setValueAtTime(.035, t);
+    clickGain.gain.exponentialRampToValueAtTime(.0001, t + .05);
+    click.connect(clickFilter);
+    clickFilter.connect(clickGain);
+    clickGain.connect(filter);
+    click.start(t);
+    click.stop(t + .06);
+    filter.connect(out);
+    out.connect(p);
+    p.connect(musicBus);
+  }
+
+  function bass(t, midi){
+    for (const [note, gain] of [[midi, .075], [midi + 12, .015]]){
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = mtof(note);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 210;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.linearRampToValueAtTime(gain, t + .06);
+      g.gain.exponentialRampToValueAtTime(.0006, t + 3.4);
+      osc.connect(g);
+      g.connect(filter);
+      filter.connect(musicBus);
+      osc.start(t);
+      osc.stop(t + 3.5);
+    }
+  }
+
+  function melody(t, chord){
+    chord.melody.forEach((midi, i) => {
+      pluck(
+        t + melodyBeats[i] * BEAT + (Math.random() - .5) * .02,
+        midi,
+        .085 + Math.random() * .025,
+        (i / 4 - .5) * .6
+      );
+    });
+  }
+
+  function gull(t){
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.random() * 1.4 - .7;
+    pan.connect(sfxBus);
+    const base = 650 + Math.random() * 500;
+    for (let i = 0; i < 3; i++){
+      const at = t + i * (.16 + Math.random() * .07);
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(base * (1 + i * .05), at);
+      osc.frequency.exponentialRampToValueAtTime(base * .65, at + .18);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1800;
+      filter.Q.value = 2.4;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(.0001, at);
+      g.gain.linearRampToValueAtTime(.024, at + .02);
+      g.gain.exponentialRampToValueAtTime(.0004, at + .24);
+      osc.connect(filter);
+      filter.connect(g);
+      g.connect(pan);
+      osc.start(at);
+      osc.stop(at + .26);
+    }
+  }
+
+  function foghorn(t){
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(.0001, t);
+    out.gain.linearRampToValueAtTime(.055, t + 1.2);
+    out.gain.setValueAtTime(.055, t + 2.6);
+    out.gain.exponentialRampToValueAtTime(.0005, t + 4.6);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 320;
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = .3;
+    for (const [freq, gain] of [[65.4, 1], [98.1, .45], [130.8, .18]]){
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const g = ctx.createGain();
+      g.gain.value = gain;
+      osc.connect(g);
+      g.connect(filter);
+      osc.start(t);
+      osc.stop(t + 4.8);
+    }
+    filter.connect(out);
+    out.connect(pan);
+    pan.connect(sfxBus);
+  }
+
+  function schedule(){
+    if (!on || !ctx) return;
+    const now = ctx.currentTime;
+    const ahead = now + .7;
+    if (nextChordAt < now - .2) nextChordAt = now + .1;
+    while (nextChordAt < ahead){
+      const chord = chords[chordIndex % chords.length];
+      pad(nextChordAt, chord);
+      bass(nextChordAt, chord.root);
+      melody(nextChordAt, chord);
+      nextChordAt += chordLen;
+      chordIndex++;
+    }
+    if (nextGullAt < now - .2) nextGullAt = now + 2;
+    if (nextGullAt < ahead){
+      if (stormLevel < .45) gull(nextGullAt);
+      nextGullAt += 10 + Math.random() * 9;
+    }
+    if (nextFogAt < now - .2) nextFogAt = now + 4;
+    if (nextFogAt < ahead){
+      foghorn(nextFogAt);
+      nextFogAt += 38 + Math.random() * 16;
+    }
+  }
+
+  function startClock(){
+    stopClock();
+    const now = ctx.currentTime;
+    nextChordAt = now + .12;
+    chordIndex = 0;
+    nextGullAt = now + 4.5;
+    nextFogAt = now + 7.5;
+    schedule();
+    ticker = window.setInterval(schedule, 200);
+  }
+
+  function stopClock(){
+    if (ticker){
+      clearInterval(ticker);
+      ticker = 0;
+    }
+  }
+
+  function setUi(){
+    if (!button) return;
+    button.classList.toggle('on', on);
+    button.classList.remove('hint');
+    if (icon) icon.classList.remove('hint');
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    button.setAttribute('aria-label', on ? '关闭环境声' : '开启环境声');
+    button.title = on ? '关闭环境声' : '开启环境声';
+  }
+
+  function fail(){
+    if (button){
+      button.disabled = true;
+      button.classList.remove('on', 'hint');
+      if (icon) icon.classList.remove('hint');
+      button.title = '当前浏览器不支持环境声';
+    }
+  }
+
+  async function enable(){
+    if (!AC || !button) return;
+    try {
+      if (!started) build();
+      if (ctx.state === 'suspended' || ctx.state === 'interrupted') await ctx.resume();
+      clearTimeout(suspendTimer);
+      if (!on){
+        on = true;
+        startClock();
+      }
+      const t = ctx.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.setTargetAtTime(.9, t, .4);
+      setUi();
+    } catch (err){
+      fail();
+    }
+  }
+
+  function disable(){
+    if (!started) return;
+    on = false;
+    stopClock();
+    const t = ctx.currentTime;
+    master.gain.cancelScheduledValues(t);
+    master.gain.setTargetAtTime(.0001, t, .12);
+    setUi();
+    clearTimeout(suspendTimer);
+    suspendTimer = setTimeout(() => {
+      if (!on && ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
+    }, 700);
+  }
+
+  function toggle(){
+    if (on) disable();
+    else enable();
+  }
+
+  function setStorm(value){
+    stormLevel = value;
+    if (!started || !on) return;
+    const now = performance.now();
+    if (now - lastMix < 200) return;
+    lastMix = now;
+    const t = ctx.currentTime;
+    seaGain.gain.setTargetAtTime(.045 + value * .085, t, .55);
+    windGain.gain.setTargetAtTime(.025 + value * .08, t, .6);
+    seaFilter.frequency.setTargetAtTime(720 + value * 620, t, .8);
+  }
+
+  function thunder(){
+    if (!on || !ctx) return;
+    const now = performance.now();
+    if (now - lastThunder < 2800) return;
+    lastThunder = now;
+    const t = ctx.currentTime;
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.random() * 1.4 - .7;
+    pan.connect(sfxBus);
+
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(260, t);
+    filter.frequency.exponentialRampToValueAtTime(90, t + 2);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(.12 + stormLevel * .06, t + .04);
+    g.gain.exponentialRampToValueAtTime(.0005, t + 2.6);
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(pan);
+    src.start(t);
+    src.stop(t + 2.8);
+
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(52, t);
+    sub.frequency.exponentialRampToValueAtTime(34, t + 1.6);
+    const sg = ctx.createGain();
+    sg.gain.setValueAtTime(.0001, t);
+    sg.gain.linearRampToValueAtTime(.075, t + .08);
+    sg.gain.exponentialRampToValueAtTime(.0005, t + 2.2);
+    sub.connect(sg);
+    sg.connect(pan);
+    sub.start(t);
+    sub.stop(t + 2.4);
+  }
+
+  function level(){
+    if (!analyser) return 0;
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+    let sum = 0;
+    for (const v of data){
+      const x = (v - 128) / 128;
+      sum += x * x;
+    }
+    return Math.sqrt(sum / data.length);
+  }
+
+  if (!AC || !button){
+    fail();
+    return {
+      enable(){}, disable(){}, toggle(){}, setStorm(){}, thunder(){}, level(){ return 0; },
+      get on(){ return false; }, get started(){ return false; }, get context(){ return null; }
+    };
+  }
+
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle();
+  });
+
+  function autoStart(e){
+    if (started || on) return;
+    if (e.target.closest?.('#audioBtn, .loading')) return;
+    const loading = document.getElementById('loading');
+    if (loading && !loading.classList.contains('done')) return;
+    enable();
+  }
+  window.addEventListener('pointerdown', autoStart, { passive: true });
+  window.addEventListener('keydown', (e) => {
+    if (started || on) return;
+    if (e.target.closest?.('#audioBtn')) return;
+    if (e.code === 'Space' || e.code === 'Enter') autoStart(e);
+  }, { passive: true });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden){
+      if (ctx.state === 'running') ctx.suspend().catch(() => {});
+    } else if (on){
+      ctx.resume().then(() => startClock()).catch(() => {});
+    }
+  });
+
+  return {
+    enable, disable, toggle, setStorm, thunder, level,
+    get on(){ return on; },
+    get started(){ return started; },
+    get context(){ return ctx; }
+  };
+})();
 
 // Orbit / zoom
 function noteInteraction(){
@@ -3994,6 +4572,7 @@ function animate(){
   timeNow += dt;
   stormVisual += (stormTarget - stormVisual) * Math.min(1, dt * (stormTarget > stormVisual ? 2.05 : 1.28));
   if (stormVisual < .001) stormVisual = 0;
+  Sound.setStorm(stormVisual);
   if (!day.paused){
     day.t = (day.t + dt * day.speed / DAY_LENGTH) % 1;
   }
@@ -4065,7 +4644,7 @@ requestAnimationFrame(animate);
 // Debug hooks for exhibition preview / QA
 window.__BOTTLE_DEBUG__ = {
   scene, camera, renderer, view, day, cameraTarget, telescopeGroup,
-  gulls, whale, whaleState, beamGroup,
+  gulls, whale, whaleState, beamGroup, audio: Sound,
   setDayT(value){ day.t = ((value % 1) + 1) % 1; updateCelestialAndLight(timeNow); updateHUD(true); },
   setSpeed,
   setPaused(value){ day.paused = !!value; updateHUD(true); },
@@ -4086,7 +4665,9 @@ window.__BOTTLE_DEBUG__ = {
       storm: stormVisual,
       pixelRatio: renderer.getPixelRatio(),
       drawCalls: renderer.info.render.calls,
-      triangles: renderer.info.render.triangles
+      triangles: renderer.info.render.triangles,
+      audioOn: Sound.on,
+      audioState: Sound.context ? Sound.context.state : 'idle'
     };
   }
 };
