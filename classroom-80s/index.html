@@ -2308,10 +2308,12 @@ bBlock(.068, .066, .068, M.skinSoft, .21, .95, -.065, teacher);
 bLimb(new THREE.Vector3(-.17, 1.33, 0), new THREE.Vector3(-.31, 1.17, -.16), .07, teacherShirtMat, teacher);
 bLimb(new THREE.Vector3(-.31, 1.17, -.16), new THREE.Vector3(-.24, 1.31, -.4), .058, M.skinSoft, teacher);
 const teacherLeftHand = bBlock(.07, .066, .07, M.skinSoft, -.24, 1.32, -.41, teacher);
-// pointing stick, placed in world space to reach toward the screen
+// pointing stick: raised toward the board while facing the class, lowered at rest
+let teacherTurned = false;
 teacher.updateMatrixWorld(true);
 const pointerFromLocal = new THREE.Vector3(-.24, 1.32, -.41);
 const pointerTarget = new THREE.Vector3(SCREEN.x - .84, 1.38, SCREEN.z + .32);
+const pointerDownLocal = new THREE.Vector3(-.52, .17, -.16);
 const pointerToLocal = teacher.worldToLocal(pointerTarget.clone());
 const pointerMesh = addBetween(pointerFromLocal, pointerToLocal, .006, M.darkWood, teacher, 5, false);
 const pointerBaseLen = pointerToLocal.distanceTo(pointerFromLocal);
@@ -2321,9 +2323,19 @@ teacher.add(pointerTip);
 const pointerUp = new THREE.Vector3(0, 1, 0);
 const pointerDir = new THREE.Vector3();
 const pointerLocalTarget = new THREE.Vector3();
-function aimPointer(){
+const pointerAim = new THREE.Vector3();
+const pointerAimDesired = new THREE.Vector3();
+function aimPointer(dt = 0, snap = false){
   teacher.updateMatrixWorld(true);
-  pointerLocalTarget.copy(pointerTarget);
+  if (teacherTurned){
+    pointerAimDesired.copy(pointerTarget);
+  } else {
+    pointerAimDesired.copy(pointerDownLocal);
+    teacher.localToWorld(pointerAimDesired);
+  }
+  if (snap) pointerAim.copy(pointerAimDesired);
+  else pointerAim.lerp(pointerAimDesired, 1 - Math.pow(.0035, Math.max(dt, .001)));
+  pointerLocalTarget.copy(pointerAim);
   teacher.worldToLocal(pointerLocalTarget);
   pointerDir.copy(pointerLocalTarget).sub(pointerFromLocal);
   const len = pointerDir.length();
@@ -2332,7 +2344,7 @@ function aimPointer(){
   pointerMesh.scale.y = len / pointerBaseLen;
   pointerTip.position.copy(pointerLocalTarget);
 }
-aimPointer();
+aimPointer(0, true);
 teacher.userData.kind = 'teacher';
 clickTargets.push(teacher);
 
@@ -2426,7 +2438,6 @@ let lightsOn = true;
 let lightLevel = 1;
 let slidePulse = 0;
 let toastTimer = 0;
-let teacherTurned = false;
 let fanBoost = 0;
 let clockSpin = 0;
 let clockAdvance = 0;
@@ -2877,7 +2888,7 @@ const beamUnit = beamDir.clone().normalize();
 
 function updateLife(time, dt){
   teacher.rotation.y = lerp(teacher.rotation.y, teacherTurned ? 3.66 : .9, 1 - Math.pow(.02, dt));
-  aimPointer();
+  aimPointer(dt);
   for (const s of students){
     let handLift = 0;
     if (s.handTimer > 0){

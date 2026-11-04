@@ -2040,6 +2040,80 @@ addClickProxy(boat, .03, .09, 'boat');
 addClickProxy(pavilion, .11, .055, 'pavilion');
 addClickProxy(pagoda, .05, .09, 'pagoda');
 
+const scoopHome = new THREE.Vector3(-1.12, .16, .60);
+const scoopAboveCaddy = new THREE.Vector3(-1.42, .72, .46);
+const scoopCaddyDip = new THREE.Vector3(-1.42, .46, .46);
+const scoopAboveBowl = new THREE.Vector3(.02, .84, .12);
+const scoopDump = new THREE.Vector3(.02, .66, .12);
+let scoopDropped = false;
+let scoopLeafCursor = 0;
+const scoopLeafMat = new THREE.MeshBasicMaterial({ color: 0x71914f, transparent: true, opacity: .95, side: THREE.DoubleSide });
+const scoopLoad = new THREE.Group();
+scoopLoad.visible = false;
+for (let i=0;i<4;i++){
+  const leaf = new THREE.Mesh(new THREE.CircleGeometry(.022, 7), scoopLeafMat);
+  leaf.rotation.x = -Math.PI / 2;
+  leaf.rotation.z = rand(0, TAU);
+  leaf.position.set(-.12 + rand(-.015,.015), .018 + i * .004, rand(-.015,.015));
+  scoopLoad.add(leaf);
+}
+scoop.add(scoopLoad);
+const scoopGleam = new THREE.Sprite(new THREE.SpriteMaterial({
+  map: mistTex, color: 0xffe0ab, transparent: true, opacity: 0,
+  depthWrite: false, blending: THREE.AdditiveBlending
+}));
+scoopGleam.scale.set(.22, .22, 1);
+scoopGleam.position.set(-.06, .03, 0);
+scoop.add(scoopGleam);
+const scoopLeafPool = [];
+for (let i=0;i<18;i++){
+  const leaf = new THREE.Mesh(new THREE.CircleGeometry(.03, 8), scoopLeafMat);
+  leaf.rotation.x = -Math.PI / 2;
+  leaf.scale.set(1, .36, 1);
+  leaf.visible = false;
+  bowlGroup.add(leaf);
+  scoopLeafPool.push({
+    mesh: leaf, active: false, landed: false,
+    vx: 0, vy: 0, vz: 0, spin: 0, phase: rand(0, TAU)
+  });
+}
+function spawnScoopLeaves(){
+  teaUniforms.uRipple.value = Math.max(teaUniforms.uRipple.value, .45);
+  for (let i=0;i<8;i++){
+    const item = scoopLeafPool[scoopLeafCursor++ % scoopLeafPool.length];
+    const a = rand(0, TAU), r = rand(0, .07);
+    item.active = true;
+    item.landed = false;
+    item.mesh.visible = true;
+    item.mesh.position.set(Math.cos(a) * r, .47 + rand(0, .05), .1 + Math.sin(a) * r);
+    item.mesh.rotation.set(-Math.PI / 2, 0, rand(0, TAU));
+    item.vx = rand(-.035, .035);
+    item.vy = rand(.16, .3);
+    item.vz = rand(-.03, .03);
+    item.spin = rand(-2.2, 2.2);
+    item.phase = rand(0, TAU);
+  }
+}
+function updateScoopLeaves(dt, time){
+  for (const item of scoopLeafPool){
+    if (!item.active) continue;
+    if (!item.landed){
+      item.mesh.position.x += item.vx * dt;
+      item.mesh.position.z += item.vz * dt;
+      item.mesh.position.y -= item.vy * dt;
+      item.mesh.rotation.z += item.spin * dt;
+      if (item.mesh.position.y <= level + .006){
+        item.mesh.position.y = level + .004;
+        item.mesh.rotation.z = rand(0, TAU);
+        item.landed = true;
+      }
+    } else {
+      item.mesh.position.y = level + .004 + Math.sin(time * .8 + item.phase) * .0015;
+      item.mesh.rotation.z += dt * .05;
+    }
+  }
+}
+
 function triggerClick(kind){
   if (kind === 'bowl'){
     clickFx.bowl = 1.0;
@@ -2054,8 +2128,10 @@ function triggerClick(kind){
     clickFx.caddy = 1.6;
     Sound.ripple();
   } else if (kind === 'scoop'){
-    clickFx.scoop = 1.4;
-    clickFx.caddy = 1.1;
+    if (clickFx.scoop > 0) return;
+    clickFx.scoop = 3.4;
+    clickFx.caddy = 1.6;
+    scoopDropped = false;
   } else if (kind === 'boat'){
     clickFx.boat = 2.2;
     Sound.ripple();
@@ -2129,11 +2205,71 @@ function updateClickFx(time, dt){
   caddyLid.rotation.z = caddyP * .12;
   caddy.rotation.z = Math.sin(time * 9) * .05 * caddyP;
 
-  const scoopP = pulse('scoop', 1.4);
-  scoop.position.y = .16 + scoopP * .12;
-  scoop.rotation.z = Math.sin(time * 13) * .55 * scoopP;
-  scoop.rotation.y = -.5 + scoopP * .6;
-  scoop.rotation.x = scoopP * .35;
+  clickFx.scoop = Math.max(0, clickFx.scoop - dt);
+  const scoopActive = clickFx.scoop > 0;
+  const scoopU = scoopActive ? 1 - clickFx.scoop / 3.4 : 1;
+  scoopLoad.visible = scoopActive && scoopU > .3 && scoopU < .8;
+  scoopGleam.material.opacity = scoopActive ? .32 + Math.sin(time * 12) * .08 : 0;
+  if (scoopActive){
+    let x, y, z;
+    if (scoopU < .2){
+      const t = smoothstep(0, .2, scoopU);
+      x = lerp(scoopHome.x, scoopAboveCaddy.x, t);
+      y = lerp(scoopHome.y, scoopAboveCaddy.y, t);
+      z = lerp(scoopHome.z, scoopAboveCaddy.z, t);
+    } else if (scoopU < .34){
+      const t = smoothstep(.2, .34, scoopU);
+      x = lerp(scoopAboveCaddy.x, scoopCaddyDip.x, t);
+      y = lerp(scoopAboveCaddy.y, scoopCaddyDip.y, t);
+      z = lerp(scoopAboveCaddy.z, scoopCaddyDip.z, t);
+    } else if (scoopU < .48){
+      const t = smoothstep(.34, .48, scoopU);
+      x = lerp(scoopCaddyDip.x, scoopAboveCaddy.x, t);
+      y = lerp(scoopCaddyDip.y, scoopAboveCaddy.y, t);
+      z = lerp(scoopCaddyDip.z, scoopAboveCaddy.z, t);
+    } else if (scoopU < .72){
+      const t = smoothstep(.48, .72, scoopU);
+      x = lerp(scoopAboveCaddy.x, scoopAboveBowl.x, t);
+      y = lerp(scoopAboveCaddy.y, scoopAboveBowl.y, t);
+      z = lerp(scoopAboveCaddy.z, scoopAboveBowl.z, t);
+    } else if (scoopU < .84){
+      const t = smoothstep(.72, .84, scoopU);
+      x = lerp(scoopAboveBowl.x, scoopDump.x, t);
+      y = lerp(scoopAboveBowl.y, scoopDump.y, t);
+      z = lerp(scoopAboveBowl.z, scoopDump.z, t);
+    } else if (scoopU < .96){
+      const t = smoothstep(.84, .96, scoopU);
+      x = lerp(scoopDump.x, scoopHome.x, t);
+      y = lerp(scoopDump.y, scoopHome.y, t);
+      z = lerp(scoopDump.z, scoopHome.z, t);
+    } else {
+      x = scoopHome.x; y = scoopHome.y; z = scoopHome.z;
+    }
+    scoop.position.set(x, y, z);
+    scoop.rotation.y = -.5 + Math.sin(scoopU * Math.PI) * .22;
+    let tilt = 0;
+    if (scoopU >= .18 && scoopU < .34){
+      tilt = lerp(0, -1.0, smoothstep(.18, .34, scoopU));
+    } else if (scoopU >= .34 && scoopU < .48){
+      tilt = lerp(-1.0, .12, smoothstep(.34, .48, scoopU));
+    } else if (scoopU >= .48 && scoopU < .72){
+      tilt = .12;
+    } else if (scoopU >= .72 && scoopU < .84){
+      tilt = lerp(.12, 1.7, smoothstep(.72, .84, scoopU));
+    } else if (scoopU >= .84 && scoopU < .96){
+      tilt = lerp(1.7, 0, smoothstep(.84, .96, scoopU));
+    }
+    scoop.rotation.z = tilt;
+    scoop.rotation.x = 0;
+    if (!scoopDropped && scoopU >= .74){
+      scoopDropped = true;
+      spawnScoopLeaves();
+    }
+  } else {
+    scoop.position.copy(scoopHome);
+    scoop.rotation.set(0, -.5, 0);
+  }
+  updateScoopLeaves(dt, time);
 
   const boatP = pulse('boat', 2.2);
   boat.position.x = .02 + boatP * .11;
