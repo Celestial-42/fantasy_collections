@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#080706" />
 <title>幻想藏品 · 横向藏品长廊</title>
-<meta name="description" content="幻想藏品 · 横向藏品长廊：六件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市、《幻灯年代》的 1998 年高中数学课堂、《潮汐假日》的夏日海滩，左右拖动逐件观看。" />
+<meta name="description" content="幻想藏品 · 横向藏品长廊：七件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市、《幻灯年代》的 1998 年高中数学课堂、《潮汐假日》的夏日海滩、《秋山鹿鸣》的深秋山林，左右拖动逐件观看。" />
 <link rel="preload" as="image" href="bottle-sea/poster.jpg" />
 <link rel="preload" as="image" href="snow-sophia/poster.jpg" />
 <link rel="preload" as="image" href="tea-mountain/poster.jpg" />
 <link rel="preload" as="image" href="lantern-changan/poster.jpg" />
 <link rel="preload" as="image" href="classroom-80s/poster.jpg" />
 <link rel="preload" as="image" href="tide-holiday/poster.jpg" />
+<link rel="preload" as="image" href="autumn-forest/poster.jpg" />
 <style>
   @property --accent{
     syntax: "<color>";
@@ -493,6 +494,17 @@
   }
   .card-seal--tide::before{border-color:rgba(222,250,246,.24);}
   .card-seal--tide small{color:rgba(222,250,246,.55);}
+  .card-seal--autumn{
+    color:rgba(255,242,222,.94);
+    background:
+      radial-gradient(circle at 36% 30%, #b97a3c, #8c5227 52%, #57301a 100%);
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.46),
+      inset 0 1px 1px rgba(255,234,204,.3),
+      inset 0 -6px 14px rgba(34,16,6,.5);
+  }
+  .card-seal--autumn::before{border-color:rgba(255,230,200,.24);}
+  .card-seal--autumn small{color:rgba(255,230,200,.55);}
 
   .card-bottom{
     position:absolute;
@@ -817,18 +829,18 @@
       <span>幻想藏品 · Atelier<br>Fantasy Collections</span>
     </a>
     <div class="top-meta">
-      <span class="meta-label">横向长廊</span><i aria-hidden="true"></i><span><b>No. 01—06</b> / 2026</span>
+      <span class="meta-label">横向长廊</span><i aria-hidden="true"></i><span><b>No. 01—07</b> / 2026</span>
     </div>
   </header>
 
   <section class="shell intro" aria-labelledby="pageTitle">
     <div class="intro-left">
-      <p class="eyebrow">Fantasy Collections · Vol. 01—06</p>
+      <p class="eyebrow">Fantasy Collections · Vol. 01—07</p>
       <h1 id="pageTitle">幻想藏品</h1>
       <p class="latin">The Fantasy Collections</p>
     </div>
     <div class="intro-right">
-      <p class="intro-note">六件可交互的幻想微缩藏品，<br>挂在同一条横向长廊上。</p>
+      <p class="intro-note">七件可交互的幻想微缩藏品，<br>挂在同一条横向长廊上。</p>
       <p class="drag-hint"><i aria-hidden="true"></i>按住拖动 · 点击进入</p>
     </div>
   </section>
@@ -959,10 +971,31 @@
         <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">潮汐假日</span></span>
       </span>
     </a>
+
+    <a class="card" href="autumn-forest/" draggable="false"
+       style="--card-accent:#e6a45e;--pos:50% 52%"
+       data-no="07" data-title="秋山鹿鸣" data-en="An Autumn Ridge"
+       data-note="一整座山的秋色，风过时落叶、果实与小鹿一同醒来。"
+       data-accent="#e6a45e" aria-label="进入《秋山鹿鸣》">
+      <span class="card-media"><img src="autumn-forest/poster.jpg" draggable="false" alt="玻璃钟罩里的秋日山景，挂满果实的枫树旁站着小鹿，秋色森林铺满整座山直到山顶" width="1200" height="1800" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 07</span><span class="card-phase">山林 · 深秋 16:40</span></span>
+        <span class="card-seal card-seal--autumn" aria-hidden="true">秋山<small>AUTUMN · RIDGE · 07</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">An Autumn Ridge</span>
+          <span class="card-note">一整座山的秋色，风过时落叶、果实与小鹿一同醒来。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">秋山鹿鸣</span></span>
+      </span>
+    </a>
   </div>
 
   <section class="shell caption" aria-live="polite">
-    <div class="cap-no"><span id="capNo">01</span><small>/ 06</small></div>
+    <div class="cap-no"><span id="capNo">01</span><small>/ 07</small></div>
     <div class="cap-main">
       <h2><span id="capTitle">瓶中沧海</span><em id="capEn">A Sea in a Bottle</em></h2>
       <p id="capNote">帆船、灯塔与一场被装进瓶里的风暴。</p>
