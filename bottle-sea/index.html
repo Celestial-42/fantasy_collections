@@ -3916,13 +3916,41 @@ function updateBeam(time, dt){
 function updateClickProps(time, dt){
   clickFx.cork = Math.max(0, clickFx.cork - dt);
   const corkP = clickFx.cork > 0 ? Math.sin((1 - clickFx.cork / 1.2) * Math.PI) : 0;
-  corkGroup.position.x = mouthX + corkP * .75;
-  corkGroup.position.y = corkP * .38;
-  corkGroup.rotation.z = corkP * .7;
+  corkGroup.position.x = mouthX + corkP * .5;
+  corkGroup.position.y = corkP * .1;
+  corkGroup.rotation.x = corkP * Math.PI * 2;
+  corkGroup.rotation.z = corkP * .08;
+  const puffScale = .3 + corkP * .55;
+  corkPuff.scale.set(puffScale, puffScale, 1);
+  corkPuff.material.opacity = corkP * .5;
   clickFx.chest = Math.max(0, clickFx.chest - dt);
-  const chestP = clickFx.chest > 0 ? Math.sin((1 - clickFx.chest / 1.8) * Math.PI) : 0;
-  chestGlowSprite.scale.set(.72 * (1 + chestP * 1.5), .72 * (1 + chestP * 1.5), 1);
-  treasureLight.intensity += chestP * 4.5 + Math.sin(time*18) * .4 * chestP;
+  const chestT = clickFx.chest > 0 ? 1 - clickFx.chest / 1.8 : 0;
+  const chestP = clickFx.chest > 0 ? Math.sin(chestT * Math.PI) : 0;
+  chestGlowSprite.scale.set(.72 * (1 + chestP * 2.2), .72 * (1 + chestP * 2.2), 1);
+  chestGlowSprite.material.opacity = Math.min(1, chestGlowSprite.material.opacity + chestP * .55);
+  treasureLight.intensity += chestP * 8.5 + Math.sin(time*22) * .6 * chestP;
+  chestSparkPoints.visible = clickFx.chest > 0;
+  chestRing.visible = clickFx.chest > 0;
+  chestFlash.visible = clickFx.chest > 0;
+  if (chestSparkPoints.visible){
+    for (let i=0;i<chestSparkCount;i++){
+      const seed = chestSparkSeeds[i];
+      const t = Math.min(1, chestT * 1.3 + seed.delay);
+      const radius = seed.radius + t * .2;
+      const angle = seed.angle + t * seed.swirl * 2.4;
+      chestSparkPositions[i*3] = Math.cos(angle) * radius;
+      chestSparkPositions[i*3+1] = t * seed.up;
+      chestSparkPositions[i*3+2] = Math.sin(angle) * radius * .75;
+    }
+    chestSparkGeo.attributes.position.needsUpdate = true;
+    chestSparkMat.opacity = Math.sin(chestT * Math.PI) * .95;
+    chestSparkMat.size = .05 + Math.sin(chestT * Math.PI) * .05;
+    const burstT = Math.min(1, chestT * 1.7);
+    chestRing.scale.setScalar(1 + burstT * 2.8);
+    chestRing.material.opacity = (1 - burstT) * .85;
+    chestFlash.scale.setScalar(.55 + chestT * 2.0);
+    chestFlash.material.opacity = Math.sin(chestT * Math.PI) * .55;
+  }
   beamSprite.scale.set(.38 * (1 + clickFx.beam / 3.2 * .5), .38 * (1 + clickFx.beam / 3.2 * .5), 1);
 }
 
@@ -4677,6 +4705,47 @@ for (let i=0;i<gulls.length;i++) addHitProxy(gulls[i].root, 0, 0, 0, .3, 'gull',
 for (let i=0;i<crabs.length;i++) addHitProxy(crabs[i].group, 0, .05, 0, .17, 'crab', i);
 addHitProxy(buoy, 0, .2, 0, .4, 'buoy');
 addHitProxy(rowboat, 0, .03, 0, .35, 'rowboat');
+addHitProxy(bottleWorld, -1.58, -1.9, 1.92, .55, 'chest');
+
+const chestSparkCount = 22;
+const chestSparkGeo = new THREE.BufferGeometry();
+const chestSparkPositions = new Float32Array(chestSparkCount * 3);
+chestSparkGeo.setAttribute('position', new THREE.BufferAttribute(chestSparkPositions, 3).setUsage(THREE.DynamicDrawUsage));
+const chestSparkMat = new THREE.PointsMaterial({
+  color: 0xffe09a, size: .06, transparent: true, opacity: 0,
+  depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false
+});
+const chestSparkPoints = new THREE.Points(chestSparkGeo, chestSparkMat);
+chestSparkPoints.position.set(-1.58, -1.92, 1.92);
+chestSparkPoints.frustumCulled = false;
+chestSparkPoints.visible = false;
+bottleWorld.add(chestSparkPoints);
+const chestRing = new THREE.Mesh(
+  new THREE.RingGeometry(.16, .26, 28),
+  new THREE.MeshBasicMaterial({
+    color: 0xffd982, transparent: true, opacity: 0, side: THREE.DoubleSide,
+    depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false
+  })
+);
+chestRing.rotation.x = -Math.PI / 2;
+chestRing.position.set(-1.58, -1.78, 1.92);
+chestRing.visible = false;
+bottleWorld.add(chestRing);
+const chestFlash = makeGlowSprite(0xffd27a, .6, 0, true);
+chestFlash.position.set(-1.58, -1.8, 1.92);
+chestFlash.visible = false;
+bottleWorld.add(chestFlash);
+const chestSparkSeeds = [];
+for (let i=0;i<chestSparkCount;i++){
+  chestSparkSeeds.push({
+    angle: randRange(0, TAU), radius: randRange(.04, .2),
+    up: randRange(.22, .58), swirl: randRange(-1, 1), delay: randRange(0, .22)
+  });
+}
+
+const corkPuff = makeGlowSprite(0xffe0b2, .5, 0, true);
+corkPuff.position.set(mouthX - .14, 0, 0);
+glassRig.add(corkPuff);
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('wheel', (e)=>{
