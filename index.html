@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#080706" />
 <title>幻想藏品 · 横向藏品长廊</title>
-<meta name="description" content="幻想藏品 · 横向藏品长廊：四件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市，左右拖动逐件观看。" />
+<meta name="description" content="幻想藏品 · 横向藏品长廊：五件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市、《幻灯年代》的 1998 年高中数学课堂，左右拖动逐件观看。" />
 <link rel="preload" as="image" href="bottle-sea/poster.jpg" />
 <link rel="preload" as="image" href="snow-sophia/poster.jpg" />
 <link rel="preload" as="image" href="tea-mountain/poster.jpg" />
 <link rel="preload" as="image" href="lantern-changan/poster.jpg" />
+<link rel="preload" as="image" href="classroom-80s/poster.jpg" />
 <style>
   @property --accent{
     syntax: "<color>";
@@ -469,6 +470,17 @@
   }
   .card-seal--lantern::before{border-color:rgba(255,236,206,.24);}
   .card-seal--lantern small{color:rgba(255,236,206,.55);}
+  .card-seal--class{
+    color:rgba(240,247,232,.94);
+    background:
+      radial-gradient(circle at 36% 30%, #778f72, #4a624e 52%, #283b2d 100%);
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.46),
+      inset 0 1px 1px rgba(228,250,232,.28),
+      inset 0 -6px 14px rgba(8,24,13,.5);
+  }
+  .card-seal--class::before{border-color:rgba(226,246,226,.24);}
+  .card-seal--class small{color:rgba(226,246,226,.55);}
 
   .card-bottom{
     position:absolute;
@@ -793,18 +805,18 @@
       <span>幻想藏品 · Atelier<br>Fantasy Collections</span>
     </a>
     <div class="top-meta">
-      <span class="meta-label">横向长廊</span><i aria-hidden="true"></i><span><b>No. 01—04</b> / 2026</span>
+      <span class="meta-label">横向长廊</span><i aria-hidden="true"></i><span><b>No. 01—05</b> / 2026</span>
     </div>
   </header>
 
   <section class="shell intro" aria-labelledby="pageTitle">
     <div class="intro-left">
-      <p class="eyebrow">Fantasy Collections · Vol. 01—04</p>
+      <p class="eyebrow">Fantasy Collections · Vol. 01—05</p>
       <h1 id="pageTitle">幻想藏品</h1>
       <p class="latin">The Fantasy Collections</p>
     </div>
     <div class="intro-right">
-      <p class="intro-note">四件可交互的幻想微缩藏品，<br>挂在同一条横向长廊上。</p>
+      <p class="intro-note">五件可交互的幻想微缩藏品，<br>挂在同一条横向长廊上。</p>
       <p class="drag-hint"><i aria-hidden="true"></i>按住拖动 · 点击进入</p>
     </div>
   </section>
@@ -893,10 +905,31 @@
         <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">灯下长安</span></span>
       </span>
     </a>
+
+    <a class="card" href="classroom-80s/" draggable="false"
+       style="--card-accent:#d8ab6e;--pos:50% 48%"
+       data-no="05" data-title="幻灯年代" data-en="The Slide Years"
+       data-note="手工数学灯片、木质双人课桌，和一束穿过粉笔灰的投影光。"
+       data-accent="#d8ab6e" aria-label="进入《幻灯年代》">
+      <span class="card-media"><img src="classroom-80s/poster.jpg" draggable="false" alt="1998 年高中数学课堂，老师用幻灯机投影手工绘制的二次函数灯片，木质双人课桌旁坐着方块小人" width="1200" height="1800" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 05</span><span class="card-phase">高三 · 1998 夏 16:40</span></span>
+        <span class="card-seal card-seal--class" aria-hidden="true">高三<small>SLIDE · YEARS · 05</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">The Slide Years</span>
+          <span class="card-note">手工数学灯片、木质双人课桌，和一束穿过粉笔灰的投影光。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">幻灯年代</span></span>
+      </span>
+    </a>
   </div>
 
   <section class="shell caption" aria-live="polite">
-    <div class="cap-no"><span id="capNo">01</span><small>/ 04</small></div>
+    <div class="cap-no"><span id="capNo">01</span><small>/ 05</small></div>
     <div class="cap-main">
       <h2><span id="capTitle">瓶中沧海</span><em id="capEn">A Sea in a Bottle</em></h2>
       <p id="capNote">帆船、灯塔与一场被装进瓶里的风暴。</p>
