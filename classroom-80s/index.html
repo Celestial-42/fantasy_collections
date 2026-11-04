@@ -302,7 +302,7 @@
       <span><b id="lightText">顶灯 已开</b></span>
     </div>
     <div class="slide-line">
-      <span class="slide-name" id="slideName">数学 · 二次函数</span>
+      <span class="slide-name" id="slideName">数学 · 夹逼定理</span>
       <span class="slide-count" id="slideCount">01 / 04</span>
     </div>
     <div class="slide-meter"><i id="slideFill"></i></div>
@@ -651,8 +651,8 @@ function makeChalkboardTexture(){
   }
   // faint old lesson remnants
   drawChalkText(x, '函数  y = ax² + bx + c', 1240, 150, 64, r, .16);
-  drawChalkText(x, 'sin²α + cos²α = 1', 1240, 300, 46, r, .12);
-  drawChalkText(x, 'y = ax² + bx + c', 1240, 360, 46, r, .12);
+  drawChalkText(x, 'g(x) ≤ f(x) ≤ h(x)', 1240, 300, 46, r, .12);
+  drawChalkText(x, 'lim g = lim h = A', 1240, 360, 46, r, .12);
 
   drawChalkText(x, '高三（2）班', 104, 92, 56, r, .84);
   drawChalkText(x, '距高考还有', 100, 230, 66, r, .9);
@@ -663,9 +663,9 @@ function makeChalkboardTexture(){
   x.beginPath(); x.moveTo(92, 500); x.lineTo(448, 496); x.stroke();
   x.lineWidth = 3;
   x.beginPath(); x.moveTo(104, 514); x.lineTo(424, 510); x.stroke();
-  drawChalkText(x, 'sin²α + cos²α = 1', 100, 560, 35, r, .7);
-  drawChalkText(x, 'y = ax² + bx + c', 100, 606, 33, r, .62);
-  drawChalkText(x, '数学 · 二次函数', 690, 578, 30, r, .55);
+  drawChalkText(x, 'g(x) ≤ f(x) ≤ h(x)', 100, 560, 34, r, .7);
+  drawChalkText(x, 'lim g = lim h = A ⇒ lim f = A', 100, 606, 29, r, .62);
+  drawChalkText(x, '数学 · 夹逼定理', 690, 578, 30, r, .55);
 
   x.strokeStyle = 'rgba(239,239,221,.5)'; x.lineWidth = 3;
   x.beginPath(); x.moveTo(692, 246); x.lineTo(930, 246); x.stroke();
@@ -1029,7 +1029,7 @@ function makeSlideArt(index){
   x.strokeStyle = 'rgba(84,72,52,.34)'; x.lineWidth = 2.2;
   x.strokeRect(44, 38, 936, 690);
 
-  const titles = ['二次函数', '三角函数的图象', '棱锥的体积', '等差数列'];
+  const titles = ['夹逼定理', '三角函数的图象', '棱锥的体积', '等差数列'];
   const subjects = ['数学 · 第一片', '数学 · 第二片', '数学 · 第三片', '数学 · 第四片'];
   x.textAlign = 'left'; x.textBaseline = 'middle';
   x.font = `500 58px ${HAND_FONT}`;
@@ -1048,45 +1048,88 @@ function makeSlideArt(index){
   x.textAlign = 'left';
 
   if (index === 0){
-    // quadratic function
-    const ox = 230, oy = 620, ax = 830, ay = 200;
-    x.strokeStyle = 'rgba(65,76,91,.34)'; x.lineWidth = 1.2;
-    for (let gx = ox; gx <= ax; gx += 40){ x.beginPath(); x.moveTo(gx, ay); x.lineTo(gx, oy); x.stroke(); }
-    for (let gy = oy; gy >= ay; gy -= 40){ x.beginPath(); x.moveTo(ox, gy); x.lineTo(ax, gy); x.stroke(); }
-    x.strokeStyle = 'rgba(48,62,78,.9)'; x.lineWidth = 4;
-    x.beginPath(); x.moveTo(ox, oy); x.lineTo(ax + 12, oy); x.stroke();
-    x.beginPath(); x.moveTo(ox, oy); x.lineTo(ox, ay - 12); x.stroke();
-    x.beginPath(); x.moveTo(ax + 12, oy); x.lineTo(ax - 3, oy - 7); x.lineTo(ax - 3, oy + 7); x.closePath(); x.fillStyle = 'rgba(48,62,78,.9)'; x.fill();
-    x.beginPath(); x.moveTo(ox, ay - 12); x.lineTo(ox - 7, ay + 2); x.lineTo(ox + 7, ay + 2); x.closePath(); x.fill();
-    x.fillStyle = 'rgba(48,62,78,.8)'; x.font = `400 24px ${HAND_FONT}`;
-    x.fillText('x', ax - 8, oy + 32); x.fillText('y', ox - 38, ay + 18);
-    x.strokeStyle = 'rgba(170,70,52,.9)'; x.lineWidth = 6;
+    // squeeze theorem
+    x.fillStyle = 'rgba(66,100,128,.92)'; x.font = `400 33px ${HAND_FONT}`;
+    x.fillText('若  g(x) ≤ f(x) ≤ h(x)', 78, 228);
+    x.fillStyle = 'rgba(84,122,102,.9)'; x.font = `400 31px ${HAND_FONT}`;
+    x.fillText('且  lim g(x) = lim h(x) = A', 78, 274);
+    x.fillStyle = 'rgba(165,77,57,.92)'; x.font = `400 34px ${HAND_FONT}`;
+    x.fillText('则  lim f(x) = A', 78, 322);
+    x.strokeStyle = 'rgba(66,100,128,.3)'; x.lineWidth = 4;
+    x.beginPath(); x.moveTo(58, 204); x.lineTo(58, 342); x.stroke();
+
+    const cx = 520, cy = 570, sx = 200, sy = 280;
+    // soft grid
+    x.strokeStyle = 'rgba(65,76,91,.2)'; x.lineWidth = 1;
+    for (let gx = 260; gx <= 800; gx += 40){ x.beginPath(); x.moveTo(gx, 238); x.lineTo(gx, cy); x.stroke(); }
+    for (let gy = 250; gy < cy; gy += 40){ x.beginPath(); x.moveTo(250, gy); x.lineTo(810, gy); x.stroke(); }
+    x.strokeStyle = 'rgba(48,62,78,.86)'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(240, cy); x.lineTo(812, cy); x.stroke();
+    x.beginPath(); x.moveTo(cx, 238); x.lineTo(cx, 650); x.stroke();
+    x.fillStyle = 'rgba(48,62,78,.75)'; x.font = `400 21px ${HAND_FONT}`;
+    x.fillText('x', 794, cy + 30); x.fillText('y', cx + 14, 256);
+    x.textAlign = 'center';
+    x.fillText('−1', cx - sx, cy + 28); x.fillText('0', cx, cy + 28); x.fillText('1', cx + sx, cy + 28);
+    x.fillText('1', cx - 28, cy - sy + 7);
+    x.textAlign = 'left';
+
+    // shaded squeezed band
     x.beginPath();
-    for (let i = 0; i <= 120; i++){
-      const t = i / 60 - 1;
-      const px = 560 + t * 300;
-      const py = 300 + t * t * 285;
+    x.moveTo(cx - 1.3 * sx, cy - sy);
+    x.lineTo(cx + 1.3 * sx, cy - sy);
+    for (let i = 60; i >= 0; i--){
+      const t = -1.3 + 2.6 * i / 60;
+      x.lineTo(cx + t * sx, cy - Math.cos(t) * sy);
+    }
+    x.closePath();
+    x.fillStyle = 'rgba(96,132,102,.12)'; x.fill();
+
+    // h(x)=1
+    x.setLineDash([10, 8]); x.strokeStyle = 'rgba(84,122,102,.9)'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(cx - 1.32 * sx, cy - sy); x.lineTo(cx + 1.32 * sx, cy - sy); x.stroke();
+    x.setLineDash([]);
+    x.fillStyle = 'rgba(84,122,102,.9)'; x.font = `400 22px ${HAND_FONT}`;
+    x.fillText('h(x) = 1', cx + 1.1 * sx + 8, cy - sy - 10);
+
+    // g(x)=cos x
+    x.strokeStyle = 'rgba(84,122,102,.9)'; x.lineWidth = 4;
+    x.beginPath();
+    for (let i = 0; i <= 110; i++){
+      const t = -1.3 + 2.6 * i / 110;
+      const px = cx + t * sx, py = cy - Math.cos(t) * sy;
       i ? x.lineTo(px, py) : x.moveTo(px, py);
     }
     x.stroke();
-    x.strokeStyle = 'rgba(170,70,52,.35)'; x.lineWidth = 2;
-    x.setLineDash([7, 7]);
-    x.beginPath(); x.moveTo(560, 300); x.lineTo(560, oy); x.stroke();
-    x.setLineDash([]);
-    x.fillStyle = '#a54d39'; x.beginPath(); x.arc(560, 300, 7, 0, TAU); x.fill();
-    x.fillStyle = 'rgba(66,100,128,.92)'; x.font = `400 43px ${HAND_FONT}`;
-    x.fillText('y = ax² + bx + c', 530, 250);
-    x.font = `400 27px ${HAND_FONT}`;
-    x.fillStyle = 'rgba(97,84,61,.72)';
-    x.fillText('a > 0  开口向上', 650, 350);
-    x.fillText('Δ = b² − 4ac', 650, 394);
-    x.strokeStyle = 'rgba(170,70,52,.7)'; x.lineWidth = 2;
-    x.beginPath(); x.moveTo(552, 520); x.lineTo(485, 480); x.stroke();
-    x.fillStyle = 'rgba(170,70,52,.8)'; x.font = `400 23px ${HAND_FONT}`;
-    x.fillText('顶点', 420, 468);
-    x.fillStyle = 'rgba(88,78,58,.6)'; x.font = `400 22px ${HAND_FONT}`;
-    x.fillText('对称轴 x = −b / 2a', 280, 670);
-  } else if (index === 1){
+    x.fillStyle = 'rgba(84,122,102,.86)'; x.font = `400 21px ${HAND_FONT}`;
+    x.fillText('g(x) = cos x', cx + .55 * sx, cy - .54 * sy);
+
+    // f(x)=sin x / x, with a hole at 0
+    x.strokeStyle = 'rgba(165,77,57,.95)'; x.lineWidth = 5;
+    for (const [a, b] of [[-1.3, -.055], [.055, 1.3]]){
+      x.beginPath();
+      for (let i = 0; i <= 90; i++){
+        const t = a + (b - a) * i / 90;
+        const px = cx + t * sx, py = cy - (Math.sin(t) / t) * sy;
+        i ? x.lineTo(px, py) : x.moveTo(px, py);
+      }
+      x.stroke();
+    }
+    x.beginPath(); x.arc(cx, cy - sy, 7, 0, TAU); x.fillStyle = 'rgba(255,250,236,.95)'; x.fill();
+    x.strokeStyle = 'rgba(165,77,57,1)'; x.lineWidth = 3; x.stroke();
+    x.fillStyle = 'rgba(165,77,57,.92)'; x.font = `400 23px ${HAND_FONT}`;
+    x.fillText('f(x) = sin x / x', cx + .35 * sx, cy - .82 * sy);
+
+    // limit arrow and example
+    x.fillStyle = 'rgba(66,100,128,.9)'; x.font = `400 24px ${HAND_FONT}`;
+    x.fillText('lim f(x) = 1', cx + .2 * sx, cy - sy - 48);
+    x.strokeStyle = 'rgba(66,100,128,.55)'; x.lineWidth = 1.5;
+    x.beginPath(); x.moveTo(cx + .35 * sx, cy - sy - 38); x.lineTo(cx + .05 * sx, cy - sy - 10); x.stroke();
+
+    x.fillStyle = 'rgba(66,100,128,.94)'; x.font = `400 38px ${HAND_FONT}`;
+    x.fillText('lim x→0 · sin x / x = 1', 180, 686);
+    x.fillStyle = 'rgba(84,122,102,.7)'; x.font = `400 23px ${HAND_FONT}`;
+    x.fillText('cos x ≤ sin x / x ≤ 1', 610, 686);
+  } else if (index === 1){  } else if (index === 1){
     // trigonometric functions
     const cx = 272, cy = 500, R = 158;
     x.strokeStyle = 'rgba(65,76,91,.58)'; x.lineWidth = 2;
@@ -1227,7 +1270,7 @@ function makeFilmStripTexture(slideCanvases){
     x.fillStyle = 'rgba(67,47,27,.9)';
     x.font = '500 12px "Avenir Next",sans-serif';
     x.textAlign = 'center';
-    x.fillText(['QUADRATIC', 'TRIGONOMETRY', 'PYRAMID', 'SEQUENCE'][i], 128, y + 158);
+    x.fillText(['SQUEEZE', 'TRIGONOMETRY', 'PYRAMID', 'SEQUENCE'][i], 128, y + 158);
   }
   // sprocket holes
   x.fillStyle = 'rgba(245,237,216,.16)';
@@ -2210,11 +2253,11 @@ const teacherPonytail = new THREE.Group();
 teacherPonytail.position.set(.025, .19, .145);
 teacherHeadPivot.add(teacherPonytail);
 bBlock(.082, .032, .082, ribbonMat, 0, 0, 0, teacherPonytail, false, false);
-bBlock(.095, .23, .085, teacherHairMat, 0, -.14, .025, teacherPonytail);
-bBlock(.09, .27, .078, teacherHairMat, .006, -.39, .042, teacherPonytail);
-bBlock(.08, .25, .072, teacherHairMat, .012, -.65, .035, teacherPonytail);
-bBlock(.06, .13, .06, teacherHairMat, .018, -.83, .026, teacherPonytail);
-bBlock(.028, .5, .018, teacherHairLight, -.035, -.4, .07, teacherPonytail, false, false);
+bBlock(.095, .2, .085, teacherHairMat, 0, -.11, .025, teacherPonytail);
+bBlock(.09, .22, .078, teacherHairMat, .006, -.31, .042, teacherPonytail);
+bBlock(.078, .18, .072, teacherHairMat, .012, -.5, .035, teacherPonytail);
+bBlock(.058, .08, .06, teacherHairMat, .018, -.62, .026, teacherPonytail);
+bBlock(.028, .4, .018, teacherHairLight, -.035, -.32, .07, teacherPonytail, false, false);
 // right arm resting
 bLimb(new THREE.Vector3(.17, 1.33, 0), new THREE.Vector3(.22, 1.13, -.03), .07, teacherShirtMat, teacher);
 bLimb(new THREE.Vector3(.22, 1.13, -.03), new THREE.Vector3(.21, .97, -.06), .058, M.skinSoft, teacher);
@@ -2302,7 +2345,7 @@ room.add(dust);
 // -------------------------------------------------------------------------
 
 const SLIDES = [
-  { name: '数学 · 二次函数', short: '二次函数' },
+  { name: '数学 · 夹逼定理', short: '夹逼定理' },
   { name: '数学 · 三角函数的图象', short: '三角函数的图象' },
   { name: '数学 · 棱锥的体积', short: '棱锥的体积' },
   { name: '数学 · 等差数列', short: '等差数列' }
