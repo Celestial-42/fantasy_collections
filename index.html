@@ -966,6 +966,7 @@
   let step = 1;
   let suppressClick = false;
   let dragging = false;
+  let downCard = null;
   let startX = 0;
   let lastX = 0;
   let moved = 0;
@@ -1032,6 +1033,7 @@
   rail.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'mouse' || e.button !== 0) return;
     dragging = true;
+    downCard = e.target.closest('a.card');
     moved = 0;
     startX = lastX = e.clientX;
     rail.classList.add('is-dragging');
@@ -1047,21 +1049,25 @@
     rail.scrollLeft -= dx;
   });
 
-  function endDrag(){
+  function endDrag(e, allowNavigate){
     if (!dragging) return;
+    const card = downCard;
+    const wasMoved = moved > 6;
     dragging = false;
+    downCard = null;
     rail.classList.remove('is-dragging');
-    if (moved > 6){
+    if (wasMoved){
       suppressClick = true;
       setTimeout(() => { suppressClick = false; }, 100);
       go(nearestIndex());
       setTimeout(() => { rail.style.scrollSnapType = ''; }, 480);
     } else {
       rail.style.scrollSnapType = '';
+      if (allowNavigate && card) card.click();
     }
   }
-  rail.addEventListener('pointerup', endDrag);
-  rail.addEventListener('pointercancel', endDrag);
+  rail.addEventListener('pointerup', (e) => endDrag(e, true));
+  rail.addEventListener('pointercancel', (e) => endDrag(e, false));
 
   rail.addEventListener('click', (e) => {
     if (!suppressClick) return;
