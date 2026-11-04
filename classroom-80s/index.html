@@ -1427,6 +1427,8 @@ M.desk.color.set(0xe0c3a2);
 M.darkWood.color.set(0xb08763);
 
 const room = new THREE.Group();
+const clickTargets = [];
+const clickAnimProps = { walkman: null, bag: null, lunchboxes: [] };
 scene.add(room);
 
 function addBox(w, h, d, mat, x, y, z, parent = room, cast = true, receive = true){
@@ -1492,7 +1494,8 @@ for (let i = 0; i < 5; i++){
 const eraser = addBox(.22, .065, .1, M.darkWood, 1.45, 1.075, -2.75, room);
 addBox(.2, .022, .08, M.felt, 1.45, 1.038, -2.75, room);
 // banner
-addPlane(5.18, .36, M.banner, 0, 2.8, -2.88, room);
+const bannerMesh = addPlane(5.18, .36, M.banner, 0, 2.8, -2.88, room);
+bannerMesh.userData.kind = 'banner'; clickTargets.push(bannerMesh);
 addBox(.07, .46, .06, M.darkWood, -2.62, 2.8, -2.89, room);
 addBox(.07, .46, .06, M.darkWood, 2.62, 2.8, -2.89, room);
 // clock + second hand
@@ -1507,6 +1510,9 @@ handMesh.position.y = .08;
 clockHand.add(handMesh);
 addCyl(.008, .008, .012, M.darkMetal, 0, 0, 0, clockHand, 8, false, false).rotation.x = Math.PI / 2;
 room.add(clockHand);
+const clockClick = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .05), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+clockClick.position.set(-2.68, 2.51, -2.76);
+clockClick.userData.kind = 'clock'; room.add(clockClick); clickTargets.push(clockClick);
 // wall speaker
 addBox(.42, .27, .14, M.warmMetal, -2.92, 2.89, -2.86, room);
 for (let i = 0; i < 4; i++){
@@ -1587,6 +1593,7 @@ for (let i = 0; i < 3; i++){
 }
 addCyl(.006, .006, .3, M.darkMetal, 0, -.16, .08, fan, 6);
 addCyl(.018, .018, .025, M.cream, 0, -.32, .08, fan, 8);
+fan.userData.kind = 'fan'; clickTargets.push(fan);
 // fluorescent fixtures
 for (const fx of [-1.62, 1.62]){
   addBox(.25, .07, 2.65, M.warmMetal, fx, 3.07, .25, room, false, false);
@@ -1787,8 +1794,20 @@ if (pencilCases.instanceColor) pencilCases.instanceColor.needsUpdate = true;
 const lunchMat = new THREE.MeshStandardMaterial({ color: 0xa7a9a2, roughness: .38, metalness: .58 });
 for (const i of [3, 7, 10]){
   const s = seatSlots[i];
-  addBox(.28, .1, .18, lunchMat, s.x - .27, .81, s.z - .66, room);
-  addBox(.055, .022, .065, M.darkMetal, s.x - .27, .866, s.z - .66, room);
+  const box = new THREE.Group();
+  box.position.set(s.x - .27, .81, s.z - .66);
+  room.add(box);
+  addBox(.28, .1, .18, lunchMat, 0, 0, 0, box);
+  addBox(.055, .022, .065, M.darkMetal, 0, .056, -.015, box);
+  const lid = new THREE.Group();
+  lid.position.set(0, .05, .09);
+  box.add(lid);
+  addBox(.28, .018, .18, lunchMat, 0, .009, -.09, lid);
+  box.userData.kind = 'lunchbox';
+  box.userData.lid = lid;
+  box.userData.open = false;
+  clickTargets.push(box);
+  clickAnimProps.lunchboxes.push(box);
 }
 // a cassette player on the desk nearest the camera
 {
@@ -1799,8 +1818,8 @@ for (const i of [3, 7, 10]){
   room.add(walkman);
   addBox(.2, .045, .13, new THREE.MeshStandardMaterial({ color: 0x41484b, roughness: .4, metalness: .2 }), 0, 0, 0, walkman);
   addBox(.14, .006, .095, new THREE.MeshStandardMaterial({ color: 0x959b94, roughness: .32, metalness: .4 }), 0, .027, 0, walkman);
-  addCyl(.021, .021, .008, M.darkMetal, -.045, .03, 0, walkman, 12);
-  addCyl(.021, .021, .008, M.darkMetal, .045, .03, 0, walkman, 12);
+  const reelL = addCyl(.021, .021, .008, M.darkMetal, -.045, .03, 0, walkman, 12);
+  const reelR = addCyl(.021, .021, .008, M.darkMetal, .045, .03, 0, walkman, 12);
   const wirePts = [
     new THREE.Vector3(-.09, .015, .02),
     new THREE.Vector3(-.23, .005, .12),
@@ -1812,6 +1831,10 @@ for (const i of [3, 7, 10]){
   const earbud = new THREE.Mesh(new THREE.SphereGeometry(.018, 8, 6), M.darkMetal);
   earbud.position.set(-.46, .02, .35);
   walkman.add(earbud);
+  walkman.userData.kind = 'walkman';
+  walkman.userData.reels = [reelL, reelR];
+  clickTargets.push(walkman);
+  clickAnimProps.walkman = walkman;
 }
 // canvas bag hanging on a chair in the middle row
 {
@@ -1826,6 +1849,9 @@ for (const i of [3, 7, 10]){
   strap.position.set(0, .17, .02);
   strap.rotation.x = Math.PI / 2;
   bag.add(strap);
+  bag.userData.kind = 'bag';
+  clickTargets.push(bag);
+  clickAnimProps.bag = bag;
 }
 
 // -------------------------------------------------------------------------
@@ -2127,6 +2153,9 @@ function makeBlockStudent(spec, seat, index){
   const g = new THREE.Group();
   g.position.set(seat.x, 0, seat.z);
   room.add(g);
+  g.userData.kind = 'student';
+  g.userData.student = index;
+  clickTargets.push(g);
   const shirtMat = spec.shirt === 'shirt' ? M.shirt : spec.shirt === 'shirtBlue' ? M.shirtBlue : spec.shirt === 'shirtTrack' ? M.shirtTrack : shirtRedMat;
   const collarMat = spec.collar === 'collarRed' ? M.collarRed : M.collarBlue;
   const isTrack = spec.shirt === 'shirtTrack';
@@ -2203,7 +2232,20 @@ function makeBlockStudent(spec, seat, index){
   } else {
     writingArm(1);
   }
-  students.push({ group: g, head, torso, baseX: spec.baseX, baseY: spec.baseY, phase, raised, index });
+  let handUp = raised;
+  const defaultHand = !!raised;
+  if (!handUp){
+    handUp = new THREE.Group();
+    handUp.position.set(.155, .81, 0);
+    handUp.visible = false;
+    g.add(handUp);
+    const upElbow = new THREE.Vector3(.09, .15, -.03);
+    const upWrist = new THREE.Vector3(.05, .4, 0);
+    bLimb(new THREE.Vector3(0, 0, 0), upElbow, .075, shirtMat, handUp);
+    bLimb(upElbow, upWrist, .064, M.skinSoft, handUp);
+    bBlock(.075, .075, .075, M.skinSoft, upWrist.x, upWrist.y, upWrist.z, handUp);
+  }
+  students.push({ group: g, head, torso, baseX: spec.baseX, baseY: spec.baseY, phase, raised, handUp, defaultHand, handTimer: 0, index });
 }
 seatSlots.forEach((seat, i) => makeBlockStudent(studentSpecs[i], seat, i));
 
@@ -2268,13 +2310,31 @@ bLimb(new THREE.Vector3(-.31, 1.17, -.16), new THREE.Vector3(-.24, 1.31, -.4), .
 const teacherLeftHand = bBlock(.07, .066, .07, M.skinSoft, -.24, 1.32, -.41, teacher);
 // pointing stick, placed in world space to reach toward the screen
 teacher.updateMatrixWorld(true);
-const pointerFrom = new THREE.Vector3();
-teacherLeftHand.getWorldPosition(pointerFrom);
-const pointerTo = new THREE.Vector3(SCREEN.x - .84, 1.38, SCREEN.z + .32);
-addBetween(pointerFrom, pointerTo, .006, M.darkWood, room, 5, false);
+const pointerFromLocal = new THREE.Vector3(-.24, 1.32, -.41);
+const pointerTarget = new THREE.Vector3(SCREEN.x - .84, 1.38, SCREEN.z + .32);
+const pointerToLocal = teacher.worldToLocal(pointerTarget.clone());
+const pointerMesh = addBetween(pointerFromLocal, pointerToLocal, .006, M.darkWood, teacher, 5, false);
+const pointerBaseLen = pointerToLocal.distanceTo(pointerFromLocal);
 const pointerTip = new THREE.Mesh(new THREE.SphereGeometry(.012, 6, 5), M.darkWood);
-pointerTip.position.copy(pointerTo);
-room.add(pointerTip);
+pointerTip.position.copy(pointerToLocal);
+teacher.add(pointerTip);
+const pointerUp = new THREE.Vector3(0, 1, 0);
+const pointerDir = new THREE.Vector3();
+const pointerLocalTarget = new THREE.Vector3();
+function aimPointer(){
+  teacher.updateMatrixWorld(true);
+  pointerLocalTarget.copy(pointerTarget);
+  teacher.worldToLocal(pointerLocalTarget);
+  pointerDir.copy(pointerLocalTarget).sub(pointerFromLocal);
+  const len = pointerDir.length();
+  pointerMesh.position.copy(pointerFromLocal).addScaledVector(pointerDir, .5);
+  pointerMesh.quaternion.setFromUnitVectors(pointerUp, pointerDir.normalize());
+  pointerMesh.scale.y = len / pointerBaseLen;
+  pointerTip.position.copy(pointerLocalTarget);
+}
+aimPointer();
+teacher.userData.kind = 'teacher';
+clickTargets.push(teacher);
 
 const teacherState = { head: teacherHeadPivot, torso: teacherTorso, ponytail: teacherPonytail, phase: 4.2 };
 
@@ -2366,6 +2426,13 @@ let lightsOn = true;
 let lightLevel = 1;
 let slidePulse = 0;
 let toastTimer = 0;
+let teacherTurned = false;
+let fanBoost = 0;
+let clockSpin = 0;
+let clockAdvance = 0;
+let bannerPulse = 0;
+let walkmanPulse = 0;
+let bagPulse = 0;
 let lastPointer = null;
 let downOnSlide = false;
 let dragging = false;
@@ -2424,6 +2491,32 @@ function hitsSlide(e){
   raycaster.setFromCamera(pointerNDC, camera);
   const hits = raycaster.intersectObjects([cart, screenMesh, screenGroup, filmStrip, slideFrame], true);
   return hits.length > 0;
+}
+function triggerSceneClick(kind, obj){
+  if (kind === 'teacher') teacherTurned = !teacherTurned;
+  else if (kind === 'student'){
+    const s = students[obj.userData.student];
+    if (s) s.handTimer = 2.7;
+  } else if (kind === 'fan') fanBoost = 2.8;
+  else if (kind === 'clock') clockSpin = 1;
+  else if (kind === 'banner') bannerPulse = 1;
+  else if (kind === 'walkman') walkmanPulse = 1.5;
+  else if (kind === 'bag') bagPulse = 1.2;
+  else if (kind === 'lunchbox') obj.userData.open = !obj.userData.open;
+}
+function handleSceneClick(e){
+  const rect = canvas.getBoundingClientRect();
+  pointerNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObjects(clickTargets, true);
+  for (const hit of hits){
+    let o = hit.object;
+    while (o){
+      if (o.userData && o.userData.kind){ triggerSceneClick(o.userData.kind, o); return true; }
+      o = o.parent;
+    }
+  }
+  return false;
 }
 function updateCamera(dt){
   const k = 1 - Math.pow(.0015, dt);
@@ -2494,8 +2587,8 @@ function endPointer(e, allowClick){
     if (canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
   } catch (err) {}
   if (activePointers.size === 0){
-    if (allowClick && wasDragging && wasOnSlide && !pinched && pointerMoved < 8 && performance.now() - pointerStart < 560){
-      advanceSlide();
+    if (allowClick && wasDragging && !pinched && pointerMoved < 8 && performance.now() - pointerStart < 560){
+      if (!handleSceneClick(e) && wasOnSlide) advanceSlide();
     }
     dragging = false;
     downOnSlide = false;
@@ -2782,22 +2875,37 @@ let timeNow = 0;
 let userMoved = false;
 const beamUnit = beamDir.clone().normalize();
 
-function updateLife(time){
+function updateLife(time, dt){
+  teacher.rotation.y = lerp(teacher.rotation.y, teacherTurned ? 3.66 : .9, 1 - Math.pow(.02, dt));
+  aimPointer();
   for (const s of students){
-    s.head.rotation.x = s.baseX + Math.sin(time * .72 + s.phase) * .028;
-    s.head.rotation.y = s.baseY + Math.sin(time * .31 + s.phase) * .024;
+    let handLift = 0;
+    if (s.handTimer > 0){
+      s.handTimer = Math.max(0, s.handTimer - dt);
+      handLift = .14;
+      if (s.handUp){
+        s.handUp.visible = true;
+        s.handUp.rotation.z = Math.sin(time * 12 + s.phase) * .12 * Math.min(1, s.handTimer);
+      }
+    } else if (s.handUp){
+      s.handUp.rotation.z = 0;
+      if (!s.defaultHand) s.handUp.visible = false;
+    }
+    s.head.rotation.x = s.baseX + Math.sin(time * .72 + s.phase) * .028 - handLift;
+    s.head.rotation.y = s.baseY + Math.sin(time * .31 + s.phase) * .024 + (s.handTimer > 0 ? .18 : 0);
     s.torso.rotation.x = -.035 + Math.sin(time * .55 + s.phase) * .008;
     if (s.raised) s.raised.rotation.z = -.02 + Math.sin(time * 1.15 + s.phase) * .035;
   }
   teacherState.head.rotation.x = -.01 + Math.sin(time * .42 + teacherState.phase) * .018;
-  teacherState.head.rotation.y = -.04 + Math.sin(time * .27 + teacherState.phase) * .02;
+  teacherState.head.rotation.y = -.04 + Math.sin(time * .27 + teacherState.phase) * .02 + (teacherTurned ? .14 : 0);
   teacherState.torso.rotation.x = -.012 + Math.sin(time * .4 + teacherState.phase) * .004;
   teacherState.ponytail.rotation.x = Math.sin(time * .55 + teacherState.phase) * .014;
   teacherState.ponytail.rotation.z = Math.sin(time * .78 + teacherState.phase) * .018;
 }
 function updateFan(dt, time){
-  fanRotor.rotation.y += dt * .72;
-  fanRotor.rotation.z = Math.sin(time * .8) * .004;
+  fanBoost = Math.max(0, fanBoost - dt);
+  fanRotor.rotation.y += dt * (.72 + fanBoost * 6.5);
+  fanRotor.rotation.z = Math.sin(time * .8) * .004 + fanBoost * .004;
 }
 function updateDust(time){
   const pos = dustGeo.attributes.position.array;
@@ -2859,8 +2967,28 @@ function updateLights(dt, time){
   windowBounce.intensity = 3.4;
   hemi.intensity = .52 - (1 - lightLevel) * .08;
 }
-function updateClock(time){
-  clockHand.rotation.z = -TAU * (20 / 60) - time * TAU / 60;
+function updateClock(time, dt){
+  clockSpin = Math.max(0, clockSpin - dt * 1.35);
+  clockAdvance += dt * 16 * clockSpin;
+  clockHand.rotation.z = -TAU * (20 / 60) - time * TAU / 60 - clockAdvance;
+}
+function updateClickProps(time, dt){
+  bannerPulse = Math.max(0, bannerPulse - dt * 1.45);
+  bannerMesh.rotation.z = Math.sin(time * 4.3) * .016 * bannerPulse;
+  if (clickAnimProps.walkman){
+    walkmanPulse = Math.max(0, walkmanPulse - dt * 1.15);
+    clickAnimProps.walkman.rotation.z = Math.sin(time * 18) * .035 * walkmanPulse;
+    for (const reel of clickAnimProps.walkman.userData.reels) reel.rotation.y += dt * 15 * walkmanPulse;
+  }
+  if (clickAnimProps.bag){
+    bagPulse = Math.max(0, bagPulse - dt * .9);
+    clickAnimProps.bag.rotation.z = .08 + Math.sin(time * 5.6) * .18 * bagPulse;
+    clickAnimProps.bag.rotation.x = Math.sin(time * 4.1) * .055 * bagPulse;
+  }
+  for (const box of clickAnimProps.lunchboxes){
+    const lid = box.userData.lid;
+    lid.rotation.x = lerp(lid.rotation.x, box.userData.open ? -1.12 : 0, 1 - Math.pow(.008, dt));
+  }
 }
 
 const baseHome = { az: HOME.az, polar: HOME.polar, dist: HOME.dist };
@@ -2900,13 +3028,14 @@ function animate(){
   timeNow += dt;
   updateCamera(dt);
   updateLights(dt, timeNow);
-  updateLife(timeNow);
+  updateLife(timeNow, dt);
   updateFan(dt, timeNow);
+  updateClickProps(timeNow, dt);
   updateDust(timeNow);
   updateBeamDust(timeNow);
   updateBeam(timeNow);
   updateScreen(dt, timeNow);
-  updateClock(timeNow);
+  updateClock(timeNow, dt);
   renderer.render(scene, camera);
 }
 
@@ -2915,12 +3044,12 @@ onResize();
 updateCamera(.016);
 applySlideUi();
 applyLightUi();
-updateLife(0);
-updateClock(0);
+updateLife(0, .016);
+updateClock(0, .016);
 animate();
 
 window.__CLASSROOM_DEBUG__ = {
-  THREE, scene, camera, renderer, view, target, room,
+  THREE, scene, camera, renderer, view, target, room, teacher, students, clickTargets, triggerSceneClick,
   beam, beamCore, beamMat, lensWorld, screenCenter, screenMesh, screenLight, projectorLamp,
   setSlide, advanceSlide, previousSlide, toggleLights,
   get slide(){ return slideIndex; },
