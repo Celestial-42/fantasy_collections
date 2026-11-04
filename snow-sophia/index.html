@@ -2231,6 +2231,20 @@ function updateKids(dt, time){
     kid.headG.rotation.y = Math.sin(time * .85 + kid.phase) * .07;
     kid.headG.rotation.x = Math.sin(time * 1.3 + kid.phase) * .025;
 
+    if (kid.clickT > 0){
+      kid.clickT = Math.max(0, kid.clickT - dt);
+      const k = 1 - kid.clickT / 1.5;
+      kid.root.position.y = kid.baseY + Math.sin(k * Math.PI) * .14;
+      kid.armL.rotation.z = -2.35 + Math.sin(time * 17 + kid.phase) * .35;
+      kid.armR.rotation.z = 2.35 - Math.sin(time * 17 + kid.phase) * .35;
+      kid.armL.rotation.x = Math.sin(time * 12) * .1;
+      kid.armR.rotation.x = -Math.sin(time * 12) * .1;
+      kid.headG.rotation.x = -.12 * Math.sin(k * Math.PI);
+      kid.root.rotation.z = Math.sin(time * 10) * .02;
+      if (kid.clickT === 0) kid.root.rotation.z = 0;
+      continue;
+    }
+
     if (kid.throwT >= 0){
       kid.throwT += dt / .68;
       if (!kid.released && kid.throwT > .52){
@@ -3077,11 +3091,13 @@ for (const side of [-1, 1]){
 }
 
 // wooden sled resting on the snow
+let sledRef = null;
 {
   const sled = new THREE.Group();
   sled.position.set(.12, GROUND_Y + .075, 1.08);
   sled.rotation.y = .38;
   innerWorld.add(sled);
+  sledRef = sled;
   const sledWood = new THREE.MeshStandardMaterial({ color: 0x7a4a2c, roughness: .74 });
   const sledRed = new THREE.MeshStandardMaterial({ color: 0x9e3c34, roughness: .6 });
   for (const z of [-.12, .12]){
@@ -3248,6 +3264,7 @@ function makeKid(cfg){
     throwSide: cfg.throwSide || 1,
     target: null,
     cooldown: rand(.3, 1.4),
+    clickT: 0,
     scale: cfg.scale || 1
   };
   root.scale.setScalar(kid.scale);
@@ -3521,6 +3538,184 @@ let pinchStart = 0;
 let pinchBaseDist = 0;
 let pinched = false;
 
+const clickables = [];
+const clickFx = {
+  snowman: 0, sled: 0, lamp: 0, mug: 0, thermos: 0, pears: 0,
+  scarf: 0, dome: 0, clock: 0, base: 0, window: 0
+};
+function markClickable(obj, kind, index){
+  obj.userData.kind = kind;
+  if (index !== undefined) obj.userData.index = index;
+  clickables.push(obj);
+}
+markClickable(snowman, 'snowman');
+markClickable(sledRef, 'sled');
+markClickable(lamp, 'lamp');
+markClickable(lampGlow, 'lamp');
+markClickable(mug, 'mug');
+markClickable(thermos, 'thermos');
+markClickable(pears, 'pears');
+markClickable(scarf, 'scarf');
+markClickable(mainDome, 'dome');
+markClickable(clockFace, 'clock');
+markClickable(clockRim, 'clock');
+markClickable(bellArch, 'clock');
+markClickable(plaque, 'base');
+markClickable(roomWindow, 'window');
+for (let i=0;i<kids.length;i++) markClickable(kids[i].root, 'kid', i);
+
+const sledHome = { x: sledRef.position.x, z: sledRef.position.z, ry: sledRef.rotation.y };
+const domePuffs = [];
+for (let i=0;i<10;i++){
+  const sprite = makeGlowSprite(0xeaf7ff, .18, 0, false);
+  sprite.position.set(0, 1.9, -.02);
+  sprite.visible = false;
+  cathedral.add(sprite);
+  domePuffs.push({ sprite, angle: i / 10 * TAU + rand(-.25,.25), speed: rand(.7,1.3) });
+}
+function burstAtObject(obj, yOff = 0, count = 14, force = .6){
+  const v = new THREE.Vector3();
+  obj.getWorldPosition(v);
+  innerWorld.worldToLocal(v);
+  v.y += yOff;
+  spawnBurst(v, count, force);
+}
+function triggerClick(kind, obj){
+  if (kind === 'snowman'){
+    clickFx.snowman = 1.7;
+    burstAtObject(snowman, .45, 16, .55);
+  } else if (kind === 'sled'){
+    clickFx.sled = 1.5;
+    burstAtObject(sledRef, .06, 10, .4);
+  } else if (kind === 'lamp'){
+    clickFx.lamp = 2.0;
+  } else if (kind === 'mug'){
+    clickFx.mug = 2.0;
+  } else if (kind === 'thermos'){
+    clickFx.thermos = 1.6;
+  } else if (kind === 'pears'){
+    clickFx.pears = 1.8;
+  } else if (kind === 'scarf'){
+    clickFx.scarf = 1.6;
+  } else if (kind === 'dome'){
+    clickFx.dome = 1.3;
+    burstAtObject(mainDome, .3, 22, .7);
+  } else if (kind === 'clock'){
+    clickFx.clock = 1.6;
+  } else if (kind === 'base'){
+    clickFx.base = 1.2;
+    shakeGlobe();
+  } else if (kind === 'window'){
+    clickFx.window = 2.2;
+  } else if (kind === 'kid'){
+    const kid = kids[obj.userData.index];
+    if (kid){
+      kid.clickT = 1.5;
+      burstAtObject(kid.root, .1, 10, .38);
+    }
+  }
+}
+function handleSceneClick(e){
+  const rect = canvas.getBoundingClientRect();
+  pointerNDC.set(
+    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+    -((e.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObjects(clickables, true);
+  for (const hit of hits){
+    let o = hit.object;
+    while (o){
+      if (o.userData && o.userData.kind){
+        triggerClick(o.userData.kind, o);
+        return true;
+      }
+      o = o.parent;
+    }
+  }
+  return false;
+}
+function updateClickFx(time, dt){
+  clickFx.snowman = Math.max(0, clickFx.snowman - dt);
+  const snowP = clickFx.snowman > 0 ? Math.sin((1 - clickFx.snowman / 1.7) * Math.PI) : 0;
+  snowman.rotation.z = Math.sin(time * 13) * .075 * snowP;
+  snowman.rotation.x = Math.sin(time * 9 + 1) * .045 * snowP;
+  bucketHat.position.y = .575 + snowP * .18;
+  bucketHat.rotation.y = snowP * 1.9;
+  bucketHat.rotation.z = snowP * .35;
+
+  clickFx.sled = Math.max(0, clickFx.sled - dt);
+  const sledP = clickFx.sled > 0 ? Math.sin((1 - clickFx.sled / 1.5) * Math.PI) : 0;
+  sledRef.position.x = sledHome.x + sledP * .42;
+  sledRef.position.z = sledHome.z - sledP * .24;
+  sledRef.rotation.y = sledHome.ry + Math.sin((1 - clickFx.sled / 1.5) * Math.PI * 2) * .28 * sledP;
+
+  clickFx.lamp = Math.max(0, clickFx.lamp - dt);
+  const lampP = clickFx.lamp > 0 ? Math.sin((1 - clickFx.lamp / 2.0) * Math.PI) : 0;
+  lamp.rotation.z = Math.sin(time * 8.5) * .03 * lampP;
+  lampGlow.material.opacity += lampP * .32;
+  lampLight.intensity += lampP * 3.2;
+
+  clickFx.mug = Math.max(0, clickFx.mug - dt);
+  const mugP = clickFx.mug > 0 ? Math.sin((1 - clickFx.mug / 2.0) * Math.PI) : 0;
+  mug.rotation.z = Math.sin(time * 12) * .075 * mugP;
+  const steamMat = steam.userData.points.material;
+  steamMat.opacity = .16 + mugP * .4;
+  steamMat.size = .035 + mugP * .025;
+
+  clickFx.thermos = Math.max(0, clickFx.thermos - dt);
+  const therP = clickFx.thermos > 0 ? Math.sin((1 - clickFx.thermos / 1.6) * Math.PI) : 0;
+  thermos.rotation.z = Math.sin(time * 11) * .08 * therP;
+  thermos.rotation.x = Math.sin(time * 8 + .7) * .04 * therP;
+
+  clickFx.pears = Math.max(0, clickFx.pears - dt);
+  const pearP = clickFx.pears > 0 ? Math.sin((1 - clickFx.pears / 1.8) * Math.PI) : 0;
+  pears.rotation.y = Math.sin(time * 3.2) * .38 * pearP;
+  pears.position.y = Math.abs(Math.sin(time * 6)) * .015 * pearP;
+
+  clickFx.scarf = Math.max(0, clickFx.scarf - dt);
+  const scarfP = clickFx.scarf > 0 ? Math.sin((1 - clickFx.scarf / 1.6) * Math.PI) : 0;
+  scarf.position.y = .025 + scarfP * .05;
+  scarf.rotation.z = Math.sin(time * 6.5) * .05 * scarfP;
+
+  clickFx.dome = Math.max(0, clickFx.dome - dt);
+  const domeP = clickFx.dome > 0 ? Math.sin((1 - clickFx.dome / 1.3) * Math.PI) : 0;
+  mainDome.scale.setScalar(1 + Math.sin(time * 15) * .04 * domeP);
+  mainDome.rotation.z = Math.sin(time * 11) * .035 * domeP;
+  const puffT = 1 - clickFx.dome / 1.3;
+  for (const puff of domePuffs){
+    const active = clickFx.dome > 0;
+    puff.sprite.visible = active;
+    if (!active) continue;
+    const r = .09 + puffT * .5;
+    const y = 1.9 + puffT * .5 * puff.speed;
+    puff.sprite.position.set(Math.cos(puff.angle) * r, y, -.02 + Math.sin(puff.angle) * r);
+    puff.sprite.material.opacity = Math.sin(puffT * Math.PI) * .55;
+    const s = .12 + puffT * .2;
+    puff.sprite.scale.set(s, s, 1);
+  }
+
+  clickFx.clock = Math.max(0, clickFx.clock - dt);
+  const clockP = clickFx.clock > 0 ? Math.sin((1 - clickFx.clock / 1.6) * Math.PI) : 0;
+  const clockScale = 1 + Math.sin(time * 16) * .055 * clockP;
+  clockRim.scale.setScalar(clockScale);
+  clockFace.scale.setScalar(clockScale);
+  bellArch.rotation.z = Math.sin(time * 17) * .13 * clockP;
+  cathedralGlow.material.opacity += clockP * .2;
+  cathedralLight.intensity += clockP * 1.6;
+
+  clickFx.base = Math.max(0, clickFx.base - dt);
+  const baseP = clickFx.base > 0 ? Math.sin((1 - clickFx.base / 1.2) * Math.PI) : 0;
+  baseGroup.rotation.y = Math.sin(time * 9) * .018 * baseP;
+  baseFill.intensity += baseP * 2.2;
+
+  clickFx.window = Math.max(0, clickFx.window - dt);
+  const winP = clickFx.window > 0 ? Math.sin((1 - clickFx.window / 2.2) * Math.PI) : 0;
+  windowGlow.material.opacity = .88 + winP * .12;
+  windowGlowSprite.material.opacity = .075 + winP * .16;
+  windowLight.intensity = 2.4 + winP * 2.6;
+}
+
 function handleThrowAt(clientX, clientY){
   const rect = canvas.getBoundingClientRect();
   pointerNDC.set(
@@ -3608,7 +3803,7 @@ function endPointer(e, allowThrow){
 
   if (activePointers.size === 0){
     if (allowThrow && wasDragging && !pinched && pointerMoved < 8 && pointerStart && performance.now() - pointerStart.t < 540){
-      handleThrowAt(e.clientX, e.clientY);
+      if (!handleSceneClick(e)) handleThrowAt(e.clientX, e.clientY);
     }
     dragging = false;
     pointerStart = null;
@@ -3672,6 +3867,7 @@ function animate(){
   timeNow += dt;
   updateCamera(dt, timeNow);
   updateAtmosphere(dt, timeNow);
+  updateClickFx(timeNow, dt);
   renderer.render(scene, camera);
   if (!sceneReady){
     sceneReady = true;
@@ -3688,6 +3884,8 @@ setTimeout(() => {
 window.__SOPHIA_DEBUG__ = {
   THREE, scene, camera, renderer, view, cameraTarget, globeRig, innerWorld,
   kids, forts, flags, flakes, balls, battle, audio: Sound,
+  snowman, bucketHat, sledRef, mug, thermos, pears, scarf, lamp, lampGlow, baseGroup,
+  mainDome, clockFace, bellArch, clickables, clickFx, triggerClick, handleSceneClick,
   setCamera(az, polar, dist, tx = 0, ty = 3.52, tz = 0){
     cameraTarget.set(tx, ty, tz);
     view.tAz = view.az = az;

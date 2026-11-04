@@ -1766,18 +1766,160 @@ function applyHomeView(immediate = false){
 
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
+const clickTargets = [];
+const clickFx = {
+  screen: 0, moon: 0, tassel: 0, finial: 0, censer: 0,
+  dragon: 0, crowd: 0, sky: 0, gate: 0, dancer: 0, stalls: 0
+};
+let finialSpin = 0;
+function markClickable(obj, kind){
+  obj.userData.kind = kind;
+  clickTargets.push(obj);
+}
+markClickable(lanternHit, 'lantern');
+markClickable(drumHit, 'drum');
+markClickable(drum, 'drum');
+markClickable(screenGroup, 'screen');
+markClickable(moonWindow, 'moon');
+markClickable(tassel, 'tassel');
+markClickable(finial, 'finial');
+markClickable(censer, 'censer');
+const cityHitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
+function addCityHit(parent, x, y, z, radius, kind){
+  const proxy = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 6), cityHitMat);
+  proxy.position.set(x, y, z);
+  proxy.visible = false;
+  proxy.userData.kind = kind;
+  parent.add(proxy);
+  clickTargets.push(proxy);
+}
+addCityHit(city, 0, .05, -.288, .07, 'gate');
+addCityHit(city, 0, .045, .22, .08, 'crowd');
+addCityHit(dancer, 0, .04, 0, .04, 'dancer');
+addCityHit(dragonHead, 0, 0, 0, .05, 'dragon');
+for (const sl of skyLanterns) addCityHit(sl.g, 0, 0, 0, .035, 'sky');
+const stallGroup = city.children.find(o => o.isGroup && o.userData.phase !== undefined);
+if (stallGroup) addCityHit(stallGroup, 0, .05, 0, .12, 'stalls');
+function triggerClick(kind){
+  if (kind === 'lantern'){
+    toggleLight();
+  } else if (kind === 'drum'){
+    beat();
+  } else if (kind === 'screen'){
+    clickFx.screen = 1.6;
+    drumPulse = Math.max(drumPulse, .5);
+    crowdPulse = Math.min(1.4, crowdPulse + .35);
+    Sound.drum();
+  } else if (kind === 'moon'){
+    clickFx.moon = 1.8;
+  } else if (kind === 'tassel'){
+    clickFx.tassel = 1.6;
+  } else if (kind === 'finial'){
+    clickFx.finial = 1.6;
+    finialSpin += 5.5;
+  } else if (kind === 'censer'){
+    clickFx.censer = 1.8;
+  } else if (kind === 'dragon'){
+    clickFx.dragon = 2.0;
+    crowdPulse = Math.min(1.4, crowdPulse + .8);
+    Sound.drum();
+  } else if (kind === 'crowd'){
+    clickFx.crowd = 1.4;
+    crowdPulse = 1.4;
+  } else if (kind === 'sky'){
+    clickFx.sky = 2.0;
+  } else if (kind === 'gate'){
+    clickFx.gate = 1.6;
+    crowdPulse = Math.min(1.4, crowdPulse + .6);
+  } else if (kind === 'dancer'){
+    clickFx.dancer = 1.6;
+  } else if (kind === 'stalls'){
+    clickFx.stalls = 1.6;
+    crowdPulse = Math.min(1.4, crowdPulse + .4);
+  }
+}
+function updateClickFx(time, dt){
+  const pulse = (name, dur) => {
+    clickFx[name] = Math.max(0, clickFx[name] - dt);
+    return clickFx[name] > 0 ? Math.sin((1 - clickFx[name] / dur) * Math.PI) : 0;
+  };
+  const screenP = pulse('screen', 1.6);
+  puppet.position.y += screenP * .05;
+  puppet.rotation.z += screenP * .4;
+  puppet.scale.setScalar(1 + screenP * .22);
+  screenGlow.material.opacity += screenP * .45;
+
+  const moonP = pulse('moon', 1.8);
+  for (const fw of fireworks){
+    fw.sprite.material.opacity = Math.min(1, fw.sprite.material.opacity + moonP * .65);
+    const s = fw.baseScale * (1 + moonP * .5);
+    fw.sprite.scale.set(s, s, 1);
+  }
+  windowDisc.scale.setScalar(1 + moonP * .04);
+  windowLight.intensity += moonP * 1.4;
+
+  const tasselP = pulse('tassel', 1.6);
+  tassel.rotation.z += Math.sin(time * 12) * .22 * tasselP;
+  tassel.rotation.x += Math.sin(time * 9 + .6) * .12 * tasselP;
+
+  const finialP = pulse('finial', 1.6);
+  finialSpin *= Math.pow(.1, dt);
+  finial.rotation.y += finialSpin * dt;
+  finial.scale.setScalar(1 + finialP * .22);
+
+  const censerP = pulse('censer', 1.8);
+  censerLid.position.y = .112 + censerP * .055;
+  censerLid.rotation.y = Math.sin(time * 10) * .5 * censerP;
+  for (const s of smoke){
+    s.s.material.opacity *= 1 + censerP * 4;
+    s.s.scale.multiplyScalar(1 + censerP * .5);
+  }
+
+  const dragonP = pulse('dragon', 2.0);
+  dragonHead.scale.setScalar(1 + dragonP * .45);
+  dragonGlow.material.opacity = Math.min(1, dragonGlow.material.opacity + dragonP * .5);
+
+  const crowdP = pulse('crowd', 1.4);
+  crowdBodies.scale.setScalar(1 + crowdP * .08);
+
+  const skyP = pulse('sky', 2.0);
+  for (const sl of skyLanterns){
+    sl.g.position.y += skyP * .055;
+    sl.g.scale.setScalar(1 + skyP * .35);
+    sl.glowMat.opacity = Math.min(1, sl.glowMat.opacity + skyP * .35);
+  }
+
+  const gateP = pulse('gate', 1.6);
+  gateDoor.position.y = .043 + gateP * .055;
+  gateDoor.scale.y = 1 + gateP * .15;
+
+  const dancerP = pulse('dancer', 1.6);
+  dancer.rotation.y += dancerP * 3;
+  dancer.scale.setScalar(1 + dancerP * .18);
+  ribbon.rotation.z = .4 + dancerP * 1.6;
+
+  const stallP = pulse('stalls', 1.6);
+  stallLanternMat.opacity = Math.min(1, .18 + glow * .82 + stallP * .25);
+}
 function pick(e){
   const rect = canvas.getBoundingClientRect();
   pointerNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(pointerNDC, camera);
-  const hits = raycaster.intersectObjects([lanternHit, drumHit, drum], true);
-  let o = hits[0]?.object;
-  while (o){
-    if (o === drum || o.userData?.kind === 'drum') return 'drum';
-    if (o.userData?.kind) return o.userData.kind;
-    o = o.parent;
+  const hits = raycaster.intersectObjects(clickTargets, true);
+  let lanternFallback = null;
+  for (const hit of hits){
+    let o = hit.object;
+    while (o){
+      if (o === drum || o.userData?.kind === 'drum') return 'drum';
+      if (o.userData?.kind === 'lantern'){
+        if (!lanternFallback) lanternFallback = 'lantern';
+        break;
+      }
+      if (o.userData?.kind) return o.userData.kind;
+      o = o.parent;
+    }
   }
-  return null;
+  return lanternFallback;
 }
 
 let dragging = false;
@@ -1850,8 +1992,7 @@ function endPointer(e, allowClick){
   } catch (err) {}
   if (activePointers.size === 0){
     if (allowClick && was && !pinched && pointerMoved < 8 && pointerStart && performance.now() - pointerStart.t < 560){
-      if (kind === 'drum') beat();
-      else if (kind === 'lantern') toggleLight();
+      if (kind) triggerClick(kind);
     }
     dragging = false;
     downKind = null;
@@ -2456,6 +2597,7 @@ function animate(){
   drum.scale.set(ds * 1.08, 1 + drumPulse * .02, ds * 1.08);
   mallets.rotation.z = Math.sin(drumPulse * Math.PI) * -.12;
 
+  updateClickFx(timeNow, dt);
   updateLightUi();
   updateCamera(dt);
   renderer.render(scene, camera);
@@ -2499,6 +2641,8 @@ updateLightUi();
 window.__LANTERN_DEBUG__ = {
   THREE, scene, camera, renderer, view, target, lantern, spin, city, shell, paperUniforms, drum, mallets,
   audio: Sound,
+  screenGroup, moonWindow, tassel, finial, censer, gateDoor, dancer, skyLanterns, dragonHead,
+  clickTargets, clickFx, triggerClick, pick,
   setLit, toggleLight, beat,
   hideUI(hide = true){
     document.querySelectorAll('.masthead,.hintbar,.toast,.loading').forEach(e => e.style.display = hide ? 'none' : '');

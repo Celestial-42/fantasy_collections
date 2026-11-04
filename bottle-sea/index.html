@@ -903,6 +903,12 @@ const view = {
 let dragging = false;
 let lastInteract = performance.now() - 2000;
 let prevPointer = { x: 0, y: 0 };
+let pointerDownAt = 0;
+let pointerTravel = 0;
+const clickTargets = [];
+const clickRay = new THREE.Raycaster();
+const clickNDC = new THREE.Vector2();
+const clickFx = { ship: 0, whale: 0, beam: 0, cork: 0, rowboat: 0, buoy: 0, chest: 0 };
 
 const bottleWorld = new THREE.Group();
 bottleWorld.position.y = BOTTLE_Y;
@@ -2745,8 +2751,10 @@ const shipRoute = { angle: 2.15, angularSpeed: .185, rx: 1.74, rz: 1.98 };
 const shipState = { pos: new THREE.Vector3(), yaw: 0, pitch: 0, roll: 0, speed: 0 };
 
 function updateShip(time, dt, storm){
+  clickFx.ship = Math.max(0, clickFx.ship - dt);
+  const boost = clickFx.ship > 0 ? Math.sin((1 - clickFx.ship / 2.4) * Math.PI) : 0;
   const route = shipRoute;
-  route.angle += dt * route.angularSpeed * (1 + storm * .18);
+  route.angle += dt * route.angularSpeed * (1 + storm * .18 + boost * 1.05);
   const a = route.angle;
   const x = ISLAND_X + route.rx * Math.cos(a);
   const z = ISLAND_Z + route.rz * Math.sin(a);
@@ -2767,7 +2775,8 @@ function updateShip(time, dt, storm){
   shipRoot.rotation.y = yaw;
   shipTilt.rotation.z = lerp(shipTilt.rotation.z, Math.atan2(hBow - hStern, 1.53) * .92, Math.min(1, dt*5.2));
   shipTilt.rotation.x = lerp(shipTilt.rotation.x, Math.atan2(hLeft - hRight, .62) * .82, Math.min(1, dt*5.2));
-  shipTilt.position.y = Math.sin(time*1.1)*.003*(1+storm*2);
+  shipTilt.rotation.z += Math.sin(time*6.4) * .05 * boost + Math.sin(time*3.1) * .018 * boost;
+  shipTilt.position.y = Math.sin(time*1.1)*.003*(1+storm*2) + Math.abs(Math.sin(time*5.2)) * .012 * boost;
   shipState.pos.set(x, WATER_LEVEL + avg, z);
   shipState.yaw = yaw;
   shipState.pitch = shipTilt.rotation.z;
@@ -2881,6 +2890,17 @@ whale.add(whaleSplash);
 const whaleState = { jumpP: -1, lastJumpSide: 0, nextX: .4, nextZ: .8 };
 
 function updateWhale(time, storm, dt){
+  if (clickFx.whale > 0){
+    clickFx.whale = Math.max(0, clickFx.whale - dt);
+    const p = 1 - clickFx.whale / 1.6;
+    const y = -1.42 + Math.sin(p * Math.PI) * 2.3;
+    whale.position.set(-1.34 + p * 1.06, y, 1.38 + Math.sin(p*Math.PI)*.1);
+    whale.rotation.set(0, -.12 + p*.24, Math.cos(p*Math.PI)*.74);
+    whaleSplash.material.opacity = Math.sin(p*Math.PI)*.4;
+    whaleSplash.scale.set(.64 + Math.sin(p*Math.PI)*.22, .64 + Math.sin(p*Math.PI)*.22, 1);
+    whaleState.jumpP = p;
+    return;
+  }
   const cycle = 19.5 - storm * 5.5;
   const u = ((time * (1 + storm*.12) + 4.5) % cycle) / cycle;
   const jumpStart = .56, jumpEnd = .83;
@@ -2964,13 +2984,18 @@ function buildGull(index){
 }
 for (let i=0;i<6;i++) buildGull(i);
 
-function updateGulls(time, storm){
+function updateGulls(time, storm, dt = 0){
   for (let i=0;i<gulls.length;i++){
     const g = gulls[i];
+    if (g.startle > 0) g.startle = Math.max(0, g.startle - dt);
     const a = g.phase + time * g.speed * (1 + storm*.35);
     const x = -2.23 + Math.cos(a) * g.radiusX;
     const z = ISLAND_Z + Math.sin(a) * g.radiusZ + g.drift * Math.sin(time*.4+i);
-    const y = g.height + Math.sin(time*.9 + i)*g.bob + storm*.035*Math.sin(i);
+    let y = g.height + Math.sin(time*.9 + i)*g.bob + storm*.035*Math.sin(i);
+    if (g.startle > 0){
+      const k = 1 - g.startle / 1.2;
+      y += Math.sin(k * Math.PI) * .34;
+    }
     g.root.position.set(x,y,z);
     const dx = -Math.sin(a) * Math.sign(g.speed);
     const dz = Math.cos(a) * Math.sign(g.speed);
@@ -2980,7 +3005,8 @@ function updateGulls(time, storm){
     g.root.rotation.z = Math.sin(time*1.2+i)*.018;
     // mirrored wing pivots need opposite X rotation, otherwise the pair
     // behaves like one see-sawing plane instead of two flapping wings
-    const flap = Math.sin(time * g.flap + i * 1.7) * .76 + .07 + storm*.14;
+    const flap = Math.sin(time * g.flap + i * 1.7) * .76 + .07 + storm*.14
+      + (g.startle > 0 ? Math.sin(time * 22 + i) * .3 * (g.startle / 1.2) : 0);
     g.wingPivotL.rotation.x = flap;
     g.wingPivotR.rotation.x = -flap;
     g.wingPivotR.rotation.y = Math.PI;
@@ -3828,29 +3854,38 @@ function updateClouds(time, dt, storm){
 
 function updateCrabs(time, dt){
   for (const crab of crabs){
+    if (crab.startle > 0) crab.startle = Math.max(0, crab.startle - dt);
     const walk = time*.26 + crab.phase;
-    crab.group.position.x = crab.x + Math.sin(walk) * .14;
+    const excited = crab.startle > 0 ? crab.startle / 1.1 : 0;
+    crab.group.position.x = crab.x + Math.sin(walk) * .14 + Math.sin(time*17 + crab.phase) * .045 * excited;
     crab.group.position.z = crab.z + Math.cos(walk*.7) * .055;
-    crab.group.position.y = crab.baseY + Math.abs(Math.sin(time*7.5 + crab.phase)) * .008;
-    crab.group.rotation.y = Math.sin(walk) * .5;
+    crab.group.position.y = crab.baseY + Math.abs(Math.sin(time*7.5 + crab.phase)) * .008
+      + Math.abs(Math.sin(time*19 + crab.phase)) * .06 * excited;
+    crab.group.rotation.y = Math.sin(walk) * .5 + Math.sin(time*13 + crab.phase) * .4 * excited;
   }
 }
 
 function updateRowboat(time, dt, storm){
+  clickFx.rowboat = Math.max(0, clickFx.rowboat - dt);
+  const pulse = clickFx.rowboat > 0 ? clickFx.rowboat / 1.4 : 0;
   const h = waveHeight(-1.98, 1.37, time, storm);
-  rowboat.position.y = WATER_LEVEL + h + .075;
-  rowboat.rotation.z = Math.sin(time*1.15)*.035 + Math.sin(time*.62)*.02 + storm*.05*Math.sin(time*3.1);
-  rowboat.rotation.x = Math.cos(time*.9)*.028 + storm*.04*Math.cos(time*2.7);
-  rowboatGlow.material.opacity = .1 + nightFactor*.25;
+  rowboat.position.y = WATER_LEVEL + h + .075 + Math.abs(Math.sin(time*8.2)) * .05 * pulse;
+  rowboat.rotation.z = Math.sin(time*1.15)*.035 + Math.sin(time*.62)*.02 + storm*.05*Math.sin(time*3.1)
+    + Math.sin(time*8.4) * .16 * pulse;
+  rowboat.rotation.x = Math.cos(time*.9)*.028 + storm*.04*Math.cos(time*2.7) + Math.sin(time*7.1) * .09 * pulse;
+  rowboatGlow.material.opacity = .1 + nightFactor*.25 + pulse*.12;
 }
 
 function updateBuoy(time, dt, storm){
+  clickFx.buoy = Math.max(0, clickFx.buoy - dt);
+  const pulse = clickFx.buoy > 0 ? clickFx.buoy / 1.6 : 0;
   const h = waveHeight(-4.38, -1.94, time, storm);
-  buoy.position.y = WATER_LEVEL + h + .035;
+  buoy.position.y = WATER_LEVEL + h + .035 + Math.abs(Math.sin(time*6.8)) * .03 * pulse;
   const slope = waveHeight(-4.38+.1, -1.94, time, storm) - h;
-  buoy.rotation.z = slope * 2.4 + Math.sin(time*.9)*.03;
+  buoy.rotation.z = slope * 2.4 + Math.sin(time*.9)*.03 + Math.sin(time*5.6) * .12 * pulse;
   buoy.rotation.x = Math.sin(time*.7+1)*.04 + storm*.06*Math.sin(time*2.1);
-  buoyGlow.material.opacity = .12 + nightFactor*.32;
+  buoy.rotation.y = Math.sin(time*2.4) * .7 * pulse;
+  buoyGlow.material.opacity = .12 + nightFactor*.32 + pulse*.3;
 }
 
 function updatePalms(time){
@@ -3870,9 +3905,25 @@ function updateBottleShake(time, storm){
   glassRig.position.y = BOTTLE_Y + Math.abs(Math.sin(time*8.2)) * .026 * amp;
 }
 
-function updateBeam(time){
-  beamGroup.rotation.y = time * .46;
+let beamAngle = 0;
+function updateBeam(time, dt){
+  clickFx.beam = Math.max(0, clickFx.beam - dt);
+  const boost = clickFx.beam > 0 ? clickFx.beam / 3.2 : 0;
+  beamAngle += dt * (.46 + boost * 2.8);
+  beamGroup.rotation.y = beamAngle;
   beamGroup.position.y = lighthouseAnchor.y + Math.sin(time*2.1)*.003;
+}
+function updateClickProps(time, dt){
+  clickFx.cork = Math.max(0, clickFx.cork - dt);
+  const corkP = clickFx.cork > 0 ? Math.sin((1 - clickFx.cork / 1.2) * Math.PI) : 0;
+  corkGroup.position.x = mouthX + corkP * .75;
+  corkGroup.position.y = corkP * .38;
+  corkGroup.rotation.z = corkP * .7;
+  clickFx.chest = Math.max(0, clickFx.chest - dt);
+  const chestP = clickFx.chest > 0 ? Math.sin((1 - clickFx.chest / 1.8) * Math.PI) : 0;
+  chestGlowSprite.scale.set(.72 * (1 + chestP * 1.5), .72 * (1 + chestP * 1.5), 1);
+  treasureLight.intensity += chestP * 4.5 + Math.sin(time*18) * .4 * chestP;
+  beamSprite.scale.set(.38 * (1 + clickFx.beam / 3.2 * .5), .38 * (1 + clickFx.beam / 3.2 * .5), 1);
 }
 
 // -------------------------------------------------------------------------
@@ -4504,6 +4555,8 @@ function noteInteraction(){
 canvas.addEventListener('pointerdown', (e)=>{
   if (!e.isPrimary) return;
   dragging = true;
+  pointerDownAt = performance.now();
+  pointerTravel = 0;
   prevPointer.x = e.clientX;
   prevPointer.y = e.clientY;
   canvas.classList.add('dragging');
@@ -4514,6 +4567,7 @@ canvas.addEventListener('pointermove', (e)=>{
   if (!dragging || !e.isPrimary) return;
   const dx = e.clientX - prevPointer.x;
   const dy = e.clientY - prevPointer.y;
+  pointerTravel += Math.abs(dx) + Math.abs(dy);
   prevPointer.x = e.clientX;
   prevPointer.y = e.clientY;
   view.tAz -= dx * .0052;
@@ -4522,13 +4576,107 @@ canvas.addEventListener('pointermove', (e)=>{
 });
 function endDrag(e){
   if (!dragging) return;
+  const shortClick = e && e.type === 'pointerup' && pointerTravel < 8 && performance.now() - pointerDownAt < 560;
   dragging = false;
   canvas.classList.remove('dragging');
   if (e && e.pointerId !== undefined && canvas.hasPointerCapture?.(e.pointerId)){
     canvas.releasePointerCapture(e.pointerId);
   }
+  if (shortClick) handleSceneClick(e);
   noteInteraction();
 }
+function triggerClick(kind, obj, hit){
+  if (kind === 'ship'){
+    clickFx.ship = 2.4;
+    emitSprayBurst(shipRoot.position.x, shipRoot.position.z, .5, 20);
+  } else if (kind === 'whale'){
+    clickFx.whale = 1.6;
+    emitSprayBurst(whale.position.x, whale.position.z, .45, 24, true);
+  } else if (kind === 'beam'){
+    clickFx.beam = 3.2;
+  } else if (kind === 'cork'){
+    clickFx.cork = 1.2;
+  } else if (kind === 'gull'){
+    const g = gulls[obj.userData.index];
+    if (g) g.startle = 1.2;
+  } else if (kind === 'crab'){
+    const c = crabs[obj.userData.index];
+    if (c) c.startle = 1.1;
+  } else if (kind === 'rowboat'){
+    clickFx.rowboat = 1.4;
+    emitSprayBurst(rowboat.position.x, rowboat.position.z, .32, 14);
+  } else if (kind === 'buoy'){
+    clickFx.buoy = 1.6;
+  } else if (kind === 'chest'){
+    clickFx.chest = 1.8;
+  } else if (kind === 'water' && hit){
+    emitSprayBurst(hit.point.x, hit.point.z, .3, 16);
+  }
+}
+function handleSceneClick(e){
+  const rect = canvas.getBoundingClientRect();
+  clickNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  clickRay.setFromCamera(clickNDC, camera);
+  const hits = clickRay.intersectObjects(clickTargets, true);
+  let waterHit = null;
+  for (const hit of hits){
+    if (hit.object.isLine || hit.object.isPoints) continue;
+    let o = hit.object, kind = null, target = null;
+    while (o){
+      if (o.userData && o.userData.kind){ kind = o.userData.kind; target = o; break; }
+      o = o.parent;
+    }
+    if (!kind) continue;
+    if (kind === 'water'){
+      if (!waterHit) waterHit = hit;
+      continue;
+    }
+    triggerClick(kind, target, hit);
+    return true;
+  }
+  if (waterHit){
+    triggerClick('water', waterHit.object, waterHit);
+    return true;
+  }
+  return false;
+}
+
+shipRoot.userData.kind = 'ship'; clickTargets.push(shipRoot);
+whale.userData.kind = 'whale'; clickTargets.push(whale);
+beamGroup.userData.kind = 'beam'; clickTargets.push(beamGroup);
+corkGroup.userData.kind = 'cork'; clickTargets.push(corkGroup);
+rowboat.userData.kind = 'rowboat'; clickTargets.push(rowboat);
+buoy.userData.kind = 'buoy'; clickTargets.push(buoy);
+chestGlowSprite.userData.kind = 'chest'; clickTargets.push(chestGlowSprite);
+for (let i=0;i<gulls.length;i++){
+  gulls[i].root.userData.kind = 'gull';
+  gulls[i].root.userData.index = i;
+  gulls[i].startle = 0;
+  clickTargets.push(gulls[i].root);
+}
+for (let i=0;i<crabs.length;i++){
+  crabs[i].group.userData.kind = 'crab';
+  crabs[i].group.userData.index = i;
+  crabs[i].startle = 0;
+  clickTargets.push(crabs[i].group);
+}
+water.userData.kind = 'water';
+clickTargets.push(water);
+
+const hitProxyMat = new THREE.MeshBasicMaterial();
+function addHitProxy(parent, x, y, z, radius, kind, index){
+  const proxy = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 6), hitProxyMat);
+  proxy.position.set(x, y, z);
+  proxy.visible = false;
+  proxy.userData.kind = kind;
+  if (index !== undefined) proxy.userData.index = index;
+  parent.add(proxy);
+  clickTargets.push(proxy);
+}
+for (let i=0;i<gulls.length;i++) addHitProxy(gulls[i].root, 0, 0, 0, .3, 'gull', i);
+for (let i=0;i<crabs.length;i++) addHitProxy(crabs[i].group, 0, .05, 0, .17, 'crab', i);
+addHitProxy(buoy, 0, .2, 0, .4, 'buoy');
+addHitProxy(rowboat, 0, .03, 0, .35, 'rowboat');
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('wheel', (e)=>{
@@ -4620,14 +4768,15 @@ function animate(){
   updateBottleShake(timeNow, stormVisual);
   updateWhale(timeNow, stormVisual, dt);
   updateWakeParticles(dt, timeNow, stormVisual);
-  updateGulls(timeNow, stormVisual);
+  updateGulls(timeNow, stormVisual, dt);
   updateClouds(timeNow, dt, stormVisual);
   updateFish(timeNow);
   updateCrabs(timeNow, dt);
   updateRowboat(timeNow, dt, stormVisual);
   updateBuoy(timeNow, dt, stormVisual);
   updatePalms(timeNow);
-  updateBeam(timeNow);
+  updateBeam(timeNow, dt);
+  updateClickProps(timeNow, dt);
   updateLightning(dt, stormVisual);
   updateCamera(dt, timeNow, stormVisual);
   updateHUD();
@@ -4680,8 +4829,10 @@ requestAnimationFrame(animate);
 
 // Debug hooks for exhibition preview / QA
 window.__BOTTLE_DEBUG__ = {
-  scene, camera, renderer, view, day, cameraTarget, telescopeGroup,
+  THREE, scene, camera, renderer, view, day, cameraTarget, telescopeGroup,
   gulls, whale, whaleState, beamGroup, audio: Sound,
+  clickTargets, clickFx, triggerClick, handleSceneClick,
+  shipRoot, rowboat, buoy, corkGroup, chestGlowSprite, water, crabs,
   setDayT(value){ day.t = ((value % 1) + 1) % 1; updateCelestialAndLight(timeNow); updateHUD(true); },
   setSpeed,
   setPaused(value){ day.paused = !!value; updateHUD(true); },

@@ -1686,6 +1686,8 @@ bowlGroup.add(gustRing);
 const pitcher = new THREE.Group();
 pitcher.position.set(1.55, .12, .48);
 scene.add(pitcher);
+let pitcherLidRef = null;
+let pitcherKnobRef = null;
 const porcelain = new THREE.MeshPhysicalMaterial({ color: 0xc2d3c5, roughness: .3, clearcoat: .6, clearcoatRoughness: .3 });
 const pBody = new THREE.Mesh(new THREE.SphereGeometry(.17, 28, 20), porcelain);
 pBody.scale.set(1, .82, 1);
@@ -1699,9 +1701,11 @@ pitcher.add(pNeck);
 const pLid = new THREE.Mesh(new THREE.CylinderGeometry(.055, .06, .025, 20), porcelain);
 pLid.position.y = .345;
 pitcher.add(pLid);
+pitcherLidRef = pLid;
 const pKnob = new THREE.Mesh(new THREE.SphereGeometry(.02, 10, 10), porcelain);
 pKnob.position.y = .37;
 pitcher.add(pKnob);
+pitcherKnobRef = pKnob;
 const pSpout = new THREE.Mesh(new THREE.CylinderGeometry(.018, .04, .25, 10), porcelain);
 pSpout.rotation.z = 1.03;
 pSpout.position.set(-.22, .28, 0);
@@ -1998,6 +2002,168 @@ let dragging = false;
 let pointerMoved = 0;
 let pointerStart = null;
 let prevPointer = { x: 0, y: 0 };
+
+const clickTargets = [];
+const clickRay = new THREE.Raycaster();
+const clickNDC = new THREE.Vector2();
+const clickFx = {
+  bowl: 0, pitcher: 0, cup: 0, caddy: 0, scoop: 0,
+  boat: 0, pavilion: 0, pagoda: 0, maple: 0, scroll: 0, window: 0
+};
+function markClickable(obj, kind){
+  obj.userData.kind = kind;
+  clickTargets.push(obj);
+}
+const clickProxyMat = new THREE.MeshBasicMaterial();
+function addClickProxy(parent, y, radius, kind){
+  const proxy = new THREE.Mesh(new THREE.SphereGeometry(radius, 8, 6), clickProxyMat);
+  proxy.position.y = y;
+  proxy.visible = false;
+  proxy.userData.kind = kind;
+  parent.add(proxy);
+  clickTargets.push(proxy);
+}
+markClickable(bowlGroup, 'bowl');
+markClickable(pitcher, 'pitcher');
+markClickable(cup, 'cup');
+markClickable(caddy, 'caddy');
+markClickable(scoop, 'scoop');
+markClickable(boat, 'boat');
+markClickable(pavilion, 'pavilion');
+markClickable(pagoda, 'pagoda');
+markClickable(scrollGroup, 'scroll');
+markClickable(windowGroup, 'window');
+addClickProxy(cup, .04, .1, 'cup');
+addClickProxy(caddy, .15, .18, 'caddy');
+addClickProxy(scoop, .01, .12, 'scoop');
+addClickProxy(boat, .03, .09, 'boat');
+addClickProxy(pavilion, .11, .055, 'pavilion');
+addClickProxy(pagoda, .05, .09, 'pagoda');
+
+function triggerClick(kind){
+  if (kind === 'bowl'){
+    clickFx.bowl = 1.0;
+    pour();
+  } else if (kind === 'pitcher'){
+    clickFx.pitcher = 3.1;
+    pour();
+  } else if (kind === 'cup'){
+    clickFx.cup = 1.4;
+    Sound.ripple();
+  } else if (kind === 'caddy'){
+    clickFx.caddy = 1.6;
+    Sound.ripple();
+  } else if (kind === 'scoop'){
+    clickFx.scoop = 1.4;
+    clickFx.caddy = 1.1;
+  } else if (kind === 'boat'){
+    clickFx.boat = 2.2;
+    Sound.ripple();
+  } else if (kind === 'pavilion'){
+    clickFx.pavilion = 1.6;
+    clickFx.maple = 1.8;
+    Sound.ripple();
+  } else if (kind === 'pagoda'){
+    clickFx.pagoda = 1.6;
+  } else if (kind === 'scroll'){
+    clickFx.scroll = 1.6;
+  } else if (kind === 'window'){
+    clickFx.window = 2.0;
+    gust();
+  }
+}
+function handleSceneClick(e){
+  const rect = canvas.getBoundingClientRect();
+  clickNDC.set(
+    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+    -((e.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  clickRay.setFromCamera(clickNDC, camera);
+  const hits = clickRay.intersectObjects(clickTargets, true);
+  let bowlHit = null;
+  for (const hit of hits){
+    let o = hit.object, kind = null, target = null;
+    while (o){
+      if (o.userData && o.userData.kind){ kind = o.userData.kind; target = o; break; }
+      o = o.parent;
+    }
+    if (!kind) continue;
+    if (kind === 'bowl'){
+      if (!bowlHit) bowlHit = target;
+      continue;
+    }
+    triggerClick(kind);
+    return true;
+  }
+  if (bowlHit){
+    triggerClick('bowl');
+    return true;
+  }
+  return false;
+}
+function updateClickFx(time, dt){
+  const pulse = (name, dur) => {
+    clickFx[name] = Math.max(0, clickFx[name] - dt);
+    return clickFx[name] > 0 ? Math.sin((1 - clickFx[name] / dur) * Math.PI) : 0;
+  };
+  const bowlP = pulse('bowl', 1.0);
+  bowlGroup.position.y = .14 + bowlP * .012;
+  bowlGroup.rotation.z = Math.sin(time * 11) * .012 * bowlP;
+
+  const pitcherP = pulse('pitcher', 3.1);
+  if (pitcherLidRef){
+    pitcherLidRef.position.y = .345 + pitcherP * .055;
+    pitcherLidRef.rotation.y = Math.sin(time * 20) * .6 * pitcherP;
+    pitcherKnobRef.position.y = .37 + pitcherP * .055;
+  }
+
+  const cupP = pulse('cup', 1.4);
+  cup.position.y = .12 + cupP * .05;
+  cup.rotation.z = Math.sin(time * 14) * .1 * cupP;
+  cup.rotation.x = Math.sin(time * 11) * .05 * cupP;
+  teaInside.scale.setScalar(1 + cupP * .22);
+
+  const caddyP = pulse('caddy', 1.6);
+  caddyLid.position.y = .29 + caddyP * .13;
+  caddyLid.rotation.y = Math.sin(time * 12) * 1.2 * caddyP;
+  caddyLid.rotation.z = caddyP * .12;
+  caddy.rotation.z = Math.sin(time * 9) * .05 * caddyP;
+
+  const scoopP = pulse('scoop', 1.4);
+  scoop.position.y = .16 + scoopP * .12;
+  scoop.rotation.z = Math.sin(time * 13) * .55 * scoopP;
+  scoop.rotation.y = -.5 + scoopP * .6;
+  scoop.rotation.x = scoopP * .35;
+
+  const boatP = pulse('boat', 2.2);
+  boat.position.x = .02 + boatP * .11;
+  boat.rotation.y += boatP * .65;
+  boat.rotation.z += Math.sin(time * 8) * .08 * boatP;
+
+  const pavilionP = pulse('pavilion', 1.6);
+  pavilion.position.y = .10 + pavilionP * .03;
+  pavilion.rotation.y = pavilionP * .4;
+  pavilionLight.scale.setScalar(1 + pavilionP * 2.2);
+
+  const pagodaP = pulse('pagoda', 1.6);
+  pagoda.scale.setScalar(.7 * (1 + pagodaP * .12));
+  pagoda.rotation.y = pagodaP * .35;
+
+  const mapleP = pulse('maple', 1.8);
+  maple.rotation.z = Math.sin(time * 15) * .14 * mapleP;
+  maple.rotation.x = Math.sin(time * 12) * .06 * mapleP;
+  maple.scale.setScalar(.72 * (1 + mapleP * .05));
+
+  const scrollP = pulse('scroll', 1.6);
+  scrollGroup.position.y = .70 + scrollP * .05;
+  scrollGroup.rotation.z = Math.sin(time * 5) * .035 * scrollP;
+  scrollGroup.rotation.x = scrollP * .03;
+
+  const windowP = pulse('window', 2.0);
+  rainSheet.material.opacity += windowP * .22;
+  windowGlow.scale.setScalar(1 + windowP * .15);
+  windowFill.intensity += windowP * 2.5;
+}
 const activePointers = new Map();
 let pinchStart = 0;
 let pinchBase = 0;
@@ -2053,7 +2219,7 @@ function endPointer(e, allowClick){
   } catch (err) {}
   if (activePointers.size === 0){
     if (allowClick && was && !pinched && pointerMoved < 8 && pointerStart && performance.now() - pointerStart.t < 540){
-      pour();
+      if (!handleSceneClick(e)) pour();
     }
     dragging = false;
     pointerStart = null;
@@ -2558,6 +2724,7 @@ function animate(){
   updateCamera(dt);
   rainTex.offset.y -= dt * .14;
   rainSheet.material.opacity = .45 + Math.sin(timeNow * .7) * .06;
+  updateClickFx(timeNow, dt);
 
   if (timeNow - lastWaterUi > .15){
     lastWaterUi = timeNow;
@@ -2615,6 +2782,8 @@ updateWaterUi();
 window.__TEA_DEBUG__ = {
   THREE, scene, camera, renderer, view, target, bowlGroup, pitcher, tea, teaUniforms,
   steam, audio: Sound,
+  cup, caddy, scoop, scrollGroup, windowGroup, boat, pavilion, pagoda, maple,
+  clickTargets, clickFx, triggerClick, handleSceneClick,
   pour, gust,
   hideUI(hide = true){
     document.querySelectorAll('.masthead,.hintbar,.toast,.loading').forEach(e => e.style.display = hide ? 'none' : '');
