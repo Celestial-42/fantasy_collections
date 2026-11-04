@@ -33,6 +33,7 @@ jobs:
           cp -R tea-mountain _site/
           cp -R lantern-changan _site/
           cp -R classroom-80s _site/
+          cp -R tide-holiday _site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
