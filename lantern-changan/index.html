@@ -1523,13 +1523,13 @@ crowdBodies.instanceColor.needsUpdate = true;
 city.add(crowdBodies, crowdHeads);
 
 // dragon dance
-const dragonSegments = 11;
-const dragonMat = new THREE.MeshBasicMaterial({ color: 0xffb04a, toneMapped: false });
-const dragon = new THREE.InstancedMesh(new THREE.BoxGeometry(.058, .038, .03), dragonMat, dragonSegments);
+const dragonSegments = 14;
+const dragonMat = new THREE.MeshBasicMaterial({ color: 0xff7a2e, toneMapped: false });
+const dragon = new THREE.InstancedMesh(new THREE.SphereGeometry(.023, 8, 6), dragonMat, dragonSegments);
 city.add(dragon);
 const dragonLineGeo = new THREE.BufferGeometry();
 dragonLineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dragonSegments * 3), 3));
-const dragonLine = new THREE.Line(dragonLineGeo, new THREE.LineBasicMaterial({ color: 0xffc56e, transparent: true, opacity: .8, toneMapped: false }));
+const dragonLine = new THREE.Line(dragonLineGeo, new THREE.LineBasicMaterial({ color: 0xff9a4a, transparent: true, opacity: .45, toneMapped: false }));
 city.add(dragonLine);
 const dragonHead = new THREE.Group();
 city.add(dragonHead);
@@ -2331,40 +2331,46 @@ function updateCrowd(dt, time){
   crowdHeads.instanceMatrix.needsUpdate = true;
 }
 
+const DRAGON_BASE_Y = .175;
+function dragonY(a, time){
+  return DRAGON_BASE_Y + Math.sin(a * 1.9 + time * 1.7) * .055 + Math.sin(a * 3.7 - time * 2.3) * .012;
+}
 function updateDragon(dt, time){
   dragonT += dt * (.5 + (lit ? .3 : 0) + crowdPulse * 1.3);
   const R = .305, Rz = .23;
-  let headPos = null, headRot = 0, tailPos = null, tailRot = 0;
+  let headPos = null, headRot = 0, headPitch = 0, tailPos = null, tailRot = 0, tailPitch = 0;
   for (let i = 0; i < dragonSegments; i++){
-    const a = dragonT - i * .33;
+    const a = dragonT - i * .27;
     const x = Math.cos(a) * R;
     const z = Math.sin(a) * Rz + .07;
-    const y = .092 + Math.sin(a * 2.2 + time * 2.4) * .014;
-    const scale = i === 0 ? 1 : 1 - i * .035;
+    const y = dragonY(a, time);
+    const yNext = dragonY(a - .27, time);
+    const pitch = -Math.atan2(y - yNext, .06) * .75;
+    const scale = i === 0 ? 1 : 1 - i * .03;
     dummy.position.set(x, y, z);
-    dummy.rotation.set(0, -a, 0);
+    dummy.rotation.set(pitch, -a, 0);
     dummy.scale.setScalar(scale);
     dummy.updateMatrix();
     dragon.setMatrixAt(i, dummy.matrix);
-    if (i === 0){ headPos = [x, y + .008, z]; headRot = Math.atan2(-Math.sin(a) * R, Math.cos(a) * Rz); }
-    if (i === dragonSegments - 1){ tailPos = [x, y, z]; tailRot = -a; }
+    if (i === 0){ headPos = [x, y + .008, z]; headRot = Math.atan2(-Math.sin(a) * R, Math.cos(a) * Rz); headPitch = pitch; }
+    if (i === dragonSegments - 1){ tailPos = [x, y, z]; tailRot = -a; tailPitch = pitch; }
   }
   dragon.instanceMatrix.needsUpdate = true;
   const lp = dragonLine.geometry.attributes.position;
   for (let i = 0; i < dragonSegments; i++){
-    const a = dragonT - i * .33;
-    lp.setXYZ(i, Math.cos(a) * R, .172 + Math.sin(a * 2.2 + time * 2.4) * .014, Math.sin(a) * Rz + .07);
+    const a = dragonT - i * .27;
+    lp.setXYZ(i, Math.cos(a) * R, dragonY(a, time), Math.sin(a) * Rz + .07);
   }
   lp.needsUpdate = true;
   if (headPos){
     dragonHead.position.set(headPos[0], headPos[1], headPos[2]);
-    dragonHead.rotation.y = headRot;
+    dragonHead.rotation.set(headPitch, headRot, Math.sin(time * 1.6) * .08);
     dragonGlow.position.set(headPos[0], headPos[1] + .01, headPos[2]);
     dragonGlow.material.opacity = .35 + glow * .65;
   }
   if (tailPos){
     dragonTail.position.set(tailPos[0], tailPos[1], tailPos[2]);
-    dragonTail.rotation.y = tailRot;
+    dragonTail.rotation.set(tailPitch, tailRot, 0);
   }
 }
 

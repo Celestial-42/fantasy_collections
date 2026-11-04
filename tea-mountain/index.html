@@ -669,7 +669,7 @@ function makeWindowTexture(){
   x.fillStyle = g;
   x.fillRect(0, 0, 768, 512);
   // blurred garden masses
-  for (let i = 0; i < 16; i++){
+  for (let i = 0; i < 18; i++){
     const px = rng() * 768, py = 90 + rng() * 260, r = 40 + rng() * 120;
     const gg = x.createRadialGradient(px, py, 0, px, py, r);
     const col = rng() > .5 ? '84,108,82' : '48,68,53';
@@ -883,6 +883,32 @@ function makeSteamTexture(){
   g.addColorStop(1, 'rgba(255,255,246,0)');
   x.fillStyle = g;
   x.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function makeWispTexture(){
+  const [c, x] = canvasOf(256, 256);
+  x.clearRect(0, 0, 256, 256);
+  x.lineCap = 'round';
+  x.filter = 'blur(7px)';
+  for (const [w, a] of [[16, .2], [8, .38], [2.5, .62]]){
+    x.globalAlpha = a;
+    x.lineWidth = w;
+    x.strokeStyle = 'rgba(238,246,232,1)';
+    x.beginPath();
+    x.moveTo(126, 248);
+    x.bezierCurveTo(72, 202, 176, 156, 112, 108);
+    x.bezierCurveTo(80, 80, 128, 48, 154, 18);
+    x.stroke();
+    x.beginPath();
+    x.moveTo(56, 246);
+    x.bezierCurveTo(48, 210, 92, 184, 70, 150);
+    x.stroke();
+  }
+  x.globalAlpha = 1;
+  x.filter = 'none';
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
@@ -1124,8 +1150,10 @@ let level = .315;
 let targetLevel = .315;
 let pouring = false;
 let pourClock = 0;
+let holdPour = false;
 let ripplePulse = 0;
 let gustPulse = 0;
+let gustClock = 2;
 
 // -------------------------------------------------------------------------
 // Ink mountains + miniature world
@@ -1602,6 +1630,7 @@ for (let i = 0; i < 3; i++){
 
 // steam
 const steamTex = makeSteamTexture();
+const wispTex = makeWispTexture();
 const steam = [];
 for (let i = 0; i < 34; i++){
   const mat = new THREE.SpriteMaterial({ map: steamTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -1613,13 +1642,42 @@ for (let i = 0; i < 34; i++){
   steam.push({ s, mat, life: rand(0, 1), speed: rand(.06, .16), drift: rand(-.03, .03), baseScale: sc });
 }
 const plume = [];
-for (let i = 0; i < 4; i++){
+for (let i = 0; i < 3; i++){
   const mat = new THREE.SpriteMaterial({ map: steamTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
   const s = new THREE.Sprite(mat);
-  s.scale.set(.30 - i * .03, .48 + i * .06, 1);
+  s.scale.set(.26 - i * .025, .38 + i * .04, 1);
   bowlGroup.add(s);
-  plume.push({ s, mat, offset: i * .23, scale: .26 + i * .02 });
+  plume.push({ s, mat, offset: i * .25, scale: .21 + i * .02 });
 }
+
+const wisps = [];
+for (let i = 0; i < 18; i++){
+  const mat = new THREE.SpriteMaterial({ map: wispTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, rotation: rand(0, TAU) });
+  const s = new THREE.Sprite(mat);
+  const bx = rand(-.38, .38), by = rand(.02, .2), bz = rand(-.22, .28);
+  s.position.set(bx, level + by, bz);
+  const sc = rand(.085, .21);
+  s.scale.set(sc, sc * 1.8, 1);
+  bowlGroup.add(s);
+  wisps.push({ s, mat, baseX: bx, baseZ: bz, baseScale: sc, life: rand(0, 1), speed: rand(.02, .055), phase: rand(0, TAU), rotSpeed: rand(-.22, .22) });
+}
+
+const gustWisps = [];
+for (let i = 0; i < 10; i++){
+  const mat = new THREE.SpriteMaterial({ map: wispTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  const s = new THREE.Sprite(mat);
+  s.scale.set(.16, .2, 1);
+  bowlGroup.add(s);
+  gustWisps.push({ s, mat, ang: rand(-.55, .55), offset: rand(0, 1), lift: rand(.02, .12) });
+}
+
+const gustRing = new THREE.Mesh(
+  new THREE.RingGeometry(.04, .058, 40),
+  new THREE.MeshBasicMaterial({ color: 0xd6e2d2, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false })
+);
+gustRing.rotation.x = -Math.PI / 2;
+gustRing.position.set(0, level + .008, .04);
+bowlGroup.add(gustRing);
 
 // -------------------------------------------------------------------------
 // Pitcher, tea caddy, props
@@ -1694,15 +1752,85 @@ teaInside.position.y = .062;
 cup.add(teaInside);
 
 // pour stream
-const streamCurve = new THREE.QuadraticBezierCurve3(
+function makeTaperedTube(curve, tubularSegments, radialSegments, radiusAt){
+  const frames = curve.computeFrenetFrames(tubularSegments, false);
+  const pos = [], nor = [], uv = [], idx = [];
+  for (let i = 0; i <= tubularSegments; i++){
+    const t = i / tubularSegments;
+    const p = curve.getPointAt(t);
+    const N = frames.normals[i], B = frames.binormals[i];
+    const r = radiusAt(t);
+    for (let j = 0; j <= radialSegments; j++){
+      const v = (j / radialSegments) * TAU;
+      const sn = Math.sin(v), cs = Math.cos(v);
+      const nx = cs * N.x + sn * B.x;
+      const ny = cs * N.y + sn * B.y;
+      const nz = cs * N.z + sn * B.z;
+      pos.push(p.x + nx * r, p.y + ny * r, p.z + nz * r);
+      nor.push(nx, ny, nz);
+      uv.push(t, j / radialSegments);
+    }
+  }
+  for (let i = 0; i < tubularSegments; i++){
+    for (let j = 0; j < radialSegments; j++){
+      const a = i * (radialSegments + 1) + j;
+      const b = a + radialSegments + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g;
+}
+
+const streamCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(.935, 1.207, .38),
-  new THREE.Vector3(.55, .85, .20),
-  new THREE.Vector3(.10, .47, .07)
-);
-const streamGeo = new THREE.TubeGeometry(streamCurve, 28, .011, 8, false);
-const streamMat = new THREE.MeshBasicMaterial({ color: 0xd8e6d8, transparent: true, opacity: 0, depthWrite: false });
+  new THREE.Vector3(.84, 1.16, .32),
+  new THREE.Vector3(.70, 1.06, .25),
+  new THREE.Vector3(.52, .89, .17),
+  new THREE.Vector3(.30, .68, .11),
+  new THREE.Vector3(.10, .465, .07)
+], false, 'catmullrom', .45);
+const streamGeo = makeTaperedTube(streamCurve, 44, 8, t => .016 * (1 - .6 * t) * (.9 + .1 * Math.sin(t * Math.PI)));
+const streamUniforms = { uOpacity: { value: 0 }, uTime: { value: 0 } };
+const streamMat = new THREE.ShaderMaterial({
+  uniforms: streamUniforms,
+  transparent: true,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  vertexShader: `
+    varying vec2 vUv;
+    void main(){
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float uOpacity;
+    uniform float uTime;
+    varying vec2 vUv;
+    void main(){
+      float edge = smoothstep(0.0, .05, vUv.x) * smoothstep(1.0, .91, vUv.x);
+      float flow = .5 + .5 * sin(vUv.x * 42.0 - uTime * 12.0 + vUv.y * 6.28318);
+      vec3 col = mix(vec3(.58, .69, .58), vec3(.94, .99, .9), .35 + .4 * flow);
+      gl_FragColor = vec4(col, edge * uOpacity * (.62 + .38 * flow));
+    }
+  `
+});
 const stream = new THREE.Mesh(streamGeo, streamMat);
 scene.add(stream);
+
+const streamDrops = [];
+for (let i = 0; i < 4; i++){
+  const mat = new THREE.MeshBasicMaterial({ color: 0xe8f1df, transparent: true, opacity: 0, depthWrite: false });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(.009, 8, 6), mat);
+  mesh.scale.set(.7, 1.5, .7);
+  scene.add(mesh);
+  streamDrops.push({ mesh, mat, offset: i * .23, side: i % 2 ? 1 : -1 });
+}
 
 const splash = new THREE.Mesh(
   new THREE.RingGeometry(.06, .085, 32),
@@ -1711,6 +1839,14 @@ const splash = new THREE.Mesh(
 splash.rotation.x = -Math.PI / 2;
 splash.position.set(.08, .32, .05);
 bowlGroup.add(splash);
+
+const splashDrops = [];
+for (let i = 0; i < 10; i++){
+  const mat = new THREE.MeshBasicMaterial({ color: 0xdbe8d4, transparent: true, opacity: 0, depthWrite: false });
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(.0065, 7, 6), mat);
+  bowlGroup.add(mesh);
+  splashDrops.push({ mesh, mat, ang: (i / 10) * TAU + rand(-.2, .2), phase: rand(0, 1) });
+}
 
 // -------------------------------------------------------------------------
 // Lighting
@@ -1827,9 +1963,10 @@ function pour(){
 }
 
 function gust(){
-  gustPulse = 1;
+  gustPulse = 1.35;
+  gustClock = 0;
   ripplePulse = 1;
-  teaUniforms.uRipple.value = 1;
+  teaUniforms.uRipple.value = 1.4;
   Sound.gust();
   showToast('吹散茶烟 · 山色更清', 1200);
   noteInteraction();
@@ -2251,16 +2388,56 @@ function updateSteam(dt, time){
     st.s.position.z += Math.cos(time * .5 + life * 6) * .0007;
     const sc = st.baseScale * (0.7 + life * 1.8);
     st.s.scale.set(sc, sc, 1);
-    st.mat.opacity = Math.sin(life * Math.PI) * (.145 + (pouring ? .16 : 0) + gustPulse * .16);
+    st.mat.opacity = Math.sin(life * Math.PI) * (.15 + (pouring ? .06 : 0) + gustPulse * .22);
   }
   for (let i = 0; i < plume.length; i++){
     const p = plume[i];
     const u = ((timeNow * .045 + p.offset) % 1);
-    p.s.position.set(Math.sin(timeNow * .25 + i) * .045, level + .04 + u * .5, .02 + Math.sin(timeNow * .18 + i) * .03);
-    p.mat.opacity = Math.sin(u * Math.PI) * (.042 + gustPulse * .05);
-    p.s.scale.set(p.scale * (0.75 + u * .4), .50 + u * .22, 1);
+    p.s.position.set(Math.sin(timeNow * .25 + i) * .045 + gustPulse * .24 * u, level + .035 + u * .3, .02 + Math.sin(timeNow * .18 + i) * .03);
+    p.mat.opacity = Math.sin(u * Math.PI) * (.055 + gustPulse * .1);
+    p.s.scale.set(p.scale * (.8 + u * .5), .38 + u * .22, 1);
+    p.mat.rotation += dt * .04;
   }
-  gustPulse = Math.max(0, gustPulse - dt * .7);
+  for (const w of wisps){
+    w.life += dt * w.speed * (1 + gustPulse * 1.8 + (pouring ? .4 : 0));
+    if (w.life > 1){
+      w.life = 0;
+      w.baseX = rand(-.34, .35);
+      w.baseZ = rand(-.24, .3);
+      w.baseScale = rand(.11, .29);
+    }
+    const life = w.life;
+    w.s.position.x = w.baseX + Math.sin(timeNow * .35 + w.phase) * .055 + gustPulse * dt * .3;
+    w.s.position.z = w.baseZ + Math.cos(timeNow * .3 + w.phase) * .035;
+    w.s.position.y = level + .02 + life * .32;
+    const sc = w.baseScale * (.7 + life * 1.25);
+    w.s.scale.set(sc, sc * 1.85, 1);
+    w.mat.rotation += dt * w.rotSpeed;
+    w.mat.opacity = Math.sin(life * Math.PI) * (.12 + gustPulse * .14 + (pouring ? .02 : 0));
+  }
+  if (gustClock < 2.0){
+    gustClock += dt;
+    const gu = clamp(gustClock / 2.0, 0, 1);
+    for (const gw of gustWisps){
+      const uu = clamp((gu - gw.offset * .22) / .78, 0, 1);
+      const spread = .04 + uu * .5;
+      const x = .02 + Math.cos(gw.ang) * spread + uu * .1;
+      const z = .05 + Math.sin(gw.ang) * spread * .55;
+      const y = level + .045 + uu * .2 + Math.sin(uu * Math.PI) * gw.lift;
+      gw.s.position.set(x, y, z);
+      gw.mat.rotation = gw.ang + uu * 1.15;
+      gw.s.scale.set(.16 + uu * .42, .2 + uu * .5, 1);
+      gw.mat.opacity = Math.sin(uu * Math.PI) * .26 * (1 - uu * .2);
+    }
+    gustRing.material.opacity = Math.sin(gu * Math.PI) * .22;
+    const rs = 1 + gu * 5;
+    gustRing.scale.set(rs, rs, 1);
+    gustRing.position.y = level + .008;
+  } else {
+    for (const gw of gustWisps) gw.mat.opacity = 0;
+    gustRing.material.opacity = 0;
+  }
+  gustPulse = Math.max(0, gustPulse - dt * .6);
 }
 
 function updatePour(dt){
@@ -2275,17 +2452,42 @@ function updatePour(dt){
   const pourPos = new THREE.Vector3(1.02, .74, .38);
   pitcher.position.lerpVectors(home, pourPos, k);
   pitcher.rotation.z = -.58 * k;
-  streamMat.opacity = (p > .18 && p < .78) ? .3 * Math.min(1, (p - .18) * 12, (0.78 - p) * 12) : 0;
-  splash.material.opacity = (p > .2 && p < .8) ? .16 * (1 - Math.abs(p - .5) * 2) : 0;
+  const flowing = p > .18 && p < .8;
+  streamUniforms.uOpacity.value = flowing ? .5 * Math.min(1, (p - .18) * 12, (0.8 - p) * 12) : 0;
+  for (const d of streamDrops){
+    if (flowing){
+      const t = Math.min(.985, clamp((p - .18) / .6, 0, 1) * 1.05 + d.offset);
+      const pt = streamCurve.getPointAt(t);
+      d.mesh.position.copy(pt);
+      d.mesh.position.x += d.side * .018;
+      d.mesh.position.z += d.side * .012;
+      const ds = (1 - t * .5) * .9;
+      d.mesh.scale.set(.7 * ds, 1.5 * ds, .7 * ds);
+      d.mat.opacity = Math.sin(Math.min(1, t) * Math.PI) * .5;
+    } else d.mat.opacity = 0;
+  }
+  splash.material.opacity = flowing ? .24 * (1 - Math.abs(p - .5) * 2) : 0;
   const s = .8 + Math.sin(p * 14) * .15;
   splash.scale.set(s, s, 1);
+  for (const d of splashDrops){
+    if (flowing){
+      const u = (pourClock * 1.5 + d.phase) % 1;
+      const rad = .015 + u * .12;
+      d.mesh.position.set(.08 + Math.cos(d.ang) * rad, level + .012 + Math.sin(u * Math.PI) * .03, .05 + Math.sin(d.ang) * rad * .7);
+      const ds = .9 * (1 - u * .45);
+      d.mesh.scale.setScalar(ds);
+      d.mat.opacity = .5 * (1 - u);
+    } else d.mat.opacity = 0;
+  }
   if (p >= 1){
     pouring = false;
     pourClock = 0;
     pitcher.position.copy(home);
     pitcher.rotation.z = 0;
-    streamMat.opacity = 0;
+    streamUniforms.uOpacity.value = 0;
     splash.material.opacity = 0;
+    for (const d of streamDrops) d.mat.opacity = 0;
+    for (const d of splashDrops) d.mat.opacity = 0;
   }
 }
 
@@ -2298,9 +2500,9 @@ function updateBoat(dt, time){
 
 function updateMist(time){
   for (const m of mistSprites){
-    m.sprite.position.x = m.baseX + Math.sin(time * .16 + m.phase) * .04 + gustPulse * .12;
+    m.sprite.position.x = m.baseX + Math.sin(time * .16 + m.phase) * .04 + gustPulse * .35;
     m.sprite.position.y = m.baseY + Math.sin(time * .22 + m.phase) * .012;
-    m.sprite.material.opacity = .09 + Math.sin(time * .3 + m.phase) * .025;
+    m.sprite.material.opacity = .09 + Math.sin(time * .3 + m.phase) * .025 + gustPulse * .045;
   }
 }
 
@@ -2316,10 +2518,11 @@ function animate(){
   tea.position.y = level + .002;
   tea.scale.set(radius, radius, 1);
   teaUniforms.uTime.value = timeNow;
+  streamUniforms.uTime.value = timeNow;
   teaUniforms.uRipple.value = Math.max(teaUniforms.uRipple.value - dt * .8, 0);
   steamBoostTick(dt);
 
-  updatePour(dt);
+  if (!holdPour) updatePour(dt);
   updateSteam(dt, timeNow);
   splash.position.y = level + .006;
   updateBoat(dt, timeNow);
@@ -2407,6 +2610,23 @@ window.__TEA_DEBUG__ = {
     targetLevel = clamp(value, .315, .375);
     level = targetLevel;
     updateWaterUi();
+  },
+  holdPourAt(p){
+    holdPour = true;
+    pouring = true;
+    pourClock = clamp(p, 0, .99) * 3.1;
+    updatePour(0);
+  },
+  releasePour(){
+    holdPour = false;
+    pouring = false;
+    pourClock = 0;
+    pitcher.position.set(1.55, .12, .48);
+    pitcher.rotation.z = 0;
+    streamUniforms.uOpacity.value = 0;
+    splash.material.opacity = 0;
+    for (const d of streamDrops) d.mat.opacity = 0;
+    for (const d of splashDrops) d.mat.opacity = 0;
   },
   snapshot(){
     return {
