@@ -3,37 +3,47 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0b0908" />
-<meta name="description" content="不可能海域 · 四件可交互的 WebGL 微缩藏品：《瓶中沧海》的海浪与风暴，《雪落索菲亚》的哈尔滨雪夜，《一盏山河》的青瓷茶中山水，《灯下长安》的纸灯笼上元灯市；均配现场合成的环境声景。" />
-<title>不可能海域 · 四件可交互微缩藏品</title>
+<meta name="theme-color" content="#080706" />
+<title>不可能海域 · 藏品长廊</title>
+<meta name="description" content="不可能海域 · 横向藏品长廊：四件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市，左右拖动逐件观看。" />
 <link rel="preload" as="image" href="bottle-sea/poster.jpg" />
 <link rel="preload" as="image" href="snow-sophia/poster.jpg" />
 <link rel="preload" as="image" href="tea-mountain/poster.jpg" />
 <link rel="preload" as="image" href="lantern-changan/poster.jpg" />
 <style>
+  @property --accent{
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #d8a66a;
+  }
   :root{
-    --ink:#0b0908;
-    --ink-deep:#060505;
+    --ink:#080706;
+    --ink-deep:#050404;
     --bone:#efe5d2;
     --bone-dim:#b9ad99;
     --muted:#8c8172;
-    --amber:#d8a66a;
-    --amber-hot:#f0c38c;
-    --wine:#7c2b24;
     --line:rgba(238,224,200,.14);
-    --line-soft:rgba(238,224,200,.07);
+    --line-soft:rgba(238,224,200,.065);
     --serif:"Iowan Old Style","Baskerville","Palatino Linotype","Songti SC","STSong","Noto Serif CJK SC",serif;
     --sans:"Avenir Next","Helvetica Neue","PingFang SC","Hiragino Sans GB",sans-serif;
+    --accent:#d8a66a;
+    --card-h:clamp(360px,56vh,660px);
+    --card-h:clamp(360px,56svh,660px);
+    --card-w:calc(var(--card-h) * 2 / 3);
+    --rail-gap:clamp(20px,3vw,42px);
+    transition:--accent .8s ease;
   }
   *{box-sizing:border-box;}
-  html{background:var(--ink);scroll-behavior:smooth;}
+  html{background:var(--ink);}
   body{
     margin:0;
-    min-height:100%;
+    height:100vh;
+    height:100svh;
+    overflow:hidden;
     background:
-      radial-gradient(70% 55% at 78% 18%, rgba(156,88,48,.20), transparent 60%),
-      radial-gradient(55% 45% at 8% 6%, rgba(120,74,48,.13), transparent 62%),
-      linear-gradient(180deg, #0f0b0a 0%, #0b0908 55%, #080606 100%);
+      radial-gradient(62% 58% at 76% 20%, rgba(144,92,56,.16), transparent 66%),
+      radial-gradient(48% 48% at 10% 88%, rgba(104,72,46,.11), transparent 70%),
+      linear-gradient(180deg, #100c0a 0%, #090706 58%, #060505 100%);
     color:var(--bone);
     font-family:var(--sans);
     -webkit-font-smoothing:antialiased;
@@ -44,18 +54,27 @@
     inset:0;
     z-index:0;
     pointer-events:none;
-    opacity:.28;
+    opacity:.25;
     background-image:
-      repeating-linear-gradient(90deg, rgba(255,220,180,.022) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(255,220,180,.02) 0 1px, transparent 1px 3px),
       repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 2px, transparent 2px 7px);
     mix-blend-mode:soft-light;
+  }
+  .ambient{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    background:
+      radial-gradient(46% 52% at 72% 24%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 72%),
+      radial-gradient(36% 42% at 16% 80%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
   }
   .grain{
     position:fixed;
     inset:0;
     z-index:40;
     pointer-events:none;
-    opacity:.13;
+    opacity:.12;
     mix-blend-mode:soft-light;
     background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.62'/%3E%3C/svg%3E");
   }
@@ -64,37 +83,57 @@
     inset:0;
     z-index:1;
     pointer-events:none;
-    background:radial-gradient(ellipse at 50% 38%, transparent 46%, rgba(4,3,3,.5) 100%);
+    background:radial-gradient(ellipse at 50% 42%, transparent 42%, rgba(4,3,3,.56) 100%);
   }
   a{color:inherit;text-decoration:none;}
+  button{font:inherit;}
   ::selection{background:rgba(216,166,106,.28);color:#fff;}
 
-  .shell{
+  .side-mark{
+    position:fixed;
+    z-index:1;
+    right:clamp(12px,2.4vw,34px);
+    top:50%;
+    transform:translateY(-50%);
+    writing-mode:vertical-rl;
+    font-size:8px;
+    letter-spacing:.48em;
+    text-transform:uppercase;
+    color:rgba(239,229,210,.14);
+    pointer-events:none;
+    user-select:none;
+  }
+
+  .page{
     position:relative;
     z-index:2;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+  }
+  .shell{
     width:min(1500px,100%);
     margin:0 auto;
-    padding:0 clamp(22px,5vw,78px);
+    padding-inline:clamp(22px,5vw,78px);
   }
 
   /* ---------- topbar ---------- */
   .topbar{
-    position:relative;
-    z-index:3;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:24px;
-    padding:30px 0 0;
+    gap:20px;
+    padding-top:clamp(16px,2.8vh,28px);
+    padding-bottom:6px;
   }
   .brand{
     display:flex;
     align-items:center;
-    gap:14px;
+    gap:13px;
     color:var(--bone-dim);
     font-size:9px;
     font-weight:600;
-    letter-spacing:.36em;
+    letter-spacing:.34em;
     line-height:1.55;
     text-transform:uppercase;
     white-space:nowrap;
@@ -102,650 +141,651 @@
   .brand-mark{
     display:grid;
     place-items:center;
-    width:30px;
-    height:42px;
-    color:var(--amber);
+    width:28px;
+    height:40px;
+    color:var(--accent);
+    transition:color .6s ease;
   }
   .brand-mark svg{display:block;}
   .top-meta{
     display:flex;
     align-items:center;
-    gap:16px;
+    gap:14px;
     color:var(--muted);
-    font-size:9px;
-    letter-spacing:.3em;
+    font-size:8.5px;
+    letter-spacing:.28em;
     text-transform:uppercase;
+    white-space:nowrap;
   }
-  .top-meta b{color:var(--amber);font-weight:600;}
+  .top-meta b{color:var(--accent);font-weight:600;transition:color .6s ease;}
   .top-meta i{
     display:block;
-    width:44px;
+    width:40px;
     height:1px;
     background:linear-gradient(90deg, transparent, var(--line));
   }
 
-  /* ---------- hero ---------- */
-  .hero{
-    display:grid;
-    grid-template-columns:minmax(0,.93fr) minmax(0,1.07fr);
-    align-items:center;
-    gap:clamp(34px,5vw,84px);
-    min-height:calc(100svh - 96px);
-    padding:clamp(46px,7vh,96px) 0 clamp(54px,8vh,96px);
+  /* ---------- intro ---------- */
+  .intro{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:30px;
+    padding-top:clamp(8px,1.8vh,20px);
+    padding-bottom:clamp(6px,1.2vh,12px);
   }
-  .copy{max-width:600px;}
   .eyebrow{
     display:flex;
     align-items:center;
-    gap:14px;
-    margin:0 0 26px;
-    color:var(--amber);
-    font-size:9px;
+    gap:12px;
+    margin:0;
+    color:var(--accent);
+    font-size:8px;
     font-weight:600;
-    letter-spacing:.36em;
+    letter-spacing:.34em;
     text-transform:uppercase;
+    transition:color .6s ease;
   }
   .eyebrow::before{
     content:"";
-    width:38px;
+    width:32px;
     height:1px;
-    background:linear-gradient(90deg, rgba(216,166,106,.8), transparent);
+    background:linear-gradient(90deg, currentColor, transparent);
   }
-  h1{
-    margin:0;
+  .intro h1{
+    margin:10px 0 0;
     font-family:var(--serif);
     font-weight:400;
-    font-size:clamp(58px,7.4vw,110px);
-    line-height:.92;
-    letter-spacing:.055em;
-    text-shadow:0 18px 70px rgba(0,0,0,.5);
+    font-size:clamp(34px,4.3vw,58px);
+    line-height:.95;
+    letter-spacing:.06em;
+    color:var(--bone);
   }
-  .latin{
-    margin:18px 0 0;
+  .intro .latin{
+    margin:10px 0 0;
     color:var(--bone-dim);
-    font-size:9px;
-    font-weight:500;
-    letter-spacing:.56em;
+    font-size:8px;
+    letter-spacing:.5em;
     text-transform:uppercase;
   }
-  .lede{
-    margin:34px 0 0;
-    max-width:30ch;
+  .intro-right{
+    max-width:35ch;
+    padding-bottom:4px;
+    text-align:right;
+  }
+  .intro-note{
+    margin:0;
     font-family:var(--serif);
-    font-size:clamp(18px,1.6vw,22px);
-    line-height:1.7;
-    letter-spacing:.09em;
-    color:rgba(239,229,210,.9);
+    font-size:clamp(13px,1.35vw,16px);
+    line-height:1.85;
+    letter-spacing:.08em;
+    color:rgba(239,229,210,.86);
   }
-  .desc{
-    margin:18px 0 0;
-    max-width:46ch;
-    color:var(--muted);
-    font-size:12px;
-    line-height:1.95;
-    letter-spacing:.045em;
-  }
-  .cta-row{
+  .drag-hint{
     display:flex;
     align-items:center;
-    flex-wrap:wrap;
-    gap:22px;
-    margin-top:38px;
-  }
-  .enter{
-    position:relative;
-    display:inline-flex;
-    align-items:center;
-    gap:26px;
-    padding:15px 22px 15px 26px;
-    border:1px solid rgba(216,166,106,.52);
-    color:var(--amber-hot);
-    background:rgba(216,166,106,.045);
-    font-size:12px;
-    letter-spacing:.22em;
-    overflow:hidden;
-    transition:border-color .35s ease, color .35s ease, background .35s ease, transform .35s ease;
-  }
-  .enter::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:linear-gradient(110deg, transparent 30%, rgba(255,225,184,.16) 50%, transparent 70%);
-    transform:translateX(-130%);
-    transition:transform .8s ease;
-  }
-  .enter:hover{
-    border-color:rgba(240,195,140,.9);
-    background:rgba(216,166,106,.12);
-    color:#fff3df;
-    transform:translateY(-2px);
-  }
-  .enter:hover::after{transform:translateX(130%);}
-  .enter .arrow{
-    font-size:15px;
-    line-height:1;
-    transition:transform .35s ease;
-  }
-  .enter:hover .arrow{transform:translateX(5px);}
-  .enter:focus-visible,
-  .artifact:focus-visible,
-  .index-row:focus-visible{
-    outline:1px solid var(--amber);
-    outline-offset:5px;
-  }
-  .cta-note{
+    justify-content:flex-end;
+    gap:10px;
+    margin:12px 0 0;
     color:var(--muted);
-    font-size:10px;
-    line-height:1.8;
-    letter-spacing:.13em;
-  }
-  .cta-note b{color:var(--bone-dim);font-weight:500;}
-
-  .phases{
-    display:flex;
-    align-items:center;
-    gap:16px;
-    margin-top:34px;
-    padding-top:24px;
-    border-top:1px solid var(--line-soft);
-  }
-  .phases-label{
-    color:var(--muted);
-    font-size:9px;
-    letter-spacing:.26em;
-    text-transform:uppercase;
-  }
-  .phase-dots{display:flex;gap:14px;}
-  .phase{
-    display:flex;
-    align-items:center;
-    gap:7px;
-    color:var(--muted);
-    font-size:9px;
-    letter-spacing:.14em;
-  }
-  .phase i{
-    width:7px;
-    height:7px;
-    border-radius:50%;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
-  }
-  .phase:nth-child(1) i{background:linear-gradient(135deg,#3c355e,#c98f74);}
-  .phase:nth-child(2) i{background:linear-gradient(135deg,#8cc7d8,#e8d9b4);}
-  .phase:nth-child(3) i{background:linear-gradient(135deg,#7a4a48,#e7a25e);}
-  .phase:nth-child(4) i{background:linear-gradient(135deg,#141d32,#48627e);}
-
-  /* ---------- artifact / poster ---------- */
-  .artifact-wrap{position:relative;perspective:1400px;}
-  .artifact{
-    position:relative;
-    display:block;
-    padding:11px 11px 0;
-    background:linear-gradient(150deg, rgba(63,45,32,.62), rgba(20,15,13,.86) 45%, rgba(11,9,8,.94));
-    border:1px solid rgba(216,166,106,.22);
-    box-shadow:
-      0 48px 110px rgba(0,0,0,.62),
-      0 10px 28px rgba(0,0,0,.45),
-      inset 0 1px 0 rgba(255,226,188,.07);
-    transform-style:preserve-3d;
-    transition:border-color .5s ease, box-shadow .5s ease;
-  }
-  .artifact:hover{
-    border-color:rgba(216,166,106,.42);
-    box-shadow:
-      0 56px 130px rgba(0,0,0,.68),
-      0 0 60px rgba(196,128,68,.12),
-      inset 0 1px 0 rgba(255,226,188,.1);
-  }
-  .plate{
-    position:relative;
-    overflow:hidden;
-    background:#0a0807;
-  }
-  .plate img{
-    display:block;
-    width:100%;
-    height:auto;
-    aspect-ratio:16 / 10;
-    object-fit:cover;
-    filter:saturate(.98) contrast(1.02);
-    transform:translateZ(0) scale(1.001);
-    transition:transform 1.1s cubic-bezier(.22,.61,.36,1), filter .7s ease;
-  }
-  .artifact:hover .plate img{
-    transform:translateZ(0) scale(1.028);
-    filter:saturate(1.06) contrast(1.03);
-  }
-  .plate::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    background:
-      linear-gradient(180deg, rgba(6,5,4,.14), transparent 26%, transparent 72%, rgba(6,5,4,.34)),
-      radial-gradient(ellipse at 50% 48%, transparent 52%, rgba(5,4,4,.32) 100%);
-  }
-  .plate-corner{
-    position:absolute;
-    width:16px;
-    height:16px;
-    border:1px solid rgba(239,229,210,.4);
-    pointer-events:none;
-    z-index:2;
-  }
-  .plate-corner.tl{top:12px;left:12px;border-right:0;border-bottom:0;}
-  .plate-corner.tr{top:12px;right:12px;border-left:0;border-bottom:0;}
-  .plate-corner.bl{bottom:12px;left:12px;border-right:0;border-top:0;}
-  .plate-corner.br{bottom:12px;right:12px;border-left:0;border-top:0;}
-  .plate-no{
-    position:absolute;
-    top:18px;
-    left:20px;
-    z-index:2;
-    color:rgba(239,229,210,.82);
-    font-family:var(--serif);
-    font-size:11px;
-    letter-spacing:.3em;
-  }
-  .enter-hint{
-    position:absolute;
-    inset:0;
-    z-index:3;
-    display:grid;
-    place-items:center;
-    opacity:0;
-    transition:opacity .45s ease;
-    background:radial-gradient(ellipse at center, rgba(8,6,5,.5), rgba(8,6,5,.08) 62%);
-  }
-  .enter-hint span{
-    padding:12px 20px;
-    border:1px solid rgba(240,195,140,.5);
-    color:var(--amber-hot);
-    background:rgba(10,8,7,.42);
-    backdrop-filter:blur(6px);
-    font-size:11px;
-    letter-spacing:.3em;
-    transform:translateY(6px);
-    transition:transform .45s ease;
-  }
-  .artifact:hover .enter-hint{opacity:1;}
-  .artifact:hover .enter-hint span{transform:translateY(0);}
-  .figcaption{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:18px;
-    padding:15px 3px 14px;
-    color:var(--muted);
-    font-size:9px;
+    font-size:8px;
     letter-spacing:.24em;
     text-transform:uppercase;
   }
-  .figcaption b{color:var(--bone-dim);font-weight:500;}
-  .seal{
+  .drag-hint i{
+    display:block;
+    width:34px;
+    height:1px;
+    background:linear-gradient(90deg, var(--line), var(--accent));
+    transition:background .6s ease;
+  }
+
+  /* ---------- rail ---------- */
+  .rail{
+    position:relative;
+    flex:1;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    gap:var(--rail-gap);
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding-inline:calc((100vw - var(--card-w)) / 2);
+    scroll-snap-type:x mandatory;
+    scrollbar-width:none;
+    cursor:grab;
+    touch-action:pan-x;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .rail::-webkit-scrollbar{display:none;}
+  .rail.is-dragging{cursor:grabbing;scroll-snap-type:none;}
+  .rail.is-dragging *{user-select:none;}
+
+  .card{
+    position:relative;
+    flex:0 0 auto;
+    width:var(--card-w);
+    height:var(--card-h);
+    overflow:hidden;
+    border:1px solid rgba(238,224,200,.16);
+    background:#0a0807;
+    scroll-snap-align:center;
+    transform:scale(.94) translateY(12px);
+    opacity:.68;
+    z-index:1;
+    -webkit-tap-highlight-color:transparent;
+    transition:
+      transform .85s cubic-bezier(.22,.61,.36,1),
+      opacity .7s ease,
+      border-color .7s ease,
+      box-shadow .7s ease;
+  }
+  .card::after{
+    content:"";
     position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:
+      linear-gradient(180deg, rgba(5,4,3,.5), transparent 24%, transparent 44%, rgba(5,4,3,.9) 100%),
+      linear-gradient(90deg, rgba(5,4,3,.3), transparent 42%);
+  }
+  .card-media{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+  }
+  .card-media img{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:cover;
+    object-position:var(--pos,50% 50%);
+    filter:saturate(.8) brightness(.68);
+    transform:scale(1.005);
+    transition:transform 1.25s cubic-bezier(.22,.61,.36,1), filter .8s ease;
+    -webkit-user-drag:none;
+    user-select:none;
+  }
+  .card.is-active{
+    transform:scale(1) translateY(0);
+    opacity:1;
+    border-color:color-mix(in srgb, var(--card-accent) 52%, transparent);
+    box-shadow:
+      0 38px 90px rgba(0,0,0,.58),
+      0 0 55px color-mix(in srgb, var(--card-accent) 10%, transparent);
+    z-index:3;
+  }
+  .card.is-active .card-media img{
+    filter:saturate(.98) brightness(.9);
+  }
+  .card:hover{
+    opacity:1;
     z-index:4;
-    left:-26px;
-    bottom:48px;
+    border-color:color-mix(in srgb, var(--card-accent) 68%, transparent);
+    transform:scale(.975) translateY(4px);
+  }
+  .card.is-active:hover{
+    transform:scale(1) translateY(-4px);
+  }
+  .card:hover .card-media img{
+    transform:scale(1.05);
+    filter:saturate(1.03) brightness(.98);
+  }
+  .card-frame{
+    position:absolute;
+    inset:9px;
+    z-index:2;
+    border:1px solid rgba(239,229,210,.14);
+    pointer-events:none;
+    transition:border-color .7s ease;
+  }
+  .card.is-active .card-frame,
+  .card:hover .card-frame{
+    border-color:color-mix(in srgb, var(--card-accent) 32%, transparent);
+  }
+  .card-frame::before,
+  .card-frame::after{
+    content:"";
+    position:absolute;
+    left:0;
+    width:18px;
+    height:1px;
+    background:var(--card-accent);
+    opacity:.55;
+  }
+  .card-frame::before{top:-1px;}
+  .card-frame::after{bottom:-1px;}
+
+  .card-top{
+    position:absolute;
+    z-index:3;
+    top:15px;
+    left:16px;
+    right:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .card-meta{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    padding-top:2px;
+  }
+  .card-no{
+    color:var(--card-accent);
+    font-family:var(--serif);
+    font-size:10px;
+    letter-spacing:.28em;
+  }
+  .card-phase{
+    color:rgba(239,229,210,.6);
+    font-size:7.5px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+  }
+  .card-seal{
+    position:relative;
     display:grid;
     place-items:center;
-    width:78px;
-    height:78px;
+    width:clamp(58px,5.4vw,78px);
+    height:clamp(58px,5.4vw,78px);
+    flex:0 0 clamp(58px,5.4vw,78px);
+    padding-bottom:7px;
     border-radius:50%;
-    color:rgba(255,226,203,.86);
+    color:rgba(255,240,221,.92);
     background:
       radial-gradient(circle at 36% 30%, #a44a3d, #7c2b24 52%, #571c18 100%);
     box-shadow:
-      0 12px 26px rgba(0,0,0,.5),
+      0 10px 22px rgba(0,0,0,.46),
       inset 0 1px 1px rgba(255,214,186,.28),
       inset 0 -6px 14px rgba(35,8,7,.5);
     transform:rotate(-9deg);
     font-family:var(--serif);
-    font-size:19px;
-    line-height:1.18;
-    letter-spacing:.06em;
+    font-size:clamp(15px,1.35vw,19px);
+    line-height:1.12;
+    letter-spacing:.04em;
     writing-mode:vertical-rl;
-    transition:transform .6s cubic-bezier(.22,.61,.36,1);
+    text-orientation:upright;
+    transition:transform .65s cubic-bezier(.22,.61,.36,1), box-shadow .6s ease;
   }
-  .seal::before{
+  .card-seal::before{
     content:"";
     position:absolute;
     inset:7px;
     border-radius:50%;
     border:1px solid rgba(255,214,186,.24);
   }
-  .seal::after{
-    content:"BOTTLED · SEA · 01";
+  .card-seal small{
     position:absolute;
-    bottom:13px;
+    bottom:12px;
     left:50%;
     transform:translateX(-50%);
-    font-family:var(--sans);
-    font-size:5px;
-    letter-spacing:.24em;
-    color:rgba(255,214,186,.5);
     writing-mode:horizontal-tb;
+    font-family:var(--sans);
+    font-size:4.5px;
+    line-height:1;
+    letter-spacing:.18em;
+    color:rgba(255,214,186,.55);
     white-space:nowrap;
   }
-  .artifact:hover ~ .seal,
-  .artifact-wrap:hover .seal{transform:rotate(-4deg) scale(1.03);}
-
-  /* ---------- second piece: snow ---------- */
-  .hero-snow{
-    border-top:1px solid var(--line-soft);
-    background:
-      radial-gradient(58% 52% at 24% 38%, rgba(112,158,180,.13), transparent 70%),
-      radial-gradient(42% 38% at 82% 16%, rgba(84,128,152,.07), transparent 72%);
+  .card.is-active .card-seal,
+  .card:hover .card-seal{
+    transform:rotate(-4deg) scale(1.04);
   }
-  .hero.mirror{grid-template-columns:minmax(0,1.07fr) minmax(0,.93fr);}
-  .hero.mirror .copy{order:2;}
-  .hero.mirror .artifact-wrap{order:1;}
-  .eyebrow.snow{color:#a9d3e4;}
-  .eyebrow.snow::before{background:linear-gradient(90deg, rgba(169,211,228,.85), transparent);}
-  .enter.snow{
-    border-color:rgba(169,211,228,.5);
-    color:#e4f6fd;
-    background:rgba(169,211,228,.055);
-  }
-  .enter.snow:hover{
-    border-color:rgba(206,239,250,.92);
-    background:rgba(169,211,228,.14);
-    color:#f6fdff;
-  }
-  .snow-phases .phase:nth-child(1) i{background:linear-gradient(135deg,#e8f7fd,#7fa9bd);}
-  .snow-phases .phase:nth-child(2) i{background:linear-gradient(135deg,#c95148,#6fa9c9);}
-  .snow-phases .phase:nth-child(3) i{background:linear-gradient(135deg,#dff2fa,#a9c8d6);}
-  .snow-phases .phase:nth-child(4) i{background:linear-gradient(135deg,#c95148,#e0bd8a);}
-  .seal-snow{
-    left:auto;
-    right:-26px;
-    color:rgba(236,250,255,.9);
+  .card-seal--snow{
+    color:rgba(236,250,255,.92);
     background:
       radial-gradient(circle at 36% 30%, #618aa0, #345c72 52%, #1d3949 100%);
     box-shadow:
-      0 12px 26px rgba(0,0,0,.5),
+      0 10px 22px rgba(0,0,0,.46),
       inset 0 1px 1px rgba(226,249,255,.28),
       inset 0 -6px 14px rgba(6,24,33,.5);
   }
-  .seal-snow::before{border-color:rgba(218,246,255,.24);}
-  .seal-snow::after{content:"SNOW · SOPHIA · 02";color:rgba(218,246,255,.5);}
-
-  /* ---------- third piece: tea ---------- */
-  .hero-tea{
-    border-top:1px solid var(--line-soft);
-    background:
-      radial-gradient(58% 52% at 22% 36%, rgba(118,154,126,.12), transparent 70%),
-      radial-gradient(44% 38% at 84% 20%, rgba(92,126,104,.07), transparent 72%);
-  }
-  .eyebrow.tea{color:#b7d3c2;}
-  .eyebrow.tea::before{background:linear-gradient(90deg, rgba(183,211,194,.85), transparent);}
-  .enter.tea{
-    border-color:rgba(183,211,194,.46);
-    color:#e2f2e7;
-    background:rgba(183,211,194,.05);
-  }
-  .enter.tea:hover{
-    border-color:rgba(211,236,220,.9);
-    background:rgba(183,211,194,.13);
-    color:#f5fff8;
-  }
-  .tea-phases .phase:nth-child(1) i{background:linear-gradient(135deg,#7d9b86,#c6d8c2);}
-  .tea-phases .phase:nth-child(2) i{background:linear-gradient(135deg,#4d6a55,#a9bfa8);}
-  .tea-phases .phase:nth-child(3) i{background:linear-gradient(135deg,#d4dfd2,#f0e3c2);}
-  .tea-phases .phase:nth-child(4) i{background:linear-gradient(135deg,#293a30,#8fa796);}
-  .seal-tea{
-    color:rgba(236,248,238,.9);
+  .card-seal--snow::before{border-color:rgba(218,246,255,.24);}
+  .card-seal--snow small{color:rgba(218,246,255,.55);}
+  .card-seal--tea{
+    color:rgba(236,248,238,.92);
     background:
       radial-gradient(circle at 36% 30%, #6f8f7c, #42604f 52%, #243a2d 100%);
     box-shadow:
-      0 12px 26px rgba(0,0,0,.5),
+      0 10px 22px rgba(0,0,0,.46),
       inset 0 1px 1px rgba(230,250,238,.28),
       inset 0 -6px 14px rgba(8,22,14,.5);
   }
-  .seal-tea::before{border-color:rgba(222,246,232,.24);}
-  .seal-tea::after{content:"CELADON · TEA · 03";color:rgba(222,246,232,.5);}
-
-  /* ---------- fourth piece: lantern ---------- */
-  .hero-lantern{
-    border-top:1px solid var(--line-soft);
-    background:
-      radial-gradient(60% 54% at 76% 36%, rgba(186,92,44,.14), transparent 70%),
-      radial-gradient(46% 40% at 16% 16%, rgba(150,54,32,.08), transparent 72%);
-  }
-  .eyebrow.lantern{color:#f0c27b;}
-  .eyebrow.lantern::before{background:linear-gradient(90deg, rgba(240,194,123,.9), transparent);}
-  .enter.lantern{
-    border-color:rgba(240,194,123,.5);
-    color:#ffeac4;
-    background:rgba(240,194,123,.055);
-  }
-  .enter.lantern:hover{
-    border-color:rgba(255,220,164,.94);
-    background:rgba(240,194,123,.14);
-    color:#fff8ea;
-  }
-  .lantern-phases .phase:nth-child(1) i{background:linear-gradient(135deg,#6b1d15,#f0b45c);}
-  .lantern-phases .phase:nth-child(2) i{background:linear-gradient(135deg,#a8432a,#ffd394);}
-  .lantern-phases .phase:nth-child(3) i{background:linear-gradient(135deg,#5a2418,#d9954c);}
-  .lantern-phases .phase:nth-child(4) i{background:linear-gradient(135deg,#241310,#c2733a);}
-  .seal-lantern{
-    left:auto;
-    right:-26px;
-    color:rgba(255,240,216,.9);
+  .card-seal--tea::before{border-color:rgba(222,246,232,.24);}
+  .card-seal--tea small{color:rgba(222,246,232,.55);}
+  .card-seal--lantern{
+    color:rgba(255,240,216,.92);
     background:
       radial-gradient(circle at 36% 30%, #b96535, #8b3f22 52%, #5e2416 100%);
     box-shadow:
-      0 12px 26px rgba(0,0,0,.5),
+      0 10px 22px rgba(0,0,0,.46),
       inset 0 1px 1px rgba(255,232,200,.3),
       inset 0 -6px 14px rgba(36,10,5,.5);
   }
-  .seal-lantern::before{border-color:rgba(255,236,206,.24);}
-  .seal-lantern::after{content:"LANTERN · CHANG'AN · 04";color:rgba(255,236,206,.5);}
+  .card-seal--lantern::before{border-color:rgba(255,236,206,.24);}
+  .card-seal--lantern small{color:rgba(255,236,206,.55);}
 
-  /* ---------- index ---------- */
-  .index{
-    padding:clamp(56px,8vh,100px) 0 clamp(44px,6vh,74px);
-    border-top:1px solid var(--line-soft);
-  }
-  .section-head{
+  .card-bottom{
+    position:absolute;
+    z-index:3;
+    left:16px;
+    right:14px;
+    bottom:15px;
     display:flex;
-    align-items:baseline;
+    align-items:flex-end;
     justify-content:space-between;
-    gap:24px;
-    margin-bottom:10px;
+    gap:12px;
   }
-  .section-head h2{
-    margin:0;
-    font-family:var(--serif);
-    font-weight:400;
-    font-size:clamp(23px,2.2vw,32px);
-    letter-spacing:.14em;
+  .card-copy{
+    min-width:0;
+    max-width:calc(100% - 48px);
   }
-  .section-head p{
-    margin:0;
-    color:var(--muted);
-    font-size:9px;
-    letter-spacing:.32em;
+  .card-en{
+    display:block;
+    color:rgba(239,229,210,.62);
+    font-size:6.8px;
+    letter-spacing:.25em;
+    line-height:1.5;
     text-transform:uppercase;
   }
-  .index-row{
-    display:grid;
-    grid-template-columns:70px minmax(0,1.3fr) minmax(0,1fr) 130px 90px;
-    align-items:center;
-    gap:20px;
-    padding:24px 4px;
-    border-bottom:1px solid var(--line-soft);
-    transition:background .35s ease, padding .35s ease;
-  }
-  .index-row:hover{
-    background:linear-gradient(90deg, rgba(216,166,106,.05), transparent 70%);
-    padding-left:12px;
-  }
-  .index-no{
-    color:var(--amber);
-    font-family:var(--serif);
-    font-size:15px;
-    letter-spacing:.18em;
-  }
-  .index-title{
-    font-family:var(--serif);
-    font-size:clamp(19px,1.8vw,25px);
-    letter-spacing:.1em;
-  }
-  .index-title small{
+  .card-note{
     display:block;
-    margin-top:6px;
+    margin-top:7px;
+    color:rgba(239,229,210,.72);
+    font-size:9.5px;
+    line-height:1.7;
+    letter-spacing:.035em;
+  }
+  .card-enter{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:10px;
+    color:var(--card-accent);
+    font-size:8px;
+    letter-spacing:.2em;
+    opacity:0;
+    transform:translateY(4px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .card.is-active .card-enter,
+  .card:hover .card-enter{opacity:1;transform:none;}
+  .card-title-wrap{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    flex:0 0 auto;
+  }
+  .card-title-line{
+    width:1px;
+    height:52px;
+    background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--card-accent) 60%, transparent));
+    margin-bottom:2px;
+  }
+  .card-title{
+    writing-mode:vertical-rl;
+    text-orientation:upright;
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(23px,2.15vw,31px);
+    line-height:1;
+    letter-spacing:.12em;
+    color:rgba(239,229,210,.9);
+    text-shadow:0 8px 24px rgba(0,0,0,.55);
+    transition:color .6s ease;
+  }
+  .card.is-active .card-title,
+  .card:hover .card-title{
+    color:color-mix(in srgb, var(--card-accent) 82%, #fff 18%);
+  }
+
+  /* ---------- caption ---------- */
+  .caption{
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;
+    gap:clamp(16px,3vw,38px);
+    padding-block:13px 9px;
+    border-top:1px solid var(--line-soft);
+  }
+  .cap-no{
+    min-width:62px;
+    color:var(--accent);
+    font-family:var(--serif);
+    font-size:27px;
+    line-height:1;
+    letter-spacing:.06em;
+    transition:color .6s ease;
+  }
+  .cap-no small{
+    margin-left:6px;
     color:var(--muted);
     font-family:var(--sans);
     font-size:8px;
-    letter-spacing:.34em;
-    text-transform:uppercase;
+    letter-spacing:.16em;
   }
-  .index-note{
-    color:var(--muted);
-    font-size:10px;
-    line-height:1.8;
+  .cap-main{min-width:0;}
+  .cap-main h2{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin:0;
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(16px,1.6vw,20px);
     letter-spacing:.08em;
+    color:var(--bone);
+    white-space:nowrap;
   }
-  .index-tag{
-    justify-self:start;
-    padding:6px 10px;
-    border:1px solid rgba(216,166,106,.32);
-    color:var(--amber);
-    font-size:8px;
+  .cap-main h2 em{
+    color:var(--muted);
+    font-family:var(--sans);
+    font-style:normal;
+    font-size:7.5px;
     letter-spacing:.26em;
     text-transform:uppercase;
     white-space:nowrap;
   }
-  .index-go{
-    justify-self:end;
-    color:var(--bone-dim);
-    font-size:10px;
-    letter-spacing:.22em;
-    transition:color .3s ease, transform .3s ease;
-  }
-  .index-row:hover .index-go{color:var(--amber-hot);transform:translateX(4px);}
-  .index-row.future{
-    color:#5d554a;
-    cursor:default;
-  }
-  .index-row.future .index-no{color:#5d554a;}
-  .index-row.future:hover{background:none;padding-left:4px;}
-  .index-row.future .index-tag{
-    border-color:rgba(150,135,112,.18);
-    color:#6c6254;
-  }
-
-  /* ---------- notes ---------- */
-  .notes{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:clamp(18px,2.4vw,36px);
-    padding:0 0 clamp(64px,9vh,110px);
-  }
-  .note{
-    padding-top:20px;
-    border-top:1px solid var(--line);
-  }
-  .note small{
-    display:block;
-    color:var(--amber);
-    font-family:var(--serif);
-    font-size:11px;
-    letter-spacing:.22em;
-  }
-  .note h3{
-    margin:12px 0 0;
-    font-family:var(--serif);
-    font-weight:400;
-    font-size:17px;
-    letter-spacing:.1em;
-  }
-  .note p{
-    margin:10px 0 0;
+  .cap-main p{
+    margin:5px 0 0;
+    overflow:hidden;
     color:var(--muted);
     font-size:10px;
-    line-height:1.9;
-    letter-spacing:.04em;
+    line-height:1.7;
+    letter-spacing:.035em;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .cap-enter{
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 14px;
+    border:1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+    color:var(--accent);
+    font-size:8px;
+    letter-spacing:.2em;
+    white-space:nowrap;
+    transition:background .35s ease, border-color .35s ease, color .35s ease;
+  }
+  .cap-enter:hover{
+    background:color-mix(in srgb, var(--accent) 14%, transparent);
+    border-color:color-mix(in srgb, var(--accent) 78%, transparent);
+    color:#fff4de;
   }
 
   /* ---------- footer ---------- */
-  footer{
+  .footer{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    flex-wrap:wrap;
     gap:16px;
-    padding:26px 0 34px;
-    border-top:1px solid var(--line-soft);
-    color:#6e6456;
+    padding-block:6px clamp(12px,2.2vh,22px);
+    color:var(--muted);
     font-size:8px;
-    letter-spacing:.3em;
+    letter-spacing:.24em;
     text-transform:uppercase;
   }
-  footer b{color:var(--bone-dim);font-weight:500;}
-  .backtop{
-    display:inline-flex;
+  .foot-drag{
+    display:flex;
     align-items:center;
-    gap:8px;
-    color:var(--muted);
-    transition:color .3s ease;
+    gap:10px;
+    white-space:nowrap;
   }
-  .backtop:hover{color:var(--amber);}
+  .foot-drag i{
+    display:block;
+    width:34px;
+    height:1px;
+    background:linear-gradient(90deg, var(--accent), var(--line));
+    transition:background .6s ease;
+  }
+  .dots{
+    display:flex;
+    align-items:center;
+    gap:clamp(10px,1.6vw,20px);
+  }
+  .dot{
+    position:relative;
+    padding:5px 2px 0;
+    border:0;
+    background:none;
+    color:rgba(239,229,210,.34);
+    cursor:pointer;
+    font-family:var(--sans);
+    font-size:8px;
+    letter-spacing:.18em;
+    transition:color .4s ease;
+  }
+  .dot::before{
+    content:"";
+    display:block;
+    width:100%;
+    height:1px;
+    margin-bottom:7px;
+    background:rgba(239,229,210,.16);
+    transition:background .4s ease, transform .4s ease;
+    transform-origin:left center;
+  }
+  .dot.is-active{color:var(--accent);}
+  .dot.is-active::before{
+    background:var(--accent);
+    transform:scaleX(1.6);
+  }
+  .dot:hover{color:var(--bone);}
+  .arrows{display:flex;align-items:center;gap:8px;}
+  .arrow{
+    display:grid;
+    place-items:center;
+    width:32px;
+    height:32px;
+    padding:0;
+    border:1px solid var(--line);
+    background:rgba(8,6,5,.22);
+    color:var(--bone-dim);
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+    transition:border-color .35s ease, color .35s ease, background .35s ease, opacity .35s ease;
+  }
+  .arrow:hover:not(:disabled){
+    border-color:color-mix(in srgb, var(--accent) 64%, transparent);
+    background:color-mix(in srgb, var(--accent) 9%, transparent);
+    color:var(--accent);
+  }
+  .arrow:disabled{opacity:.28;cursor:default;}
 
-  @media (max-width:1080px){
-    .hero{grid-template-columns:1fr;min-height:0;padding-top:52px;gap:52px;}
-    .hero.mirror{grid-template-columns:1fr;}
-    .hero.mirror .copy,
-    .hero.mirror .artifact-wrap{order:0;}
-    .copy{max-width:720px;}
-    .lede{max-width:36ch;}
-    .artifact-wrap{width:min(760px,100%);}
-    .notes{grid-template-columns:repeat(2,minmax(0,1fr));}
+  /* ---------- intro animation ---------- */
+  .topbar,.intro,.caption,.footer{opacity:0;transform:translateY(10px);transition:opacity .9s ease,transform .9s ease;}
+  .rail{opacity:0;transition:opacity 1s ease;}
+  body.is-ready .topbar,
+  body.is-ready .intro,
+  body.is-ready .caption,
+  body.is-ready .footer{opacity:1;transform:none;}
+  body.is-ready .rail{opacity:1;}
+  body.is-ready .intro{transition-delay:.06s;}
+  body.is-ready .caption{transition-delay:.12s;}
+  body.is-ready .footer{transition-delay:.16s;}
+
+  @media (max-width:1024px){
+    .intro-note{font-size:14px;}
+    .intro-right{max-width:30ch;}
+    .side-mark{display:none;}
   }
-  @media (max-width:720px){
-    .shell{padding:0 22px;}
-    .topbar{padding-top:22px;gap:12px;align-items:flex-start;}
-    .brand{font-size:8px;line-height:1.5;letter-spacing:.16em;gap:9px;}
-    .brand-mark{width:24px;height:34px;flex:0 0 24px;}
-    .brand-mark svg{width:20px;height:30px;}
-    .top-meta{font-size:7.5px;gap:8px;letter-spacing:.16em;white-space:nowrap;padding-top:5px;}
-    .top-meta i{display:none;}
-    .hero{padding-top:44px;}
-    .eyebrow{margin-bottom:20px;letter-spacing:.26em;}
-    .latin{letter-spacing:.4em;}
-    .lede{margin-top:26px;font-size:18px;}
-    .desc{font-size:11px;}
-    .cta-row{gap:16px;margin-top:30px;}
-    .enter{padding:13px 18px;gap:20px;}
-    .phases{flex-wrap:wrap;gap:10px 16px;}
-    .seal{width:64px;height:64px;font-size:16px;left:-16px;bottom:40px;}
-    .seal-snow{left:auto;right:-14px;}
-    .seal-lantern{left:auto;right:-14px;}
-    .seal::after{font-size:4px;bottom:10px;}
-    .index-row{grid-template-columns:44px 1fr 70px;gap:12px;padding:18px 2px;}
-    .index-note{display:none;}
-    .index-tag{display:none;}
-    .index-go{font-size:9px;}
-    .notes{gap:22px 18px;}
-    .section-head{align-items:flex-start;flex-direction:column;gap:8px;}
-    footer{font-size:7px;letter-spacing:.2em;}
+  @media (max-width:760px){
+    :root{
+      --card-h:clamp(330px,50svh,460px);
+      --rail-gap:18px;
+    }
+    .topbar{padding-top:16px;}
+    .brand{font-size:8px;letter-spacing:.2em;gap:9px;}
+    .brand-mark{width:22px;height:32px;flex:0 0 22px;}
+    .brand-mark svg{width:18px;height:28px;}
+    .top-meta{font-size:7.5px;letter-spacing:.16em;gap:8px;}
+    .top-meta i,.top-meta .meta-label{display:none;}
+    .intro{padding-top:10px;padding-bottom:6px;}
+    .intro h1{font-size:34px;}
+    .intro .latin{font-size:7px;letter-spacing:.34em;margin-top:8px;}
+    .intro-right{display:none;}
+    .eyebrow{font-size:7px;letter-spacing:.24em;gap:8px;}
+    .eyebrow::before{width:22px;}
+    .card-top{top:13px;left:13px;right:12px;}
+    .card-seal{
+      width:58px;
+      height:58px;
+      flex-basis:58px;
+      padding-bottom:5px;
+      font-size:15px;
+    }
+    .card-seal::before{inset:5px;}
+    .card-seal small{bottom:8px;font-size:4px;letter-spacing:.12em;}
+    .card-bottom{left:13px;right:12px;bottom:13px;}
+    .card-note{display:none;}
+    .card-title{font-size:24px;}
+    .card-title-line{height:40px;}
+    .card-enter{margin-top:7px;}
+    .caption{grid-template-columns:auto minmax(0,1fr) auto;gap:10px;padding-block:10px 6px;}
+    .cap-no{min-width:40px;font-size:18px;}
+    .cap-no small{display:none;}
+    .cap-main h2{font-size:14px;gap:0;}
+    .cap-main h2 em{display:none;}
+    .cap-main p{display:none;}
+    .cap-enter{padding:8px 10px;gap:7px;font-size:7.5px;letter-spacing:.12em;}
+    .foot-drag span{display:none;}
+    .footer{font-size:7.5px;padding-bottom:12px;}
+    .arrow{width:29px;height:29px;font-size:12px;}
+    body.is-ready .card{transition-delay:0s;}
+  }
+  @media (max-height:680px) and (min-width:761px){
+    :root{--card-h:clamp(320px,56svh,430px);}
+    .intro{padding-top:4px;padding-bottom:4px;}
+    .intro h1{font-size:38px;margin-top:6px;}
+    .intro-note{display:none;}
+    .caption{padding-top:9px;padding-bottom:5px;}
+    .cap-main p{display:none;}
+    .footer{padding-bottom:8px;}
   }
   @media (prefers-reduced-motion:reduce){
-    html{scroll-behavior:auto;}
-    *{transition-duration:.01ms !important;animation-duration:.01ms !important;}
+    *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;scroll-behavior:auto !important;}
+    .topbar,.intro,.rail,.caption,.footer{opacity:1;transform:none;}
   }
 </style>
 </head>
 <body>
-<div class="vignette"></div>
-<div class="grain"></div>
+<div class="ambient" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="side-mark" aria-hidden="true">The Long Gallery · 2026</div>
 
-<div class="shell">
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="返回总集目录">
+<div class="page">
+  <header class="shell topbar">
+    <a class="brand" href="./" aria-label="回到藏品长廊">
       <span class="brand-mark" aria-hidden="true">
-        <svg width="26" height="38" viewBox="0 0 26 38" fill="none">
+        <svg width="24" height="36" viewBox="0 0 26 38" fill="none">
           <path d="M8 2h10M11 2v6.2c0 1.2-.5 2.2-1.3 3L5 18.6A7.6 7.6 0 0 0 3 23.8V32a4 4 0 0 0 4 4h12a4 4 0 0 0 4-4v-8.2a7.6 7.6 0 0 0-2-5.2l-4.7-7.4c-.8-.8-1.3-1.8-1.3-3V2" stroke="currentColor" stroke-width="1" opacity=".8"/>
           <path d="M6 24h14M6 28h14M9 33h8" stroke="currentColor" stroke-width=".7" opacity=".5"/>
         </svg>
@@ -753,352 +793,285 @@
       <span>不可能海域 · Atelier<br>Impossible Seas</span>
     </a>
     <div class="top-meta">
-      <span>总集目录</span><i aria-hidden="true"></i><span><b>No. 01—04</b> / 2026</span>
+      <span class="meta-label">藏品长廊</span><i aria-hidden="true"></i><span><b>No. 01—04</b> / 2026</span>
     </div>
   </header>
 
-  <main>
-    <section class="hero" aria-labelledby="workTitle">
-      <div class="copy">
-        <p class="eyebrow">Bottled Ocean · Interactive Diorama</p>
-        <h1 id="workTitle">瓶中沧海</h1>
-        <p class="latin">A Sea in a Bottle</p>
-        <p class="lede">在玻璃的疆界里，<br>让一整片海继续呼吸。</p>
-        <p class="desc">
-          一张旧木桌，一只横卧的玻璃瓶。瓶中藏着一艘三桅帆船、一座亮着灯塔的小岛，
-          以及会随天色变换的潮汐。平日有海浪与海鸥；按住空格唤来风暴后，
-          浪声更沉，雷声从瓶外滚过；静置片刻，镜头会自行巡游。
-        </p>
+  <section class="shell intro" aria-labelledby="pageTitle">
+    <div class="intro-left">
+      <p class="eyebrow">Atelier Collection · Vol. 01—04</p>
+      <h1 id="pageTitle">藏品长廊</h1>
+      <p class="latin">The Long Gallery</p>
+    </div>
+    <div class="intro-right">
+      <p class="intro-note">四件可交互的微缩藏品，<br>挂在同一条横向长廊上。</p>
+      <p class="drag-hint"><i aria-hidden="true"></i>按住拖动 · 点击进入</p>
+    </div>
+  </section>
 
-        <div class="cta-row">
-          <a class="enter" href="bottle-sea/">
-            <span>进入瓶中</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </a>
-          <p class="cta-note">
-            实时渲染 · 无需安装<br>
-            <b>建议佩戴耳机，独自观看</b>
-          </p>
-        </div>
+  <div class="rail" id="rail" tabindex="0" role="region" aria-roledescription="carousel" aria-label="藏品横向长廊">
+    <a class="card is-active" href="bottle-sea/" draggable="false"
+       style="--card-accent:#d8a66a;--pos:50% 48%"
+       data-no="01" data-title="瓶中沧海" data-en="A Sea in a Bottle"
+       data-note="帆船、灯塔与一场被装进瓶里的风暴。"
+       data-accent="#d8a66a" aria-label="进入《瓶中沧海》">
+      <span class="card-media"><img src="bottle-sea/poster.jpg" draggable="false" alt="玻璃瓶中的暮色海洋，帆船、灯塔小岛与宝箱" width="1600" height="1000" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 01</span><span class="card-phase">黄昏 · 17:16</span></span>
+        <span class="card-seal" aria-hidden="true">沧海<small>BOTTLED · SEA · 01</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">A Sea in a Bottle</span>
+          <span class="card-note">帆船、灯塔与一场被装进瓶里的风暴。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">瓶中沧海</span></span>
+      </span>
+    </a>
 
-        <div class="phases" aria-label="昼夜四时">
-          <span class="phases-label">昼夜四时</span>
-          <div class="phase-dots">
-            <span class="phase"><i aria-hidden="true"></i>黎明</span>
-            <span class="phase"><i aria-hidden="true"></i>正午</span>
-            <span class="phase"><i aria-hidden="true"></i>黄昏</span>
-            <span class="phase"><i aria-hidden="true"></i>子夜</span>
-          </div>
-        </div>
-      </div>
+    <a class="card" href="snow-sophia/" draggable="false"
+       style="--card-accent:#a9cfe0;--pos:50% 52%"
+       data-no="02" data-title="雪落索菲亚" data-en="Snowfall over Sophia"
+       data-note="圣索菲亚、红蓝雪仗与一只会下雪的玻璃球。"
+       data-accent="#a9cfe0" aria-label="进入《雪落索菲亚》">
+      <span class="card-media"><img src="snow-sophia/poster.jpg" draggable="false" alt="木桌上的玻璃雪花球，球内是雪夜中的圣索菲亚教堂与打雪仗的孩子" width="1600" height="1000" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 02</span><span class="card-phase">雪夜 · 19:42</span></span>
+        <span class="card-seal card-seal--snow" aria-hidden="true">雪夜<small>SNOW · SOPHIA · 02</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">Snowfall over Sophia</span>
+          <span class="card-note">圣索菲亚、红蓝雪仗与一只会下雪的玻璃球。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">雪落索菲亚</span></span>
+      </span>
+    </a>
 
-      <div class="artifact-wrap">
-        <a class="artifact" href="bottle-sea/" aria-label="进入《瓶中沧海》交互场景">
-          <div class="plate">
-            <img src="bottle-sea/poster.jpg" width="1600" height="1000"
-                 alt="黄昏中的玻璃瓶，瓶内有一艘三桅帆船、灯塔小岛、海面、飞鸟与发光的宝箱" />
-            <span class="plate-corner tl" aria-hidden="true"></span>
-            <span class="plate-corner tr" aria-hidden="true"></span>
-            <span class="plate-corner bl" aria-hidden="true"></span>
-            <span class="plate-corner br" aria-hidden="true"></span>
-            <span class="plate-no">No. 01</span>
-            <span class="enter-hint"><span>推门而入 ↗</span></span>
-          </div>
-          <div class="figcaption">
-            <span><b>黄昏</b> · 17:16</span>
-            <span>WebGL / 实时交互实景</span>
-          </div>
-        </a>
-        <span class="seal" aria-hidden="true">沧海</span>
-      </div>
-    </section>
+    <a class="card" href="tea-mountain/" draggable="false"
+       style="--card-accent:#b3cdb8;--pos:50% 50%"
+       data-no="03" data-title="一盏山河" data-en="A Landscape in a Teacup"
+       data-note="青瓷碗里的江南，注水显山，吹烟见舟。"
+       data-accent="#b3cdb8" aria-label="进入《一盏山河》">
+      <span class="card-media"><img src="tea-mountain/poster.jpg" draggable="false" alt="青瓷茶碗里的烟雨江南，小舟、松树、亭台与远山" width="1600" height="1000" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 03</span><span class="card-phase">江南 · 谷雨 16:20</span></span>
+        <span class="card-seal card-seal--tea" aria-hidden="true">山河<small>CELADON · TEA · 03</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">A Landscape in a Teacup</span>
+          <span class="card-note">青瓷碗里的江南，注水显山，吹烟见舟。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">一盏山河</span></span>
+      </span>
+    </a>
 
-    <section class="hero hero-snow mirror" aria-labelledby="workTitle02">
-      <div class="copy">
-        <p class="eyebrow snow">Harbin Snow Globe · Interactive Diorama</p>
-        <h1 id="workTitle02">雪落索菲亚</h1>
-        <p class="latin">Snowfall over Sophia</p>
-        <p class="lede">在零下二十度的夜里，<br>雪球比钟声先落下。</p>
-        <p class="desc">
-          一只木底玻璃雪花球，封存着雪夜里的圣索菲亚。风声、音乐盒与远处钟声随第一次触碰响起；
-          红蓝两队的雪仗正在进行，摇一摇，整场雪会下得更大；点向球心，替孩子扔出下一颗雪球。
-        </p>
+    <a class="card" href="lantern-changan/" draggable="false"
+       style="--card-accent:#e08a55;--pos:50% 46%"
+       data-no="04" data-title="灯下长安" data-en="Lanterns of Chang'an"
+       data-note="纸灯笼里的上元灯市，皮影与龙灯一起游过。"
+       data-accent="#e08a55" aria-label="进入《灯下长安》">
+      <span class="card-media"><img src="lantern-changan/poster.jpg" draggable="false" alt="上元夜的纸灯笼里是长安灯市、城楼、人群与皮影屏" width="1600" height="1000" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 04</span><span class="card-phase">长安 · 上元 19:40</span></span>
+        <span class="card-seal card-seal--lantern" aria-hidden="true">上元<small>LANTERN · CHANG'AN · 04</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">Lanterns of Chang'an</span>
+          <span class="card-note">纸灯笼里的上元灯市，皮影与龙灯一起游过。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">灯下长安</span></span>
+      </span>
+    </a>
+  </div>
 
-        <div class="cta-row">
-          <a class="enter snow" href="snow-sophia/">
-            <span>进入雪夜</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </a>
-          <p class="cta-note">
-            实时渲染 · 程序化声景<br>
-            <b>建议佩戴耳机，点击玻璃球扔雪球</b>
-          </p>
-        </div>
+  <section class="shell caption" aria-live="polite">
+    <div class="cap-no"><span id="capNo">01</span><small>/ 04</small></div>
+    <div class="cap-main">
+      <h2><span id="capTitle">瓶中沧海</span><em id="capEn">A Sea in a Bottle</em></h2>
+      <p id="capNote">帆船、灯塔与一场被装进瓶里的风暴。</p>
+    </div>
+    <a class="cap-enter" id="capEnter" href="bottle-sea/">进入这件藏品 <span aria-hidden="true">→</span></a>
+  </section>
 
-        <div class="phases snow-phases" aria-label="雪夜互动">
-          <span class="phases-label">雪夜互动</span>
-          <div class="phase-dots">
-            <span class="phase"><i aria-hidden="true"></i>落雪</span>
-            <span class="phase"><i aria-hidden="true"></i>雪仗</span>
-            <span class="phase"><i aria-hidden="true"></i>摇一摇</span>
-            <span class="phase"><i aria-hidden="true"></i>计分</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="artifact-wrap">
-        <a class="artifact" href="snow-sophia/" aria-label="进入《雪落索菲亚》交互场景">
-          <div class="plate">
-            <img src="snow-sophia/poster.jpg" width="1600" height="1000"
-                 alt="木桌上的玻璃雪花球，球内是雪夜中的圣索菲亚教堂，红蓝两队的孩子们正在打雪仗" />
-            <span class="plate-corner tl" aria-hidden="true"></span>
-            <span class="plate-corner tr" aria-hidden="true"></span>
-            <span class="plate-corner bl" aria-hidden="true"></span>
-            <span class="plate-corner br" aria-hidden="true"></span>
-            <span class="plate-no">No. 02</span>
-            <span class="enter-hint"><span>推门而入 ↗</span></span>
-          </div>
-          <div class="figcaption">
-            <span><b>雪夜</b> · 19:42</span>
-            <span>WebGL / 实时交互实景</span>
-          </div>
-        </a>
-        <span class="seal seal-snow" aria-hidden="true">雪夜</span>
-      </div>
-    </section>
-
-    <section class="hero hero-tea" aria-labelledby="workTitle03">
-      <div class="copy">
-        <p class="eyebrow tea">Celadon Diorama · Jiangnan, 16:20</p>
-        <h1 id="workTitle03">一盏山河</h1>
-        <p class="latin">A Landscape in a Teacup</p>
-        <p class="lede">把一座山，<br>养在一盏茶里。</p>
-        <p class="desc">
-          一只青瓷茶碗，盛着谷雨时节的江南。注水，山色从茶烟里显形；吹一口气，雾散开，
-          小舟还在水面上。窗外的雨、茶汤的涟漪与古琴的泛音，都是现场合成的。
-        </p>
-
-        <div class="cta-row">
-          <a class="enter tea" href="tea-mountain/">
-            <span>进入茶室</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </a>
-          <p class="cta-note">
-            实时渲染 · 程序化声景<br>
-            <b>建议佩戴耳机，点击注水，空格吹烟</b>
-          </p>
-        </div>
-
-        <div class="phases tea-phases" aria-label="茶事互动">
-          <span class="phases-label">茶事互动</span>
-          <div class="phase-dots">
-            <span class="phase"><i aria-hidden="true"></i>听雨</span>
-            <span class="phase"><i aria-hidden="true"></i>注水</span>
-            <span class="phase"><i aria-hidden="true"></i>吹烟</span>
-            <span class="phase"><i aria-hidden="true"></i>远山</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="artifact-wrap">
-        <a class="artifact" href="tea-mountain/" aria-label="进入《一盏山河》交互场景">
-          <div class="plate">
-            <img src="tea-mountain/poster.jpg" width="1600" height="1000"
-                 alt="青瓷茶碗里是烟雨江南的微缩山水，茶汤上有小舟、松树、亭台与远山，旁边是白瓷茶壶与茶罐" />
-            <span class="plate-corner tl" aria-hidden="true"></span>
-            <span class="plate-corner tr" aria-hidden="true"></span>
-            <span class="plate-corner bl" aria-hidden="true"></span>
-            <span class="plate-corner br" aria-hidden="true"></span>
-            <span class="plate-no">No. 03</span>
-            <span class="enter-hint"><span>推门而入 ↗</span></span>
-          </div>
-          <div class="figcaption">
-            <span><b>江南</b> · 谷雨 16:20</span>
-            <span>WebGL / 实时交互实景</span>
-          </div>
-        </a>
-        <span class="seal seal-tea" aria-hidden="true">山河</span>
-      </div>
-    </section>
-
-    <section class="hero hero-lantern mirror" aria-labelledby="workTitle04">
-      <div class="copy">
-        <p class="eyebrow lantern">Lantern Theatre · Chang'an, 19:40</p>
-        <h1 id="workTitle04">灯下长安</h1>
-        <p class="latin">Lanterns of Chang'an</p>
-        <p class="lede">把一座长安，<br>点在一盏灯里。</p>
-        <p class="desc">
-          上元夜的纸灯笼，藏着一座长安灯市。点灯，城市从纸上醒来；拖动灯笼，灯影与皮影一起转；
-          击鼓，龙灯游得更急。窗外的烟花与市声，都是现场生成的。
-        </p>
-
-        <div class="cta-row">
-          <a class="enter lantern" href="lantern-changan/">
-            <span>进入灯市</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </a>
-          <p class="cta-note">
-            实时渲染 · 程序化市声<br>
-            <b>建议佩戴耳机，点灯后击鼓</b>
-          </p>
-        </div>
-
-        <div class="phases lantern-phases" aria-label="灯市互动">
-          <span class="phases-label">灯市互动</span>
-          <div class="phase-dots">
-            <span class="phase"><i aria-hidden="true"></i>点灯</span>
-            <span class="phase"><i aria-hidden="true"></i>转灯</span>
-            <span class="phase"><i aria-hidden="true"></i>击鼓</span>
-            <span class="phase"><i aria-hidden="true"></i>灯影</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="artifact-wrap">
-        <a class="artifact" href="lantern-changan/" aria-label="进入《灯下长安》交互场景">
-          <div class="plate">
-            <img src="lantern-changan/poster.jpg" width="1600" height="1000"
-                 alt="上元夜的纸灯笼里是一座长安灯市，城楼、塔、摊位与人群在暖光中，桌上有小鼓与皮影屏，窗外烟花盛开" />
-            <span class="plate-corner tl" aria-hidden="true"></span>
-            <span class="plate-corner tr" aria-hidden="true"></span>
-            <span class="plate-corner bl" aria-hidden="true"></span>
-            <span class="plate-corner br" aria-hidden="true"></span>
-            <span class="plate-no">No. 04</span>
-            <span class="enter-hint"><span>推门而入 ↗</span></span>
-          </div>
-          <div class="figcaption">
-            <span><b>长安</b> · 上元 19:40</span>
-            <span>WebGL / 实时交互实景</span>
-          </div>
-        </a>
-        <span class="seal seal-lantern" aria-hidden="true">上元</span>
-      </div>
-    </section>
-
-    <section class="index" aria-labelledby="indexTitle">
-      <div class="section-head">
-        <h2 id="indexTitle">总集目录</h2>
-        <p>The Collection / Vol. 01—04</p>
-      </div>
-
-      <a class="index-row" href="bottle-sea/">
-        <span class="index-no">01</span>
-        <span class="index-title">瓶中沧海<small>A Sea in a Bottle</small></span>
-        <span class="index-note">玻璃瓶中的暮色海洋 —— 帆船、灯塔、鲸跃与风暴。</span>
-        <span class="index-tag">正在展出</span>
-        <span class="index-go">进入 →</span>
-      </a>
-
-      <a class="index-row" href="snow-sophia/">
-        <span class="index-no">02</span>
-        <span class="index-title">雪落索菲亚<small>Snowfall over Sophia</small></span>
-        <span class="index-note">哈尔滨的雪夜 —— 圣索菲亚、红蓝雪仗与一只会下雪的玻璃球。</span>
-        <span class="index-tag">新入藏</span>
-        <span class="index-go">进入 →</span>
-      </a>
-
-      <a class="index-row" href="tea-mountain/">
-        <span class="index-no">03</span>
-        <span class="index-title">一盏山河<small>A Landscape in a Teacup</small></span>
-        <span class="index-note">青瓷茶碗里的江南山水 —— 注水显山，吹烟见舟，茶汤上还泊着一叶小舟。</span>
-        <span class="index-tag">新入藏</span>
-        <span class="index-go">进入 →</span>
-      </a>
-
-      <a class="index-row" href="lantern-changan/">
-        <span class="index-no">04</span>
-        <span class="index-title">灯下长安<small>Lanterns of Chang'an</small></span>
-        <span class="index-note">纸灯笼里的上元灯市 —— 点灯、转灯、击鼓，皮影与龙灯一起游过长安。</span>
-        <span class="index-tag">新入藏</span>
-        <span class="index-go">进入 →</span>
-      </a>
-    </section>
-
-    <section class="notes" aria-label="藏品细节">
-      <article class="note">
-        <small>I</small>
-        <h3>瓶中航行</h3>
-        <p>四向浮力让帆船随波起伏；召来风暴时，船首破浪，尾迹与飞沫一起变白，浪声更沉，雷声从远处滚过。</p>
-      </article>
-      <article class="note">
-        <small>II</small>
-        <h3>昼夜四时</h3>
-        <p>太阳与月亮沿玻璃天穹移动，正午的湛蓝、黄昏的琥珀与子夜的群星依次落进瓶里。</p>
-      </article>
-      <article class="note">
-        <small>III</small>
-        <h3>雪落玻璃</h3>
-        <p>摇一摇，球身晃过木座，雪片腾起又落下；风声扬起，音乐盒的碎音与窗里的灯一起亮着。</p>
-      </article>
-      <article class="note">
-        <small>IV</small>
-        <h3>红蓝雪仗</h3>
-        <p>两队孩子自动开战；也可以点击球心，替其中一队扔出一颗雪球。每次投掷与命中都有破风声和落雪声。</p>
-      </article>
-      <article class="note">
-        <small>V</small>
-        <h3>茶烟山水</h3>
-        <p>注水，山色渐显；吹一口气，茶烟散开。雨声、茶汤的涟漪与古琴从碗沿升起，小舟在茶汤上轻轻晃。</p>
-      </article>
-      <article class="note">
-        <small>VI</small>
-        <h3>走马灯影</h3>
-        <p>点亮烛火，纸灯里的长安开始旋转；拖灯换影，击鼓时龙灯游得更快，桌上的皮影也随鼓点翻身。</p>
-      </article>
-    </section>
-
-    <footer>
-      <span><b>Impossible Seas Atelier</b> · 以 WebGL 封装微型世界</span>
-      <span>© 2026 / 第 01—04 号藏品</span>
-      <a class="backtop" href="#workTitle">回到开始 ↑</a>
-    </footer>
-  </main>
+  <footer class="shell footer">
+    <div class="foot-drag"><i aria-hidden="true"></i><span>按住拖动 · Drag to explore</span></div>
+    <div class="dots" id="dots" aria-label="藏品页码"></div>
+    <div class="arrows">
+      <button class="arrow" id="prev" type="button" aria-label="上一件藏品">←</button>
+      <button class="arrow" id="next" type="button" aria-label="下一件藏品">→</button>
+    </div>
+  </footer>
 </div>
 
 <script>
-  (() => {
-    const wraps = [...document.querySelectorAll('.artifact-wrap')];
-    if (!wraps.length) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (reduce.matches || matchMedia('(pointer: coarse)').matches) return;
+(() => {
+  const rail = document.getElementById('rail');
+  const cards = [...rail.querySelectorAll('.card')];
+  const dotsEl = document.getElementById('dots');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const capNo = document.getElementById('capNo');
+  const capTitle = document.getElementById('capTitle');
+  const capEn = document.getElementById('capEn');
+  const capNote = document.getElementById('capNote');
+  const capEnter = document.getElementById('capEnter');
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const cards = wraps.map((wrap) => {
-      const card = wrap.querySelector('.artifact');
-      if (!card) return null;
-      return { wrap, card, targetX: 0, targetY: 0, curX: 0, curY: 0 };
-    }).filter(Boolean);
-    if (!cards.length) return;
+  let active = -1;
+  let step = 1;
+  let suppressClick = false;
+  let dragging = false;
+  let startX = 0;
+  let lastX = 0;
+  let moved = 0;
+  let scrollRaf = 0;
+  let wheelLock = 0;
 
-    let raf = 0;
-    function tick(){
-      let active = false;
-      for (const c of cards){
-        c.curX += (c.targetX - c.curX) * .08;
-        c.curY += (c.targetY - c.curY) * .08;
-        c.card.style.transform =
-          `rotateX(${(-c.curY * 2.1).toFixed(3)}deg) rotateY(${(c.curX * 2.6).toFixed(3)}deg) translateY(${(-Math.abs(c.curX) * 3).toFixed(2)}px)`;
-        if (Math.abs(c.targetX - c.curX) + Math.abs(c.targetY - c.curY) > .001) active = true;
-      }
-      raf = active ? requestAnimationFrame(tick) : 0;
-    }
-    function kick(){
-      if (!raf) raf = requestAnimationFrame(tick);
-    }
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-    for (const c of cards){
-      c.wrap.addEventListener('pointermove', (e) => {
-        const rect = c.wrap.getBoundingClientRect();
-        c.targetX = ((e.clientX - rect.left) / rect.width - .5) * 2;
-        c.targetY = ((e.clientY - rect.top) / rect.height - .5) * 2;
-        kick();
-      });
-      c.wrap.addEventListener('pointerleave', () => {
-        c.targetX = 0;
-        c.targetY = 0;
-        kick();
-      });
+  dotsEl.innerHTML = cards.map((card, i) => (
+    `<button class="dot" type="button" data-i="${i}" aria-label="查看第 ${i + 1} 件藏品 · ${card.dataset.title}">${card.dataset.no}</button>`
+  )).join('');
+  const dots = [...dotsEl.querySelectorAll('.dot')];
+
+  function measure(){
+    if (cards.length < 2) return;
+    step = cards[1].offsetLeft - cards[0].offsetLeft;
+  }
+
+  function setActive(index){
+    const i = clamp(index, 0, cards.length - 1);
+    if (i === active) return;
+    active = i;
+    cards.forEach((card, j) => {
+      card.classList.toggle('is-active', j === i);
+      if (j === i) card.setAttribute('aria-current', 'true');
+      else card.removeAttribute('aria-current');
+    });
+    dots.forEach((dot, j) => dot.classList.toggle('is-active', j === i));
+    const card = cards[i];
+    const data = card.dataset;
+    root.style.setProperty('--accent', data.accent);
+    capNo.textContent = data.no;
+    capTitle.textContent = data.title;
+    capEn.textContent = data.en;
+    capNote.textContent = data.note;
+    capEnter.href = card.getAttribute('href');
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === cards.length - 1;
+  }
+
+  function go(index, smooth = true){
+    const i = clamp(index, 0, cards.length - 1);
+    const behavior = smooth && !reduce ? 'smooth' : 'auto';
+    rail.scrollTo({ left: i * step, behavior });
+    setActive(i);
+  }
+
+  function nearestIndex(){
+    return clamp(Math.round(rail.scrollLeft / step), 0, cards.length - 1);
+  }
+
+  function onScroll(){
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0;
+      setActive(nearestIndex());
+    });
+  }
+
+  rail.addEventListener('scroll', onScroll, { passive: true });
+
+  rail.addEventListener('dragstart', (e) => e.preventDefault());
+
+  rail.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    dragging = true;
+    moved = 0;
+    startX = lastX = e.clientX;
+    rail.classList.add('is-dragging');
+    rail.style.scrollSnapType = 'none';
+    rail.setPointerCapture(e.pointerId);
+  });
+
+  rail.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX;
+    lastX = e.clientX;
+    moved += Math.abs(dx);
+    rail.scrollLeft -= dx;
+  });
+
+  function endDrag(){
+    if (!dragging) return;
+    dragging = false;
+    rail.classList.remove('is-dragging');
+    if (moved > 6){
+      suppressClick = true;
+      setTimeout(() => { suppressClick = false; }, 100);
+      go(nearestIndex());
+      setTimeout(() => { rail.style.scrollSnapType = ''; }, 480);
+    } else {
+      rail.style.scrollSnapType = '';
     }
-  })();
+  }
+  rail.addEventListener('pointerup', endDrag);
+  rail.addEventListener('pointercancel', endDrag);
+
+  rail.addEventListener('click', (e) => {
+    if (!suppressClick) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }, true);
+
+  rail.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    const now = performance.now();
+    if (now < wheelLock) return;
+    wheelLock = now + 480;
+    go(active + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => go(Number(dot.dataset.i)));
+  });
+  prevBtn.addEventListener('click', () => go(active - 1));
+  nextBtn.addEventListener('click', () => go(active + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight'){ e.preventDefault(); go(active + 1); }
+    else if (e.key === 'ArrowLeft'){ e.preventDefault(); go(active - 1); }
+  });
+
+  window.addEventListener('resize', () => {
+    const i = Math.max(active, 0);
+    requestAnimationFrame(() => {
+      measure();
+      rail.scrollLeft = i * step;
+      setActive(i);
+    });
+  });
+
+  requestAnimationFrame(() => {
+    measure();
+    setActive(0);
+    rail.scrollLeft = 0;
+    requestAnimationFrame(() => document.body.classList.add('is-ready'));
+  });
+})();
 </script>
 </body>
 </html>
