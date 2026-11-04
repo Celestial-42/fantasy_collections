@@ -1715,6 +1715,22 @@ const pSpoutTip = new THREE.Object3D();
 pSpoutTip.position.set(-.327, .344, 0);
 pitcher.add(pSpoutTip);
 
+const PITCHER_HOME = new THREE.Vector3(1.55, .12, .48);
+const POUR_POS = new THREE.Vector3(1.35, 1.08, .38);
+const POUR_ROT = .95;
+const POUR_TIP = (() => {
+  const pos = pitcher.position.clone();
+  const rot = pitcher.rotation.z;
+  pitcher.position.copy(POUR_POS);
+  pitcher.rotation.z = POUR_ROT;
+  pitcher.updateMatrixWorld(true);
+  const tip = pSpoutTip.getWorldPosition(new THREE.Vector3());
+  pitcher.position.copy(pos);
+  pitcher.rotation.z = rot;
+  pitcher.updateMatrixWorld(true);
+  return tip;
+})();
+
 const caddy = new THREE.Group();
 caddy.position.set(-1.42, .12, .46);
 scene.add(caddy);
@@ -1786,14 +1802,20 @@ function makeTaperedTube(curve, tubularSegments, radialSegments, radiusAt){
   return g;
 }
 
-const streamCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(.935, 1.207, .38),
-  new THREE.Vector3(.84, 1.16, .32),
-  new THREE.Vector3(.70, 1.06, .25),
-  new THREE.Vector3(.52, .89, .17),
-  new THREE.Vector3(.30, .68, .11),
-  new THREE.Vector3(.10, .465, .07)
-], false, 'catmullrom', .45);
+const streamEnd = new THREE.Vector3(.10, .465, .07);
+const streamPoints = [];
+const dropH = POUR_TIP.y - streamEnd.y;
+const vy0 = -.22;
+const gravity = 2 * (dropH + vy0);
+for (let i = 0; i <= 8; i++){
+  const t = i / 8;
+  streamPoints.push(new THREE.Vector3(
+    POUR_TIP.x + (streamEnd.x - POUR_TIP.x) * t,
+    POUR_TIP.y + vy0 * t - .5 * gravity * t * t,
+    POUR_TIP.z + (streamEnd.z - POUR_TIP.z) * t
+  ));
+}
+const streamCurve = new THREE.CatmullRomCurve3(streamPoints, false, 'catmullrom', .5);
 const streamGeo = makeTaperedTube(streamCurve, 44, 8, t => .016 * (1 - .6 * t) * (.9 + .1 * Math.sin(t * Math.PI)));
 const streamUniforms = { uOpacity: { value: 0 }, uTime: { value: 0 } };
 const streamMat = new THREE.ShaderMaterial({
@@ -2448,10 +2470,8 @@ function updatePour(dt){
   if (p < .22) k = smoothstep(0, .22, p);
   else if (p < .78) k = 1;
   else k = 1 - smoothstep(.78, 1, p);
-  const home = new THREE.Vector3(1.55, .12, .48);
-  const pourPos = new THREE.Vector3(1.02, .74, .38);
-  pitcher.position.lerpVectors(home, pourPos, k);
-  pitcher.rotation.z = -.58 * k;
+  pitcher.position.lerpVectors(PITCHER_HOME, POUR_POS, k);
+  pitcher.rotation.z = POUR_ROT * k;
   const flowing = p > .18 && p < .8;
   streamUniforms.uOpacity.value = flowing ? .5 * Math.min(1, (p - .18) * 12, (0.8 - p) * 12) : 0;
   for (const d of streamDrops){
@@ -2482,7 +2502,7 @@ function updatePour(dt){
   if (p >= 1){
     pouring = false;
     pourClock = 0;
-    pitcher.position.copy(home);
+    pitcher.position.copy(PITCHER_HOME);
     pitcher.rotation.z = 0;
     streamUniforms.uOpacity.value = 0;
     splash.material.opacity = 0;
@@ -2621,7 +2641,7 @@ window.__TEA_DEBUG__ = {
     holdPour = false;
     pouring = false;
     pourClock = 0;
-    pitcher.position.set(1.55, .12, .48);
+    pitcher.position.copy(PITCHER_HOME);
     pitcher.rotation.z = 0;
     streamUniforms.uOpacity.value = 0;
     splash.material.opacity = 0;
