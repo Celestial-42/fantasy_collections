@@ -109,6 +109,17 @@
     font-size:9px;color:var(--muted);letter-spacing:.08em;
   }
   .panel-row b{font-weight:500;color:var(--sea);font-size:10px;}
+  .panel-sound{align-items:center;}
+  .panel-sound button{
+    appearance:none;border:1px solid rgba(229,173,120,.22);background:rgba(229,173,120,.05);
+    padding:2px 6px;min-width:26px;min-height:20px;margin-left:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-family:var(--sans);font-size:9px;line-height:1;letter-spacing:.12em;color:var(--sea);
+    cursor:pointer;transition:color .25s ease,border-color .25s ease,background .25s ease;
+  }
+  .panel-sound button:hover,.panel-sound button.is-on{
+    color:var(--accent);border-color:rgba(229,173,120,.55);background:rgba(229,173,120,.13);
+  }
   .panel-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:15px;}
   .panel-actions button,.panel-actions a{
     appearance:none;border:1px solid var(--line);
@@ -136,6 +147,7 @@
   }
   .hintbar b{font-weight:500;color:rgba(245,233,214,.58);margin-right:5px;}
   .hintbar i{width:1px;height:9px;background:rgba(245,233,214,.13);}
+  @media (max-width: 700px){.hintbar .tide-hint{display:none;}}
   .hint-note{
     position:fixed;z-index:4;left:clamp(22px,4.5vw,64px);bottom:clamp(48px,6vw,72px);
     color:rgba(245,233,214,.28);font-family:var(--serif);font-size:10px;letter-spacing:.11em;
@@ -176,6 +188,7 @@
     .panel-meta em{display:block;font-size:7px;}
     .panel-row{font-size:7.5px;margin-top:7px;padding-top:7px;}
     .panel-row b{font-size:8px;}
+    .panel-sound button{font-size:8px;min-width:30px;min-height:22px;padding:3px 6px;margin-left:6px;}
     .panel-actions{grid-template-columns:1fr;gap:5px;margin-top:9px;}
     .panel-actions button,.panel-actions a{min-height:25px;font-size:7.5px;}
     .hintbar{bottom:14px;gap:10px;font-size:7.5px;letter-spacing:.04em;}
@@ -206,7 +219,8 @@
   <div class="panel-head"><span>ATELIER NO. 06</span><strong>16:20</strong></div>
   <div class="panel-rule"></div>
   <div class="panel-meta"><span>海边 · 盛夏</span><em>晴 / 海风 3 级</em></div>
-  <div class="panel-row"><span>潮位 · TIDE</span><b>退潮 · 低</b></div>
+  <div class="panel-row"><span>潮位 · TIDE</span><b id="tideState">退潮 · 低</b></div>
+  <div class="panel-row panel-sound"><span>环境声 · SOUND</span><button id="soundBtn" type="button" aria-pressed="false" aria-label="切换环境声">关</button></div>
   <div class="panel-actions">
     <button id="homeBtn" type="button">归位视角</button>
     <a href="../">总集目录</a>
@@ -214,12 +228,13 @@
 </aside>
 
 <div class="side-mark">NO. 06 / TIDAL HOLIDAY / 2026</div>
-<p class="hint-note">夏天被留在玻璃罩里，潮水还在慢慢退。</p>
+<p class="hint-note" id="hintNote">夏天被留在玻璃罩里，潮水还在慢慢退。</p>
 
 <div class="hintbar">
   <span><b>拖拽</b>环绕</span><i></i>
   <span><b>滚轮</b>推近</span><i></i>
   <span><b>点击</b>互动</span><i></i>
+  <span class="tide-hint"><b>海面</b>涨潮</span><i class="tide-hint"></i>
   <span><b>双击</b>归位</span>
 </div>
 
@@ -566,15 +581,65 @@ function makeBallTexture(){
 }
 
 function makeNoteTexture(symbol){
-  const [c, x] = canvasOf(128, 192);
-  x.clearRect(0, 0, 128, 192);
-  x.fillStyle = 'rgba(246,228,190,.95)';
-  x.strokeStyle = 'rgba(246,228,190,.95)';
-  x.lineWidth = 8;
+  const [c, x] = canvasOf(128, 128);
+  x.clearRect(0, 0, 128, 128);
+  const glow = x.createRadialGradient(64, 64, 5, 64, 64, 64);
+  glow.addColorStop(0, 'rgba(255,236,196,.3)');
+  glow.addColorStop(.5, 'rgba(255,236,196,.1)');
+  glow.addColorStop(1, 'rgba(255,236,196,0)');
+  x.fillStyle = glow;
+  x.fillRect(0, 0, 128, 128);
   x.lineCap = 'round';
-  x.font = '700 128px serif';
-  x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText(symbol, 64, 96);
+  x.lineJoin = 'round';
+  const cream = 'rgba(255,246,220,.96)';
+  const ink = 'rgba(35,58,53,.9)';
+  function head(cx, cy, rot){
+    x.save();
+    x.translate(cx, cy);
+    x.rotate(rot);
+    x.beginPath();
+    x.ellipse(0, 0, 18, 12, 0, 0, TAU);
+    x.fillStyle = cream;
+    x.fill();
+    x.strokeStyle = ink;
+    x.lineWidth = 4;
+    x.stroke();
+    x.restore();
+  }
+  function strokePath(draw){
+    draw();
+    x.strokeStyle = ink;
+    x.lineWidth = 10;
+    x.stroke();
+    draw();
+    x.strokeStyle = cream;
+    x.lineWidth = 5;
+    x.stroke();
+  }
+  head(48, 90, -.32);
+  strokePath(() => {
+    x.beginPath();
+    x.moveTo(64, 84);
+    x.lineTo(64, 26);
+  });
+  strokePath(() => {
+    x.beginPath();
+    x.moveTo(64, 26);
+    x.bezierCurveTo(94, 34, 98, 58, 80, 70);
+  });
+  if (symbol === '♫'){
+    head(94, 75, -.32);
+    strokePath(() => {
+      x.beginPath();
+      x.moveTo(110, 69);
+      x.lineTo(110, 27);
+    });
+    strokePath(() => {
+      x.beginPath();
+      x.moveTo(64, 30);
+      x.lineTo(110, 28);
+    });
+  }
   return texFrom(c);
 }
 
@@ -863,6 +928,8 @@ jarRig.add(sand);
 
 const SHORE_Z = 1.02;
 const SHORE_RADIUS = 1.965;
+const CASTLE_X = -.58;
+const CASTLE_Z = .58;
 function shoreZAt(x){
   return SHORE_Z + .045 * Math.sin(x * 2.8 + .35) + .022 * Math.sin(x * 6.3 + .9);
 }
@@ -971,6 +1038,70 @@ foam.renderOrder = 2;
 const foamInnerMat = new THREE.MeshBasicMaterial({ color: 0xf7fbf0, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide });
 const foamInner = makeShoreBand(.002, .052, .123, foamInnerMat);
 foamInner.renderOrder = 3;
+
+// 涨潮时铺上沙滩的浅水层，水位边缘由 uEdge 推进
+const tideUniforms = {
+  uTime: { value: 0 },
+  uLevel: { value: 0 },
+  uEdge: { value: 1.06 },
+  uCastle: { value: new THREE.Vector2(CASTLE_X, CASTLE_Z) },
+  uShallow: { value: new THREE.Color('#63c0b2') },
+  uDeep: { value: new THREE.Color('#2e7d77') }
+};
+const tideMat = new THREE.ShaderMaterial({
+  uniforms: tideUniforms,
+  transparent: true,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  vertexShader: `
+    varying vec2 vPos;
+    void main(){
+      vPos = position.xy;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    uniform float uLevel;
+    uniform float uEdge;
+    uniform vec2 uCastle;
+    uniform vec3 uShallow;
+    uniform vec3 uDeep;
+    varying vec2 vPos;
+    void main(){
+      float x = vPos.x;
+      float worldZ = -vPos.y;
+      float shore = 1.02 + .045 * sin(x * 2.8 + .35) + .022 * sin(x * 6.3 + .9);
+      if (worldZ > shore) discard;
+      float edge = uEdge + .03 * sin(x * 4.6 + uTime * 1.7) + .014 * sin(x * 9.4 - uTime * .9);
+      if (worldZ < edge) discard;
+      float depth = worldZ - edge;
+      vec3 col = mix(uShallow, uDeep, smoothstep(.03, .5, depth));
+      float bands = sin(depth * 30.0 - uTime * 2.6 + x * 2.2 + sin(x * 5.0) * 1.2);
+      col += vec3(.035, .065, .055) * smoothstep(.2, .95, bands) * .35;
+      float glint = pow(max(0.0, sin(x * 5.4 + uTime * .8 + depth * 14.0)), 22.0);
+      col += vec3(1.0, .93, .74) * glint * .05;
+      float foam = 1.0 - smoothstep(0.0, .045, depth);
+      vec2 c = vec2(x - uCastle.x, worldZ - uCastle.y);
+      float r = length(c);
+      float wob = .012 * sin(atan(c.y, c.x) * 5.0 + uTime * 1.1);
+      if (r + wob < .285) discard;
+      float rim = smoothstep(.27, .295, r) * (1.0 - smoothstep(.32, .36, r));
+      foam = max(foam, rim * .9);
+      col = mix(col, vec3(.95, .985, .94), clamp(foam, 0.0, .8));
+      float alpha = mix(.52, .76, foam) * smoothstep(0.0, .03, depth) * mix(.8, 1.0, uLevel);
+      gl_FragColor = vec4(col, alpha);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+    }
+  `
+});
+const tideSheet = new THREE.Mesh(new THREE.CircleGeometry(1.94, 96), tideMat);
+tideSheet.rotation.x = -Math.PI / 2;
+tideSheet.position.y = SAND_Y + .028;
+tideSheet.renderOrder = 1;
+tideSheet.visible = false;
+jarRig.add(tideSheet);
 
 const horizonHaze = softSprite(0xe9efe1, 2.8, .18, false);
 horizonHaze.position.set(-.25, .62, -1.82);
@@ -1242,15 +1373,20 @@ function makeParent(kind, chair){
   limb(armL, new THREE.Vector3(-.03, -.14, .05), new THREE.Vector3(.015, -.245, .085), .052, .068, skin);
   block(armL, .065, .06, .06, skin, .02, -.26, .09);
 
+  const legs = [];
   for (const side of [-1, 1]){
     const x = side * .075;
     const hipZ = isDad ? 0 : .015;
-    limb(body, new THREE.Vector3(x, 0, hipZ), new THREE.Vector3(x + side * .015, -.235, .01), .08, .09, isDad ? M.navy : skin);
-    limb(body, new THREE.Vector3(x + side * .015, -.235, .01), new THREE.Vector3(x + side * .025, -.445, .025), .07, .082, skin);
-    block(body, .085, .056, .135, skin, x + side * .025, -.485, .055);
+    const leg = new THREE.Group();
+    leg.position.set(x, 0, hipZ);
+    body.add(leg);
+    limb(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(side * .015, -.235, .01), .08, .09, isDad ? M.navy : skin);
+    limb(leg, new THREE.Vector3(side * .015, -.235, .01), new THREE.Vector3(side * .025, -.445, .025), .07, .082, skin);
+    block(leg, .085, .056, .135, skin, side * .025, -.485, .055);
+    legs.push(leg);
   }
 
-  return { root: body, torso: body, head: head.group, armR, armL, drink: null, book: null, chair, kind };
+  return { root: body, torso: body, head: head.group, armR, armL, legs, drink: null, book: null, chair, kind };
 }
 
 const dad = makeParent('dad', dadChair);
@@ -1287,6 +1423,9 @@ childArmL.position.set(-.105, .21, .015);
 childTorso.add(childArmL);
 limb(childArmL, new THREE.Vector3(0, 0, 0), new THREE.Vector3(-.04, -.12, .08), .05, .06, M.skinChild);
 block(childArmL, .06, .05, .065, M.skinChild, -.04, -.15, .1);
+const childCarryAnchor = new THREE.Object3D();
+childCarryAnchor.position.set(-.04, -.15, .1);
+childArmL.add(childCarryAnchor);
 // right arm with spade
 const childArmR = new THREE.Group();
 childArmR.position.set(.105, .21, .02);
@@ -1401,6 +1540,10 @@ const radioHandle = new THREE.Mesh(new THREE.TorusGeometry(.08, .009, 5, 16, Mat
 radioHandle.position.set(0, .1, 0);
 radioHandle.rotation.z = Math.PI;
 radio.add(radioHandle);
+const radioLedMat = new THREE.MeshStandardMaterial({ color: 0x4d3322, emissive: 0xff9a5c, emissiveIntensity: 0, roughness: .4 });
+const radioLed = new THREE.Mesh(new THREE.SphereGeometry(.009, 8, 6), radioLedMat);
+radioLed.position.set(.135, .045, .062);
+radio.add(radioLed);
 
 // bucket
 const bucket = new THREE.Group();
@@ -1435,9 +1578,14 @@ spareHandle.position.y = .13;
 spareSpade.add(spareHandle);
 block(spareSpade, .1, .11, .018, M.bucket, 0, -.05, 0);
 
-// small sandcastle
+// small sandcastle, raised on a little sand bank so the tide can wash around it
+const castleMound = new THREE.Mesh(new THREE.CylinderGeometry(.28, .33, .04, 24), M.sand);
+castleMound.position.set(CASTLE_X, SAND_Y + .02, CASTLE_Z);
+castleMound.receiveShadow = true;
+jarRig.add(castleMound);
+
 const castle = new THREE.Group();
-castle.position.set(-.58, SAND_Y + .01, .58);
+castle.position.set(CASTLE_X, SAND_Y + .038, CASTLE_Z);
 jarRig.add(castle);
 block(castle, .3, .12, .22, M.sand, 0, .06, 0);
 for (const [x, z] of [[-.11, -.075], [.11, -.075], [-.11, .075], [.11, .075]]){
@@ -1471,8 +1619,8 @@ function makeTowel(x, z, ry, colorA, colorB){
   }
   return g;
 }
-makeTowel(-1.43, .47, .26, '#d97d63', '#efe1c8');
-makeTowel(1.42, .5, -.21, '#6aa6a0', '#efe1c8');
+const towelL = makeTowel(-1.43, .47, .26, '#d97d63', '#efe1c8');
+const towelR = makeTowel(1.42, .5, -.21, '#6aa6a0', '#efe1c8');
 
 // shells and starfish
 for (let i = 0; i < 7; i++){
@@ -1691,12 +1839,79 @@ const noteTexA = makeNoteTexture('♪');
 const noteTexB = makeNoteTexture('♫');
 const notes = [];
 for (let i = 0; i < 4; i++){
-  const mat = new THREE.SpriteMaterial({ map: i % 2 ? noteTexB : noteTexA, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+  const mat = new THREE.SpriteMaterial({ map: i % 2 ? noteTexB : noteTexA, transparent: true, opacity: 0, depthWrite: false, depthTest: false, toneMapped: false });
   const s = new THREE.Sprite(mat);
   s.position.set(1.18, .42, .5);
-  s.scale.set(.1, .15, 1);
+  s.scale.set(.14, .14, 1);
+  s.renderOrder = 8;
   jarRig.add(s);
   notes.push({ sprite: s, offset: i * .2, drift: rand(-.09, .09) });
+}
+
+// -------------------------------------------------------------------------
+// Tide event
+// -------------------------------------------------------------------------
+
+const tideStateEl = document.getElementById('tideState');
+const hintNoteEl = document.getElementById('hintNote');
+const TIDE_EDGE_LOW = 1.045;
+const TIDE_EDGE_PEAK = .255;
+const tide = { active:false, t:0, level:0, edge:TIDE_EDGE_LOW, rescue:0, carry:0, hop:0, receding:false };
+
+function startTideEvent(){
+  if (tide.active) return false;
+  tide.active = true;
+  tide.t = 0;
+  tide.level = 0;
+  tide.rescue = 0;
+  tide.carry = 0;
+  tide.hop = 0;
+  tide.receding = false;
+  clickFx.sea = 2.0;
+  clickFx.child = 0;
+  clickFx.bucket = 0;
+  clickFx.castle = 0;
+  seaUniforms.uWave.value = 1;
+  foamMat.opacity = .55;
+  emitSand(9, .55);
+  if (tideStateEl) tideStateEl.textContent = '涨潮 · 上涌';
+  if (hintNoteEl) hintNoteEl.textContent = '潮水漫上沙滩，一家人在把下午往后搬。';
+  return true;
+}
+
+function updateTide(dt, time){
+  if (tide.active){
+    tide.t += dt;
+    const t = tide.t;
+    const rise = smooth(0, 2.1, t);
+    const fall = smooth(4.2, 6.6, t);
+    tide.level = rise * (1 - fall);
+    tide.rescue = smooth(.15, 1.15, t) * (1 - smooth(5.0, 6.05, t));
+    tide.carry = smooth(.2, .62, t) * (1 - smooth(6.2, 6.6, t));
+    tide.hop = Math.sin(clamp((t - .15) / 1.0, 0, 1) * Math.PI) * (t < 1.4 ? .055 : 0)
+             + Math.sin(clamp((t - 5.0) / .9, 0, 1) * Math.PI) * (t > 5.0 && t < 6.0 ? .035 : 0);
+    if (t > 4.2 && !tide.receding){
+      tide.receding = true;
+      if (tideStateEl) tideStateEl.textContent = '退潮 · 回落';
+      if (hintNoteEl) hintNoteEl.textContent = '潮水退回去，沙堡还留在原地。';
+    }
+    if (t > 7.15){
+      tide.active = false;
+      tide.t = 0;
+      tide.level = tide.rescue = tide.carry = tide.hop = 0;
+      if (tideStateEl) tideStateEl.textContent = '退潮 · 低';
+      if (hintNoteEl) hintNoteEl.textContent = '夏天被留在玻璃罩里，潮水还在慢慢退。';
+    }
+  } else {
+    tide.level = tide.rescue = tide.carry = tide.hop = 0;
+  }
+
+  tide.edge = lerp(TIDE_EDGE_LOW, TIDE_EDGE_PEAK, tide.level);
+  tideUniforms.uTime.value = time + 2.0;
+  tideUniforms.uLevel.value = tide.level;
+  tideUniforms.uEdge.value = tide.edge;
+  tideSheet.visible = tide.level > .002;
+  tideSheet.position.y = SAND_Y + .028 + tide.level * .005;
 }
 
 // -------------------------------------------------------------------------
@@ -1743,6 +1958,7 @@ for (let i = 0; i < gulls.length; i++) addProxy(gulls[i].group, 0, 0, 0, .16, 'g
 const raycaster = new THREE.Raycaster();
 const pointerNDC = new THREE.Vector2();
 function triggerClick(kind, obj){
+  if (tide.active && (kind === 'child' || kind === 'bucket' || kind === 'castle')) return;
   if (kind === 'dad'){
     clickFx.dad = 2.2;
   } else if (kind === 'mom'){
@@ -1756,10 +1972,10 @@ function triggerClick(kind, obj){
     clickFx.ball = 1.7;
   } else if (kind === 'radio'){
     clickFx.radio = 2.3;
+    toggleAudio();
   } else if (kind === 'sea'){
     clickFx.sea = 2.0;
-    seaUniforms.uWave.value = 1;
-    foamMat.opacity = .55;
+    startTideEvent();
   } else if (kind === 'gull'){
     const g = gulls[obj.userData.index];
     if (g) g.startle = 1.6;
@@ -1800,13 +2016,14 @@ function handleClick(e){
 function updateWater(time, dt){
   seaUniforms.uTime.value = time + 2.0;
   clickFx.sea = Math.max(0, clickFx.sea - dt);
-  const wave = clickFx.sea > 0 ? Math.sin((1 - clickFx.sea / 2.0) * Math.PI) : 0;
+  const clickWave = clickFx.sea > 0 ? Math.sin((1 - clickFx.sea / 2.0) * Math.PI) : 0;
+  const wave = Math.max(clickWave, tide.level * .92);
   seaUniforms.uWave.value = wave;
   const baseFoam = .3 + Math.sin(time * 1.4) * .07;
-  foamMat.opacity = baseFoam + wave * .32;
-  foamInnerMat.opacity = .14 + Math.sin(time * 1.8 + .8) * .04 + wave * .18;
-  foam.position.y = .119 + Math.sin(time * 1.25) * .002 + wave * .004;
-  foamInner.position.y = .123 + Math.sin(time * 1.6) * .002;
+  foamMat.opacity = baseFoam + wave * .26 + tide.level * .12;
+  foamInnerMat.opacity = .14 + Math.sin(time * 1.8 + .8) * .04 + wave * .16 + tide.level * .08;
+  foam.position.y = .119 + Math.sin(time * 1.25) * .002 + tide.level * .006;
+  foamInner.position.y = .123 + Math.sin(time * 1.6) * .002 + tide.level * .005;
 }
 
 function updateGulls(dt, time){
@@ -1839,17 +2056,36 @@ function updateBall(time, dt){
   clickFx.ball = Math.max(0, clickFx.ball - dt);
   const p = clickFx.ball > 0 ? 1 - clickFx.ball / 1.7 : 0;
   const hop = clickFx.ball > 0 ? Math.sin(p * Math.PI) * .35 : 0;
-  ball.position.y = SAND_Y + .16 + Math.sin(time * 1.7) * .01 + hop;
-  ballMesh.rotation.y += dt * (.15 + (clickFx.ball > 0 ? 5.5 : 0));
-  ballMesh.rotation.z = Math.sin(time * 1.2) * .05;
+  const floating = tide.level;
+  ball.position.x = -1.18 - floating * .06;
+  ball.position.z = .55 - floating * .12;
+  ball.position.y = SAND_Y + .16 + Math.sin(time * 1.7) * .01 * (1 - floating) + hop
+                    + floating * .034 + Math.sin(time * 2.6) * .006 * floating;
+  ballMesh.rotation.y += dt * (.15 + (clickFx.ball > 0 ? 5.5 : 0) + floating * 1.8);
+  ballMesh.rotation.z = Math.sin(time * 1.2) * .05 + Math.sin(time * 1.5) * .08 * floating;
 }
 
 function updateBucket(time, dt){
   clickFx.bucket = Math.max(0, clickFx.bucket - dt);
   const p = clickFx.bucket > 0 ? Math.sin((1 - clickFx.bucket / 1.5) * Math.PI) : 0;
-  bucket.position.y = SAND_Y + .01 + p * .12;
-  bucket.rotation.y = .3 + p * 2.5;
-  bucket.rotation.z = Math.sin(time * 9) * .12 * p;
+  const carry = tide.carry;
+  if (carry > .001){
+    child.updateMatrixWorld(true);
+    const hand = new THREE.Vector3();
+    childCarryAnchor.getWorldPosition(hand);
+    jarRig.worldToLocal(hand);
+    hand.y -= .16;
+    hand.z += .02;
+    bucket.position.set(
+      lerp(.54, hand.x, carry),
+      lerp(SAND_Y + .01, hand.y, carry) + p * .12,
+      lerp(.68, hand.z, carry)
+    );
+    bucket.rotation.set(0, .3, Math.sin(time * 7) * .06 * carry);
+  } else {
+    bucket.position.set(.54, SAND_Y + .01 + p * .12, .68);
+    bucket.rotation.set(0, .3 + p * 2.5, Math.sin(time * 9) * .12 * p);
+  }
 }
 
 function updateCastle(time, dt){
@@ -1862,18 +2098,41 @@ function updateCastle(time, dt){
 function updateRadio(time, dt){
   clickFx.radio = Math.max(0, clickFx.radio - dt);
   const p = clickFx.radio > 0 ? Math.sin((1 - clickFx.radio / 2.3) * Math.PI) : 0;
-  radio.position.y = SAND_Y + .08 + Math.sin(time * 2.2) * .003 + p * .025;
+  radio.position.z = .42 - tide.level * .03;
+  radio.position.y = SAND_Y + .08 + Math.sin(time * 2.2) * .003 + p * .025
+                    + tide.level * .018 + Math.sin(time * 2.8) * .004 * tide.level;
   radio.rotation.z = Math.sin(time * 3.4) * .012 + Math.sin(time * 12) * .035 * p;
   antenna.rotation.z = -.36 + Math.sin(time * 1.7) * .02 + p * .18;
-  for (const n of notes){
-    const u = clickFx.radio > 0 ? clamp((1 - clickFx.radio / 2.3) * 1.5 - n.offset, 0, 1) : 1;
-    n.sprite.visible = clickFx.radio > 0 && u > 0 && u < 1;
-    if (n.sprite.visible){
-      n.sprite.position.set(1.18 + n.drift * u + Math.sin(time * 1.7 + n.offset) * .06, .4 + u * .62, .5 + Math.sin(time * .7 + n.offset) * .08);
-      n.sprite.material.opacity = Math.sin(u * Math.PI) * .7;
-      n.sprite.scale.set(.09 + u * .04, .14 + u * .05, 1);
+  radioLedMat.emissiveIntensity = audio.on ? .9 + Math.sin(time * 5.2) * .22 : 0;
+  if (audio.on){
+    for (const n of notes){
+      const u = ((time * .22 + n.offset) % 1 + 1) % 1;
+      n.sprite.visible = u > .08 && u < .82;
+      if (n.sprite.visible){
+        n.sprite.position.set(1.18 + n.drift * u + Math.sin(time * 1.7 + n.offset) * .06, .4 + u * .62, .5 + Math.sin(time * .7 + n.offset) * .08);
+        n.sprite.material.opacity = Math.sin(((u - .08) / .74) * Math.PI) * .62;
+        n.sprite.scale.set(.12 + u * .035, .12 + u * .035, 1);
+      }
+    }
+  } else {
+    for (const n of notes){
+      const u = clickFx.radio > 0 ? clamp((1 - clickFx.radio / 2.3) * 1.5 - n.offset, 0, 1) : 1;
+      n.sprite.visible = clickFx.radio > 0 && u > 0 && u < 1;
+      if (n.sprite.visible){
+        n.sprite.position.set(1.18 + n.drift * u + Math.sin(time * 1.7 + n.offset) * .06, .4 + u * .62, .5 + Math.sin(time * .7 + n.offset) * .08);
+        n.sprite.material.opacity = Math.sin(u * Math.PI) * .75;
+        n.sprite.scale.set(.12 + u * .035, .12 + u * .035, 1);
+      }
     }
   }
+}
+
+function updateTideProps(time, dt){
+  const lv = tide.level;
+  towelL.position.set(-1.43, SAND_Y + .012 + lv * .032, .47 - lv * .1);
+  towelL.rotation.y = .26 + Math.sin(time * 1.2) * .05 * lv;
+  towelR.position.set(1.42, SAND_Y + .012 + lv * .029, .5 - lv * .09);
+  towelR.rotation.y = -.21 - Math.sin(time * 1.1 + .7) * .05 * lv;
 }
 
 function updateUmbrella(time, dt){
@@ -1889,6 +2148,7 @@ function updateUmbrella(time, dt){
 }
 
 function updateFamily(time, dt){
+  const tideWave = tide.level * (1 + Math.sin(time * 7.5) * .06);
   // idle breathing and small gestures
   dad.head.rotation.z = Math.sin(time * .5 + 1.1) * .022;
   mom.head.rotation.z = Math.sin(time * .55 + 3.2) * .022;
@@ -1896,38 +2156,55 @@ function updateFamily(time, dt){
 
   clickFx.dad = Math.max(0, clickFx.dad - dt);
   const dadP = clickFx.dad > 0 ? Math.sin((1 - clickFx.dad / 2.2) * Math.PI) : 0;
-  dad.armR.rotation.x = Math.sin(time * .8) * .012 - dadP * .92;
-  dad.armR.rotation.z = dadP * .2;
-  dad.head.rotation.y = -.05 + dadP * .18;
+  dad.armR.rotation.x = Math.sin(time * .8) * .012 - dadP * .92 - tideWave * .38;
+  dad.armR.rotation.z = dadP * .2 + tideWave * .08;
+  dad.armL.rotation.x = Math.sin(time * .9 + 2.1) * .01 - tideWave * .3;
+  dad.armL.rotation.z = -tideWave * .05;
+  dad.head.rotation.y = -.05 + dadP * .18 + tideWave * .1;
+  for (let i = 0; i < dad.legs.length; i++){
+    dad.legs[i].rotation.x = -tideWave * .52;
+    dad.legs[i].rotation.z = (i === 0 ? -1 : 1) * tideWave * .035;
+  }
 
   clickFx.mom = Math.max(0, clickFx.mom - dt);
   const momP = clickFx.mom > 0 ? Math.sin((1 - clickFx.mom / 2.2) * Math.PI) : 0;
-  mom.armL.rotation.x = Math.sin(time * .8 + 1.4) * .012 - momP * .92;
-  mom.armL.rotation.z = momP * .2;
-  mom.head.rotation.y = .05 + Math.sin(time * .34 + 2.2) * .035 + momP * .18;
+  mom.armL.rotation.x = Math.sin(time * .8 + 1.4) * .012 - momP * .92 - tideWave * .38;
+  mom.armL.rotation.z = momP * .2 - tideWave * .08;
+  mom.armR.rotation.x = Math.sin(time * .9 + .7) * .01 - tideWave * .3;
+  mom.armR.rotation.z = tideWave * .05;
+  mom.head.rotation.y = .05 + Math.sin(time * .34 + 2.2) * .035 + momP * .18 - tideWave * .1;
+  for (let i = 0; i < mom.legs.length; i++){
+    mom.legs[i].rotation.x = -tideWave * .52;
+    mom.legs[i].rotation.z = (i === 0 ? -1 : 1) * tideWave * .035;
+  }
 
   clickFx.child = Math.max(0, clickFx.child - dt);
   const childBoost = clickFx.child > 0 ? 2.4 : 0;
   const digSpeed = 2.1 + childBoost;
-  const dig = Math.sin(time * digSpeed) * .5 + .5;
-  const armSwing = Math.sin(time * digSpeed) * .28;
-  childTorso.rotation.x = .22 + dig * .06 + (clickFx.child > 0 ? .04 : 0);
-  childArmR.rotation.x = -.34 + armSwing * .8 + dig * .35;
-  childArmR.rotation.z = -.16 + Math.sin(time * digSpeed + .8) * .18;
+  const rescue = tide.rescue;
+  const idle = 1 - rescue;
+  const dig = (Math.sin(time * digSpeed) * .5 + .5) * idle;
+  const armSwing = Math.sin(time * digSpeed) * .28 * idle;
+  childTorso.rotation.x = .22 + dig * .06 + (clickFx.child > 0 ? .04 : 0) - rescue * .1;
+  childArmR.rotation.x = -.34 + armSwing * .8 + dig * .35 + rescue * .25;
+  childArmR.rotation.z = -.16 + Math.sin(time * digSpeed + .8) * .18 * idle - rescue * .08;
   childHead.group.rotation.z = Math.sin(time * .7 + 1.2) * .025;
   childHead.group.rotation.x = -.08 + Math.sin(time * 1.1) * .02;
-  if (childBoost > 0){
+  childHead.group.rotation.y = .05 + rescue * .28;
+  if (childBoost > 0 && rescue < .2){
     childArmR.rotation.x -= .15;
     childArmR.rotation.z += Math.sin(time * 18) * .1;
   }
-  sandAccumulator += dt * (digSpeed > 3.5 ? 4.5 : 1.7);
+  childArmL.rotation.x = lerp(-.12 + Math.sin(time * digSpeed + 2.1) * .08, -1.15, rescue);
+  childArmL.rotation.z = lerp(.04 + Math.sin(time * .9 + .2) * .025, .34, rescue);
+  child.position.set(lerp(.12, .2, rescue), SAND_Y + .02 + tide.hop, lerp(.38, .1, rescue));
+  child.rotation.y = -.08 - .22 * rescue;
+
+  sandAccumulator += dt * (digSpeed > 3.5 ? 4.5 : 1.7) * idle;
   if (sandAccumulator > 1.0){
     sandAccumulator = 0;
     emitSand(clickFx.child > 0 ? 4 : 2, clickFx.child > 0 ? .7 : .38);
   }
-
-  childArmL.rotation.x = -.12 + Math.sin(time * digSpeed + 2.1) * .08;
-  childArmL.rotation.z = .04 + Math.sin(time * .9 + .2) * .025;
 }
 
 function updateSandSky(time){
@@ -1939,12 +2216,178 @@ function updateSandSky(time){
   glintB.material.opacity = .065 + Math.sin(time * 1.4 + 2.0) * .02;
 }
 
+// -------------------------------------------------------------------------
+// Ambient audio: surf and radio
+// -------------------------------------------------------------------------
+
+const soundBtn = document.getElementById('soundBtn');
+const audio = { ctx:null, master:null, radioGain:null, surfGain:null, surfFilter:null, analyser:null, on:false };
+
+function makeSurfBuffer(ctx){
+  const sr = ctx.sampleRate;
+  const n = Math.floor(sr * 2.5);
+  const buf = ctx.createBuffer(1, n, sr);
+  const d = buf.getChannelData(0);
+  let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+  for (let i = 0; i < n; i++){
+    const w = Math.random() * 2 - 1;
+    b0 = .99886 * b0 + w * .0555179;
+    b1 = .99332 * b1 + w * .0750759;
+    b2 = .96900 * b2 + w * .1538520;
+    b3 = .86650 * b3 + w * .3104856;
+    b4 = .55000 * b4 + w * .5329522;
+    b5 = -.7616 * b5 - w * .0168980;
+    d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * .5362) * .15;
+    b6 = w * .115926;
+  }
+  const fade = Math.floor(sr * .05);
+  for (let i = 0; i < fade; i++){
+    const k = i / fade;
+    d[i] *= k;
+    d[n - 1 - i] *= k;
+  }
+  return buf;
+}
+
+function makeRadioBuffer(ctx){
+  const sr = 24000;
+  const dur = 8;
+  const n = sr * dur;
+  const buf = ctx.createBuffer(1, n, sr);
+  const d = buf.getChannelData(0);
+  const chords = [
+    [261.63, 329.63, 392.00, 493.88],
+    [220.00, 261.63, 329.63, 392.00],
+    [174.61, 220.00, 261.63, 329.63],
+    [196.00, 246.94, 293.66, 349.23]
+  ];
+  for (let i = 0; i < n; i++){
+    const t = i / sr;
+    const chord = chords[Math.floor(t / 2) % 4];
+    let s = 0;
+    for (let k = 0; k < chord.length; k++){
+      const f = chord[k] * (1 + (k % 2 ? .0015 : -.0015));
+      s += Math.sin(TAU * f * t + Math.sin(TAU * .13 * t + k) * .2) * .05;
+    }
+    const step = Math.floor(t / .5);
+    const noteT = t - step * .5;
+    const arp = chord[(step + 1) % 4] * 2;
+    s += Math.sin(TAU * arp * t) * Math.exp(-noteT * 6.5) * .08;
+    if (Math.random() < .0006) s += (Math.random() * 2 - 1) * .05;
+    d[i] = s * Math.min(1, t / .04, (dur - t) / .04);
+  }
+  return buf;
+}
+
+function initAudio(){
+  if (audio.ctx) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;
+  const ctx = new Ctx();
+  audio.ctx = ctx;
+
+  const master = ctx.createGain();
+  master.gain.value = 0;
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  master.connect(analyser);
+  analyser.connect(ctx.destination);
+  audio.master = master;
+  audio.analyser = analyser;
+
+  const surfSrc = ctx.createBufferSource();
+  surfSrc.buffer = makeSurfBuffer(ctx);
+  surfSrc.loop = true;
+  const surfFilter = ctx.createBiquadFilter();
+  surfFilter.type = 'lowpass';
+  surfFilter.frequency.value = 520;
+  surfFilter.Q.value = .7;
+  const surfWave = ctx.createGain();
+  surfWave.gain.value = .5;
+  const waveLfo = ctx.createOscillator();
+  waveLfo.frequency.value = .09;
+  const waveDepth = ctx.createGain();
+  waveDepth.gain.value = .16;
+  waveLfo.connect(waveDepth);
+  waveDepth.connect(surfWave.gain);
+  const surfGain = ctx.createGain();
+  surfGain.gain.value = .45;
+  surfSrc.connect(surfFilter);
+  surfFilter.connect(surfWave);
+  surfWave.connect(surfGain);
+  surfGain.connect(master);
+  surfSrc.start();
+  waveLfo.start();
+  audio.surfFilter = surfFilter;
+  audio.surfGain = surfGain;
+
+  const radioSrc = ctx.createBufferSource();
+  radioSrc.buffer = makeRadioBuffer(ctx);
+  radioSrc.loop = true;
+  const radioFilter = ctx.createBiquadFilter();
+  radioFilter.type = 'lowpass';
+  radioFilter.frequency.value = 1900;
+  const radioGain = ctx.createGain();
+  radioGain.gain.value = .3;
+  radioSrc.connect(radioFilter);
+  radioFilter.connect(radioGain);
+  radioGain.connect(master);
+  radioSrc.start();
+  audio.radioGain = radioGain;
+}
+
+function updateSoundUI(){
+  if (!soundBtn) return;
+  soundBtn.textContent = audio.on ? '开' : '关';
+  soundBtn.setAttribute('aria-pressed', String(audio.on));
+  soundBtn.classList.toggle('is-on', audio.on);
+}
+
+function toggleAudio(){
+  initAudio();
+  if (!audio.ctx) return;
+  if (audio.ctx.state === 'suspended') audio.ctx.resume();
+  audio.on = !audio.on;
+  const now = audio.ctx.currentTime;
+  audio.master.gain.cancelScheduledValues(now);
+  audio.master.gain.setTargetAtTime(audio.on ? .9 : 0, now, .12);
+  updateSoundUI();
+}
+
+function updateAudio(){
+  if (!audio.ctx || !audio.on) return;
+  const now = audio.ctx.currentTime;
+  const lv = tide.level;
+  audio.surfGain.gain.setTargetAtTime(.45 + lv * .3, now, .12);
+  audio.surfFilter.frequency.setTargetAtTime(500 + lv * 1650, now, .2);
+  audio.radioGain.gain.setTargetAtTime(.3 * (1 - lv * .35), now, .2);
+}
+
+function audioLevel(){
+  if (!audio.analyser) return 0;
+  const arr = new Uint8Array(audio.analyser.fftSize);
+  audio.analyser.getByteTimeDomainData(arr);
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++){
+    const v = (arr[i] - 128) / 128;
+    sum += v * v;
+  }
+  return Math.sqrt(sum / arr.length);
+}
+
+if (soundBtn) soundBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  toggleAudio();
+  if (audio.on) clickFx.radio = Math.max(clickFx.radio, 2.3);
+});
+
 function animate(){
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), .05);
   timeNow += dt;
 
   updateCamera(dt);
+  updateTide(dt, timeNow);
   updateWater(timeNow, dt);
   updateGulls(dt, timeNow);
   updateClouds(dt, timeNow);
@@ -1954,8 +2397,10 @@ function animate(){
   updateBucket(timeNow, dt);
   updateCastle(timeNow, dt);
   updateRadio(timeNow, dt);
+  updateTideProps(timeNow, dt);
   updateSand(dt);
   updateSandSky(timeNow);
+  updateAudio();
 
   glassUniforms.uFresnel.value = 1 + Math.sin(timeNow * .45) * .08;
   renderer.render(scene, camera);
@@ -2129,8 +2574,9 @@ requestAnimationFrame(animate);
 
 window.__TIDE_DEBUG__ = {
   THREE, scene, camera, renderer, view, target, jarRig, baseGroup, skyDome, glass,
-  dad, mom, child, umbrella, ball, radio, bucket, castle, gulls, sea, clickTargets, clickFx,
-  triggerClick, handleClick,
+  dad, mom, child, umbrella, ball, radio, bucket, castle, gulls, sea, tideSheet, tide,
+  clickTargets, clickFx, audio, audioLevel,
+  triggerClick, handleClick, startTideEvent, toggleAudio,
   setCamera(az, polar, dist, tx = 0, ty = 1.92, tz = 0){
     target.set(tx, ty, tz);
     view.tAz = view.az = az;
@@ -2153,7 +2599,9 @@ window.__TIDE_DEBUG__ = {
       triangles: renderer.info.render.triangles,
       pixelRatio: renderer.getPixelRatio(),
       camera: camera.position.toArray().map(v => +v.toFixed(2)),
-      clickFx: { ...clickFx }
+      clickFx: { ...clickFx },
+      tide: { active: tide.active, level: +tide.level.toFixed(2), rescue: +tide.rescue.toFixed(2), carry: +tide.carry.toFixed(2) },
+      audio: { on: audio.on, state: audio.ctx ? audio.ctx.state : 'none', level: +audioLevel().toFixed(3) }
     };
   }
 };
