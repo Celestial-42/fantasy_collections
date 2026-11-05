@@ -1420,9 +1420,9 @@ backCushion.rotation.x = -.3;
 
 // --- sleeping cat ----------------------------------------------------------
 const cat = new THREE.Group();
-cat.position.set(.02, .705, .2);
+cat.position.set(.02, .55, .02);
 cat.scale.setScalar(.92);
-chair.add(cat);
+chairBody.add(cat);
 const catBody = sphere(.155, std(0xc8884e, .95, 0), 0, .05, 0, cat);
 catBody.scale.set(1.1, .58, .9);
 const catChest = sphere(.105, std(0xdca46b, .95, 0), 0, .045, .07, cat);
@@ -1449,7 +1449,7 @@ for (let i = 0; i < 3; i++){
 }
 const catTail = tube([[.13, .07, -.04], [.21, .04, -.01], [.24, .035, .07], [.17, .04, .12], [.1, .045, .09]], .022, std(0xc8884e, .95, 0), cat, 18);
 catTail.castShadow = true;
-clickProxy(.02, .65, .09, .19, 'cat', chair);
+clickProxy(.02, .62, .08, .19, 'cat', chairBody);
 
 // --- sleeping golden retriever --------------------------------------------
 const dog = new THREE.Group();
@@ -1537,8 +1537,8 @@ box(.18, .022, .12, M.cream, -.09, .578, -.06, table, false).rotation.y = .4;
 const armor = new THREE.Group();
 const armorSteel = std(0x8796a1, .42, .52);
 const armorDark = std(0x5c6871, .5, .48);
-armor.position.set(1.16, 0, -.25);
-armor.rotation.y = -.52;
+armor.position.set(1.34, 0, -.52);
+armor.rotation.y = -1.05;
 room.add(armor);
 box(.52, .08, .46, M.stoneDark, 0, .04, 0, armor);
 box(.44, .05, .38, M.woodDeep, 0, .095, 0, armor, false);
@@ -1679,7 +1679,7 @@ windowFill.position.set(WIN.x, WIN.y, -.82);
 scene.add(windowFill);
 
 const armorFill = new THREE.PointLight(0xb9d4e6, 1.5, 2.8, 2.0);
-armorFill.position.set(1.18, 1.4, 1.0);
+armorFill.position.set(1.25, 1.3, .1);
 scene.add(armorFill);
 
 // --- fire flames -----------------------------------------------------------
@@ -1795,8 +1795,9 @@ dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
 const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: glowTex, color: 0xffd7a4, size: .009, transparent: true, opacity: .3, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true }));
 room.add(dust);
 
-let fireBoost = 0;
+let fireBoost = .78;
 let stokePulse = 0;
+let lastFireWidth = -1;
 let armorPulse = 0;
 let catPulse = 0;
 let dogPulse = 0;
@@ -1812,12 +1813,16 @@ const pointerNDC = new THREE.Vector2();
 
 function updateFireUi(){
   const level = clamp(fireBoost, 0, 1);
-  fireFillEl.style.width = `${72 + level * 23}%`;
-  fireTextEl.textContent = level > .32 ? '炉火 更旺' : '炉火 正旺';
-  fireStateEl.textContent = level > .32 ? '火星四溅' : '噼啪作响';
+  const width = Math.round(22 + level * 72);
+  if (width !== lastFireWidth){
+    fireFillEl.style.width = `${width}%`;
+    lastFireWidth = width;
+  }
+  fireTextEl.textContent = level > .67 ? '炉火 正旺' : level > .47 ? '炉火 平稳' : '炉火 低微';
+  fireStateEl.textContent = level > .67 ? '噼啪作响' : level > .47 ? '轻轻燃烧' : '只剩暗红';
 }
 function stokeFire(){
-  fireBoost = Math.min(1, fireBoost + .55);
+  fireBoost = Math.min(1, fireBoost + .45);
   stokePulse = 1;
   Sound.stoke();
   updateFireUi();
@@ -1828,7 +1833,7 @@ function triggerSceneClick(kind){
     armorSalute = true;
     armorPulse = 2.5;
     Sound.clank();
-    showToast('铠甲微微低头，面甲抬起一条缝，铁手套在身侧轻响。', 1900);
+    showToast('铠甲低头致意，铁片在身侧轻响。', 1900);
   } else if (kind === 'fire'){
     stokeFire();
   } else if (kind === 'cat'){
@@ -1870,31 +1875,33 @@ stokeBtn.addEventListener('click', (e) => {
 let armorLift = 0;
 let clockMinute = 2.1;
 function updateFire(dt, time){
-  fireBoost = Math.max(0, fireBoost - dt * .24);
+  // the fire slowly burns down to a low, never extinguished ember bed
+  fireBoost = Math.max(.25, fireBoost - dt * .009);
   stokePulse = Math.max(0, stokePulse - dt * .8);
-  const boost = fireBoost;
-  const flick = .88 + Math.sin(time * 17.3) * .045 + Math.sin(time * 31.1 + 1.2) * .028 + boost * .18;
-  fireSpot.intensity = 23 * flick + boost * 11;
-  fireFill.intensity = 3.0 * flick + boost * 1.6;
-  fireGlow.material.opacity = .26 + .06 * Math.sin(time * 6.7) + boost * .16;
-  fireGlow.scale.set(.92 + boost * .15, 1.2 + boost * .2, 1);
+  const level = fireBoost;
+  const boost = stokePulse;
+  const flick = .88 + Math.sin(time * 17.3) * .045 + Math.sin(time * 31.1 + 1.2) * .028 + level * .08 + boost * .1;
+  fireSpot.intensity = (5 + 22 * level) * flick + boost * 7;
+  fireFill.intensity = (.6 + 3.0 * level) * flick + boost * .8;
+  fireGlow.material.opacity = .06 + level * .26 + .05 * Math.sin(time * 6.7) + boost * .12;
+  fireGlow.scale.set(.66 + level * .34 + boost * .1, .8 + level * .4 + boost * .12, 1);
   for (const sp of flameSprites){
     const u = sp.userData;
-    const breathe = 1 + Math.sin(time * u.speed * 5.2 + u.phase) * .075 + boost * .22;
-    sp.scale.set(u.s * (1 + Math.sin(time * 3.2 + u.phase) * .06), u.s * (2.1 + (u.speed > 1.1 ? .35 : 0)) * breathe, 1);
+    const breathe = 1 + Math.sin(time * u.speed * 5.2 + u.phase) * .075 + boost * .16;
+    sp.scale.set(u.s * (.42 + level * .5) * (1 + Math.sin(time * 3.2 + u.phase) * .06), u.s * (.45 + level * .55) * (2.1 + (u.speed > 1.1 ? .35 : 0)) * breathe, 1);
     sp.position.x = u.bx + Math.sin(time * 1.7 + u.phase) * .012;
-    sp.position.y = u.by + Math.sin(time * 2.6 + u.phase * 1.4) * .018 + boost * .03;
-    sp.material.opacity = .55 + Math.sin(time * 9 + u.phase) * .09 + boost * .2;
+    sp.position.y = u.by + Math.sin(time * 2.6 + u.phase * 1.4) * .018 + boost * .02;
+    sp.material.opacity = .15 + level * .55 + Math.sin(time * 9 + u.phase) * .08 + boost * .12;
   }
   for (const sm of smokeSprites){
     const u = sm.userData;
-    sm.position.y += dt * (.035 + boost * .055);
+    sm.position.y += dt * (.03 + level * .04 + boost * .05);
     sm.position.x = u.baseX + Math.sin(time * .5 + u.phase) * .035;
     if (sm.position.y > 1.85){
       sm.position.y = 1.0;
       sm.position.x = u.baseX;
     }
-    sm.material.opacity = .035 + Math.sin(time * .6 + u.phase) * .012 + boost * .02;
+    sm.material.opacity = .02 + level * .03 + Math.sin(time * .6 + u.phase) * .01;
   }
   for (const cf of candleFlames){
     const s = .1 + Math.sin(time * 8.7 + cf.phase) * .012 + Math.sin(time * 19 + cf.phase * 2) * .005;
@@ -1937,7 +1944,7 @@ function updateSnow(dt, time){
   const ea = embers.geometry.attributes.position.array;
   for (let i = 0; i < EMBER_N; i++){
     const d = emberData[i];
-    ea[i * 3 + 1] += dt * d.speed * (1.5 + fireBoost * 2.6);
+    ea[i * 3 + 1] += dt * d.speed * (.8 + fireBoost * 2.2 + stokePulse * 2.2);
     ea[i * 3] = d.x0 + Math.sin(time * 1.4 + d.phase) * d.sway;
     ea[i * 3 + 2] = d.z0 + Math.cos(time * .9 + d.phase) * .012;
     if (ea[i * 3 + 1] > 1.3){
@@ -1946,7 +1953,7 @@ function updateSnow(dt, time){
     }
   }
   embers.geometry.attributes.position.needsUpdate = true;
-  emberMat.size = .012 + fireBoost * .006;
+  emberMat.size = .007 + fireBoost * .007 + stokePulse * .004;
 
   const da = dust.geometry.attributes.position.array;
   for (let i = 0; i < DUST_N; i++){
@@ -1966,9 +1973,9 @@ function updateLife(dt, time){
   armorArm.rotation.x = 0;
   armorForearm.rotation.x = 0;
   armorForearm.rotation.z = 0;
-  visor.rotation.x = -armorLift * .6;
-  helmet.rotation.y = armorLift * .06;
-  helmet.rotation.x = armorLift * .17;
+  visor.rotation.x = 0;
+  helmet.rotation.y = armorLift * .04;
+  helmet.rotation.x = armorLift * .1;
   armor.rotation.z = Math.sin(time * .45) * .003;
 
   catPulse = Math.max(0, catPulse - dt);
