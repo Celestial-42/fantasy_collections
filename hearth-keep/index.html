@@ -304,7 +304,7 @@
     <div class="hints">
       <span class="key">拖拽</span><span>环视</span>
       <span class="key">滚轮</span><span>推近</span>
-      <span class="key">点击</span><span>铠甲 · 炉火 · 猫狗</span>
+      <span class="key">点击</span><span>器物 · 猫狗</span>
       <span class="key">F</span><span>添柴</span>
       <span class="key">双击</span><span>归位</span>
     </div>
@@ -1256,7 +1256,7 @@ function candlestick(x, z, h = .28, lit = true){
     flame.position.set(0, .17 + h + .18, 0);
     flame.scale.set(.12, .16, 1);
     g.add(flame);
-    candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y });
+    candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y, lit: true, scope: 'mantel' });
   }
   return g;
 }
@@ -1313,7 +1313,7 @@ for (const sx of [-1.43, 1.43]){
   flame.position.set(sx < 0 ? -.13 : .13, .18, .06);
   flame.scale.set(.12, .17, 1);
   g.add(flame);
-  candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y });
+  candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y, lit: true, scope: 'sconce' });
   sconces.push(g);
 }
 
@@ -1342,7 +1342,7 @@ for (let i = 0; i < 4; i++){
   flame.position.set(gx, .25, gz);
   flame.scale.set(.12, .16, 1);
   chand.add(flame);
-  candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y });
+  candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y, lit: true, scope: 'chandelier' });
 }
 for (let i = 0; i < 4; i++){
   const a = i / 4 * TAU + .4;
@@ -1474,22 +1474,37 @@ const dogChest = sphere(.16, furLight, .2, .17, .01, dogBody);
 dogChest.scale.set(.82, .76, .96);
 const saddle = sphere(.2, furDark, -.05, .285, 0, dogBody, false);
 saddle.scale.set(.9, .17, .72);
-const dogHead = sphere(.135, fur, .33, .245, .035, dogBody);
-dogHead.scale.set(.98, .92, .95);
-const muzzle = sphere(.085, furLight, .425, .205, .055, dogBody);
-muzzle.scale.set(1.35, .66, .9);
-sphere(.032, M.black, .505, .21, .055, dogBody, false).scale.set(.9, .75, 1);
-// floppy ears: one near, one far
-const earNear = sphere(.07, std(0x9f703d, .95, 0), .29, .285, .08, dogBody);
-earNear.scale.set(.52, 1.35, .34);
-earNear.rotation.z = -.24;
-const earFar = sphere(.075, std(0x9f703d, .95, 0), .29, .285, -.055, dogBody);
-earFar.scale.set(.52, 1.3, .34);
-earFar.rotation.z = .18;
-// closed eye and brow on the near side
-box(.04, .0035, .004, M.black, .39, .285, .13, dogBody, false).rotation.z = -.12;
-box(.045, .006, .006, furDark, .39, .31, .12, dogBody, false).rotation.z = .05;
-box(.03, .0025, .003, M.black, .455, .195, .13, dogBody, false).rotation.z = .1;
+// head turned a little toward the room so the sleeping face reads
+const dogHeadGroup = new THREE.Group();
+dogHeadGroup.position.set(.3, .245, .04);
+dogHeadGroup.rotation.y = -.45;
+dogBody.add(dogHeadGroup);
+const dogHead = sphere(.14, fur, 0, .015, 0, dogHeadGroup);
+dogHead.scale.set(.98, .92, .9);
+const browFur = sphere(.085, fur, -.045, .075, .01, dogHeadGroup);
+browFur.scale.set(.9, .6, .85);
+const muzzle = sphere(.085, furLight, .105, -.035, .02, dogHeadGroup);
+muzzle.scale.set(1.45, .62, .9);
+sphere(.034, M.black, .195, -.035, .02, dogHeadGroup, false).scale.set(1, .75, .9);
+// nose bridge and a closed smile
+box(.08, .022, .06, furLight, .1, .025, .015, dogHeadGroup, false).rotation.z = -.08;
+box(.06, .004, .004, M.black, .11, -.075, .075, dogHeadGroup, false).rotation.z = .08;
+for (const side of [-1, 1]){
+  // floppy ears hang from the sides, away from the eyes
+  const ear = sphere(.075, std(0x9f703d, .95, 0), -.02, .035, side * .1, dogHeadGroup);
+  ear.scale.set(.56, 1.35, .34);
+  ear.rotation.z = side * .18;
+  ear.rotation.x = side * -.12;
+  const innerEar = sphere(.04, std(0xbd8a5a, .95, 0), -.015, .02, side * .118, dogHeadGroup, false);
+  innerEar.scale.set(.45, 1.1, .22);
+  // closed eyes and brows on both sides
+  box(.042, .004, .004, M.black, .075, .055, side * .105, dogHeadGroup, false).rotation.z = -.12;
+  box(.048, .006, .006, furDark, .075, .078, side * .095, dogHeadGroup, false).rotation.z = .05;
+  sphere(.006, M.cream, .09, .06, side * .11, dogHeadGroup, false);
+}
+// neck joining head and shoulders
+const dogNeck = sphere(.13, fur, .22, .205, .01, dogBody);
+dogNeck.scale.set(.9, .78, .85);
 // front paws stretched out
 for (const z of [-.1, .1]){
   const paw = sphere(.07, furLight, .4, .085, z, dogBody, false);
@@ -1503,7 +1518,7 @@ for (const z of [-.14, .14]){
   paw.scale.set(1.35, .45, .8);
 }
 // collar and tag
-const dogCollar = new THREE.Mesh(new THREE.TorusGeometry(.098, .021, 6, 18), std(0x7d3d34, .9, 0));
+const dogCollar = new THREE.Mesh(new THREE.TorusGeometry(.1, .022, 6, 18), std(0xa34b3b, .9, 0));
 dogCollar.position.set(.255, .21, .035);
 dogCollar.rotation.y = Math.PI / 2;
 dogBody.add(dogCollar);
@@ -1512,7 +1527,20 @@ sphere(.023, M.brass, .29, .13, .11, dogBody, false);
 const dogTail = tube([[-.18, .14, -.08], [-.28, .1, -.04], [-.33, .07, .04], [-.3, .06, .14], [-.21, .06, .18]], .021, fur, dogBody, 18);
 const tailTip = sphere(.045, furLight, -.19, .06, .19, dogBody, false);
 tailTip.scale.set(1.3, .65, 1.0);
+for (let i = 0; i < 4; i++){
+  const feather = sphere(.025, furLight, -.22 + i * .008, .065, .17 - i * .018, dogBody, false);
+  feather.scale.set(.65, .6, 1.5);
+}
 clickProxy(-.42, .32, .74, .4, 'dog');
+clickProxy(0, 1.0, -.4, .24, 'chair', chairBody);
+for (const cf of candleFlames){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(.075, 6, 5), INVISIBLE_MAT);
+  m.position.copy(cf.sprite.position);
+  m.userData.kind = 'candle';
+  m.userData.candle = cf;
+  cf.sprite.parent.add(m);
+  clickTargets.push(m);
+}
 
 // --- tea table -------------------------------------------------------------
 const table = new THREE.Group();
@@ -1521,17 +1549,39 @@ room.add(table);
 cyl(.245, .245, .035, 20, M.wood, 0, .52, 0, table);
 cyl(.05, .07, .45, 10, M.wood, 0, .28, 0, table);
 cyl(.16, .2, .04, 12, M.wood, 0, .04, 0, table);
-// teacup
-cyl(.055, .045, .065, 12, M.cream, .04, .57, .03, table, false);
+// teacup, still warm
+const cup = new THREE.Group();
+cup.position.set(.04, .537, .03);
+table.add(cup);
+cyl(.09, .09, .008, 16, M.cream, 0, 0, 0, cup, false);
+cyl(.055, .045, .065, 12, M.cream, 0, .035, 0, cup, false);
+const teaSurface = new THREE.Mesh(new THREE.CircleGeometry(.047, 14), std(0x4b2c19, .35, 0, { emissive: 0x1a0b04, emissiveIntensity: .2 }));
+teaSurface.rotation.x = -Math.PI / 2;
+teaSurface.position.set(0, .068, 0);
+cup.add(teaSurface);
 const handle = new THREE.Mesh(new THREE.TorusGeometry(.028, .007, 5, 12, Math.PI), M.cream);
-handle.position.set(.11, .575, .03);
+handle.position.set(.062, .04, 0);
 handle.rotation.z = -Math.PI / 2;
-table.add(handle);
-cyl(.09, .09, .008, 16, M.cream, .04, .535, .03, table, false);
-// little book
-const tableBook = box(.2, .035, .14, std(0x4b3b2b, .9, 0), -.09, .56, -.06, table, false);
-tableBook.rotation.y = .4;
-box(.18, .022, .12, M.cream, -.09, .578, -.06, table, false).rotation.y = .4;
+cup.add(handle);
+const cupSteam = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xf3e9d6, transparent: true, opacity: 0, depthWrite: false }));
+cupSteam.position.set(0, .16, 0);
+cupSteam.scale.set(.12, .18, 1);
+cup.add(cupSteam);
+
+// little book, closed on the table
+const bookGroup = new THREE.Group();
+bookGroup.position.set(-.09, .542, -.06);
+bookGroup.rotation.y = .4;
+table.add(bookGroup);
+box(.22, .018, .15, std(0x3e2a1c, .9, 0), 0, .009, 0, bookGroup, false);
+box(.2, .028, .135, M.cream, 0, .031, .004, bookGroup, false);
+const bookCoverPivot = new THREE.Group();
+bookCoverPivot.position.set(0, .05, -.072);
+bookGroup.add(bookCoverPivot);
+box(.22, .012, .15, std(0x4f3928, .9, 0), 0, 0, .075, bookCoverPivot, false);
+box(.012, .002, .09, std(0x9a5144, .8, 0), .055, .012, .045, bookGroup, false);
+clickProxy(0, .07, 0, .1, 'cup', cup);
+clickProxy(0, .06, 0, .12, 'book', bookGroup);
 
 // --- plate armor -----------------------------------------------------------
 const armor = new THREE.Group();
@@ -1797,10 +1847,14 @@ room.add(dust);
 
 let fireBoost = .78;
 let stokePulse = 0;
+let stokeTimer = 0;
 let lastFireWidth = -1;
 let armorPulse = 0;
 let catPulse = 0;
 let dogPulse = 0;
+let cupPulse = 0;
+let chairPulse = 0;
+let bookOpen = false;
 let armorSalute = false;
 
 
@@ -1822,13 +1876,14 @@ function updateFireUi(){
   fireStateEl.textContent = level > .67 ? '噼啪作响' : level > .47 ? '轻轻燃烧' : '只剩暗红';
 }
 function stokeFire(){
-  fireBoost = Math.min(1, fireBoost + .45);
+  fireBoost = 1;
+  stokeTimer = 15;
   stokePulse = 1;
   Sound.stoke();
   updateFireUi();
   showToast('你添了一根柴，火星顺着烟道往上窜。', 1500);
 }
-function triggerSceneClick(kind){
+function triggerSceneClick(kind, obj){
   if (kind === 'armor'){
     armorSalute = true;
     armorPulse = 2.5;
@@ -1844,6 +1899,27 @@ function triggerSceneClick(kind){
     dogPulse = 1.9;
     Sound.dogSigh();
     showToast('金毛的尾巴在地毯上轻轻敲了两下，没睁眼。', 1800);
+  } else if (kind === 'chair'){
+    chairPulse = 1.8;
+    catPulse = Math.max(catPulse, .6);
+    Sound.woodCreak();
+    showToast('摇椅晃了两下，猫跟着轻轻起伏。', 1600);
+  } else if (kind === 'cup'){
+    cupPulse = 1.4;
+    Sound.cupClink();
+    showToast('茶还温着，杯口浮起一缕白汽。', 1500);
+  } else if (kind === 'book'){
+    bookOpen = !bookOpen;
+    Sound.pageFlip();
+    showToast(bookOpen ? '书页翻到夹着书签的那一页。' : '你把书合上，放回桌面。', 1500);
+  } else if (kind === 'candle'){
+    const cf = obj && obj.userData.candle;
+    if (cf){
+      cf.lit = !cf.lit;
+      cf.sprite.visible = cf.lit;
+      Sound.candle(cf.lit);
+      showToast(cf.lit ? '蜡烛重新亮了。' : '蜡烛灭了，一缕青烟散开。', 1300);
+    }
   }
 }
 function handleSceneClick(e){
@@ -1856,7 +1932,7 @@ function handleSceneClick(e){
     let o = hit.object;
     while (o){
       if (o.userData && o.userData.kind){
-        triggerSceneClick(o.userData.kind);
+        triggerSceneClick(o.userData.kind, o);
         return true;
       }
       o = o.parent;
@@ -1875,8 +1951,14 @@ stokeBtn.addEventListener('click', (e) => {
 let armorLift = 0;
 let clockMinute = 2.1;
 function updateFire(dt, time){
-  // the fire slowly burns down to a low, never extinguished ember bed
-  fireBoost = Math.max(.25, fireBoost - dt * .009);
+  // a stoked fire burns down to the low, never extinguished ember bed in ~15s;
+  // an unstoked fire settles much more slowly
+  if (stokeTimer > 0){
+    stokeTimer = Math.max(0, stokeTimer - dt);
+    fireBoost = .25 + .75 * (stokeTimer / 15);
+  } else {
+    fireBoost = Math.max(.25, fireBoost - dt * .008);
+  }
   stokePulse = Math.max(0, stokePulse - dt * .8);
   const level = fireBoost;
   const boost = stokePulse;
@@ -1887,8 +1969,8 @@ function updateFire(dt, time){
   fireGlow.scale.set(.66 + level * .34 + boost * .1, .8 + level * .4 + boost * .12, 1);
   for (const sp of flameSprites){
     const u = sp.userData;
-    const breathe = 1 + Math.sin(time * u.speed * 5.2 + u.phase) * .075 + boost * .16;
-    sp.scale.set(u.s * (.42 + level * .5) * (1 + Math.sin(time * 3.2 + u.phase) * .06), u.s * (.45 + level * .55) * (2.1 + (u.speed > 1.1 ? .35 : 0)) * breathe, 1);
+    const breathe = 1 + Math.sin(time * u.speed * 5.2 + u.phase) * .075 + boost * .24;
+    sp.scale.set(u.s * (.42 + level * .5 + boost * .1) * (1 + Math.sin(time * 3.2 + u.phase) * .06), u.s * (.45 + level * .55 + boost * .12) * (2.1 + (u.speed > 1.1 ? .35 : 0)) * breathe, 1);
     sp.position.x = u.bx + Math.sin(time * 1.7 + u.phase) * .012;
     sp.position.y = u.by + Math.sin(time * 2.6 + u.phase * 1.4) * .018 + boost * .02;
     sp.material.opacity = .15 + level * .55 + Math.sin(time * 9 + u.phase) * .08 + boost * .12;
@@ -1904,12 +1986,16 @@ function updateFire(dt, time){
     sm.material.opacity = .02 + level * .03 + Math.sin(time * .6 + u.phase) * .01;
   }
   for (const cf of candleFlames){
+    cf.sprite.visible = cf.lit;
+    if (!cf.lit) continue;
     const s = .1 + Math.sin(time * 8.7 + cf.phase) * .012 + Math.sin(time * 19 + cf.phase * 2) * .005;
     cf.sprite.scale.set(s, s * 1.4, 1);
     cf.sprite.position.y = cf.baseY + Math.sin(time * 6 + cf.phase) * .005;
     cf.sprite.material.opacity = .62 + Math.sin(time * 10 + cf.phase) * .1;
   }
-  chandLight.intensity = 3.1 + Math.sin(time * 7.1) * .12 + Math.sin(time * 13.3) * .06;
+  const chandCandles = candleFlames.filter(c => c.scope === 'chandelier');
+  const litChand = chandCandles.filter(c => c.lit).length;
+  chandLight.intensity = (.8 + 4.8 * litChand / Math.max(1, chandCandles.length)) * (1 + Math.sin(time * 7.1) * .025);
   moon.intensity = 1.5 + Math.sin(time * .23) * .04;
   updateFireUi();
   clockMinute += dt * .014;
@@ -1921,7 +2007,7 @@ function updateSnow(dt, time){
   const pa = snow.geometry.attributes.position.array;
   for (let i = 0; i < SNOW_N; i++){
     const d = snowData[i];
-    pa[i * 3 + 1] -= d.speed * dt * (10 / 3);
+    pa[i * 3 + 1] -= d.speed * dt;
     if (pa[i * 3 + 1] < .77){
       pa[i * 3 + 1] = 2.14;
     }
@@ -1930,7 +2016,7 @@ function updateSnow(dt, time){
   snow.geometry.attributes.position.needsUpdate = true;
   for (const sp of bigFlakes){
     const d = sp.userData;
-    sp.position.y -= d.speed * dt * (10 / 3);
+    sp.position.y -= d.speed * dt;
     if (sp.position.y < .78){
       sp.position.y = 2.14;
       sp.position.x = .31 + rng() * .81;
@@ -1980,14 +2066,22 @@ function updateLife(dt, time){
 
   catPulse = Math.max(0, catPulse - dt);
   dogPulse = Math.max(0, dogPulse - dt);
-  const rock = Math.sin(time * .55) * .012 + Math.sin(time * 1.3) * .0012;
+  chairPulse = Math.max(0, chairPulse - dt);
+  cupPulse = Math.max(0, cupPulse - dt);
+  const rock = Math.sin(time * .55) * .012 + Math.sin(time * 1.3) * .0012 + Math.sin(time * 4.6) * .05 * chairPulse;
   chairBody.rotation.x = rock;
+  cup.position.y = .537 + Math.sin(time * 13) * .012 * cupPulse;
+  cup.rotation.z = Math.sin(time * 15) * .045 * cupPulse;
+  cupSteam.material.opacity = cupPulse * .32;
+  cupSteam.position.y = .16 + (1 - cupPulse) * .04;
+  cupSteam.scale.set(.12 + (1 - cupPulse) * .08, .18 + (1 - cupPulse) * .1, 1);
+  bookCoverPivot.rotation.x += ((bookOpen ? -1.15 : 0) - bookCoverPivot.rotation.x) * Math.min(1, dt * 7);
   catBody.scale.y = .58 * (1 + Math.sin(time * 1.45) * .035);
   catHead.position.y = .09 + Math.sin(time * 1.45 + .4) * .004;
   catTail.rotation.y = Math.sin(time * .7) * .06 + catPulse * .22;
   catTail.rotation.z = catPulse * .1;
   dogTorso.scale.y = .52 * (1 + Math.sin(time * .78) * .024);
-  dogHead.rotation.x = Math.sin(time * .5) * .018 + dogPulse * .12;
+  dogHeadGroup.rotation.x = Math.sin(time * .5) * .018 + dogPulse * .12;
   dogTail.rotation.y = Math.sin(time * .44) * .03 + dogPulse * Math.sin(time * 18) * .18;
   dogBody.position.y = Math.sin(time * .44) * .003;
 }
@@ -2197,10 +2291,36 @@ const Sound = (() => {
     if (!enabled()) return;
     burst({ dur: .3, peak: .012, type: 'bandpass', freq: 1800, q: .7, attack: .04 });
   }
+  function cupClink(){
+    if (!enabled()) return;
+    burst({ dur: .035, peak: .016, type: 'highpass', freq: 2800, q: .8, attack: .001 });
+    tone(1260, .32, .009, 'sine', 980);
+    tone(1910, .22, .004, 'sine', 1580, .01);
+  }
+  function pageFlip(){
+    if (!enabled()) return;
+    burst({ dur: .2, peak: .016, type: 'bandpass', freq: 1900, q: .75, attack: .03 });
+    burst({ dur: .12, peak: .008, type: 'bandpass', freq: 3200, q: 1, attack: .05 });
+  }
+  function woodCreak(){
+    if (!enabled()) return;
+    tone(124, .36, .009, 'sawtooth', 88);
+    burst({ dur: .18, peak: .006, type: 'bandpass', freq: 620, q: 1.2, attack: .03 });
+  }
+  function candle(lit){
+    if (!enabled()) return;
+    if (lit){
+      burst({ dur: .06, peak: .014, type: 'highpass', freq: 2400, q: .7, attack: .001 });
+      tone(760, .18, .004, 'sine', 620);
+    } else {
+      burst({ dur: .28, peak: .022, type: 'lowpass', freq: 700, q: .6, attack: .01 });
+      tone(280, .2, .006, 'sine', 160);
+    }
+  }
 
   if (!AC || !button){
     syncUi();
-    return { enable(){}, disable(){}, toggle(){}, stoke(){}, clank(){}, purr(){}, dogSigh(){}, rustle(){}, get on(){ return false; }, get started(){ return false; } };
+    return { enable(){}, disable(){}, toggle(){}, stoke(){}, clank(){}, purr(){}, dogSigh(){}, rustle(){}, cupClink(){}, pageFlip(){}, woodCreak(){}, candle(){}, get on(){ return false; }, get started(){ return false; } };
   }
   button.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle(); });
   function autoStart(e){
@@ -2241,7 +2361,7 @@ const Sound = (() => {
   }
   syncUi();
   return {
-    enable, disable, toggle, stoke, clank, purr, dogSigh, rustle,
+    enable, disable, toggle, stoke, clank, purr, dogSigh, rustle, cupClink, pageFlip, woodCreak, candle,
     level(){
       if (!analyser) return 0;
       const data = new Uint8Array(analyser.fftSize);
