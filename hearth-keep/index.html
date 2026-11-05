@@ -1336,9 +1336,9 @@ for (const z of [-.52, .6]) sphere(.05, M.brass, -1.67, 2.08, z, room, false);
 
 // chandelier
 const chand = new THREE.Group();
-chand.position.set(.08, 2.05, -.12);
+chand.position.set(.08, 1.86, -.12);
 room.add(chand);
-cyl(.018, .018, .46, 6, M.iron, 0, .23, 0, chand, false);
+cyl(.018, .018, .66, 6, M.iron, 0, .33, 0, chand, false);
 const chandRing = new THREE.Mesh(new THREE.TorusGeometry(.28, .014, 6, 24), M.iron);
 chandRing.rotation.x = Math.PI / 2;
 chand.add(chandRing);
@@ -1346,16 +1346,16 @@ for (let i = 0; i < 4; i++){
   const a = i / 4 * TAU + .4;
   const gx = Math.cos(a) * .28, gz = Math.sin(a) * .28;
   cyl(.035, .05, .04, 8, M.brass, gx, .03, gz, chand, false);
-  cyl(.02, .02, .16, 8, M.candle, gx, .12, gz, chand, false);
+  cyl(.02, .02, .14, 8, M.candle, gx, .12, gz, chand, false);
   const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: warmGlowTex, color: 0xffd9a0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .75 }));
-  flame.position.set(gx, .25, gz);
+  flame.position.set(gx, .23, gz);
   flame.scale.set(.12, .16, 1);
   chand.add(flame);
   candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y, lit: true, scope: 'chandelier' });
 }
 for (let i = 0; i < 4; i++){
   const a = i / 4 * TAU + .4;
-  tube([[0, .48, 0], [Math.cos(a) * .12, .36, Math.sin(a) * .12], [Math.cos(a) * .28, .24, Math.sin(a) * .28]], .006, M.iron, chand, 8);
+  tube([[0, .38, 0], [Math.cos(a) * .12, .3, Math.sin(a) * .12], [Math.cos(a) * .28, .22, Math.sin(a) * .28]], .006, M.iron, chand, 8);
 }
 
 // logs in fireplace
