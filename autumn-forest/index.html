@@ -319,10 +319,10 @@ const M = {
   fruit: std(0xd85a34, .58),
   fruitDark: std(0xb84227, .62),
   fruitLeaf: std(0x77854a, .85),
-  deer: std(0x9a6236, .86),
-  deerLight: std(0xcfa573, .86),
+  deer: std(0x8f5a33, .88),
+  deerLight: std(0xc49563, .88),
   deerDark: std(0x503522, .86),
-  antler: std(0xdcc79c, .78),
+  antler: std(0xb99b6b, .82),
   bear: std(0x5c3d29, .9),
   bearDark: std(0x3a2517, .92),
   bearSnout: std(0xb78c60, .88),
@@ -561,6 +561,36 @@ function blob(parent, sx, sy, sz, mat, x = 0, y = 0, z = 0, detail = 1){
   parent.add(m);
   return m;
 }
+const ORB_GEO = new THREE.SphereGeometry(1, 18, 12);
+const CONE_GEO = new THREE.ConeGeometry(1, 1, 8);
+function orb(parent, sx, sy, sz, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0){
+  const m = new THREE.Mesh(ORB_GEO, mat);
+  m.scale.set(sx, sy, sz);
+  m.position.set(x, y, z);
+  m.rotation.set(rx, ry, rz);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function cone(parent, radius, height, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0){
+  const m = new THREE.Mesh(CONE_GEO, mat);
+  m.scale.set(radius, height, radius);
+  m.position.set(x, y, z);
+  m.rotation.set(rx, ry, rz);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function curveTube(parent, points, radius, mat, segments = 18, radial = 8){
+  const curve = new THREE.CatmullRomCurve3(points);
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, radial, false), mat);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
 function softSprite(color, scale, opacity, additive = false){
   const mat = new THREE.SpriteMaterial({
     map: softTex, color, transparent: true, opacity,
@@ -772,7 +802,7 @@ function terrainH(x, z){
   const shoulder = .38 * Math.exp(-(((x + 1.14) ** 2) / .8 + ((z + .18) ** 2) / .5));
   const ripple = .035 * Math.sin(x * 4.2 + z * 3.1) + .022 * Math.cos(z * 5.4 - x * 2.2);
   const clearing = .012 * Math.sin(x * 7.0 + 1.2) * Math.cos(z * 6.0);
-  return .048 + peakA + peakB + shoulder + ripple + clearing;
+  return Math.max(.06, .048 + peakA + peakB + shoulder + ripple + clearing);
 }
 
 const RINGS = 54, SEGS = 168;
@@ -1520,38 +1550,47 @@ function makeDeer(){
   const root = new THREE.Group();
   const parts = { kind: 'deer', speed: .42, name: '小鹿', root, legs: [] };
   const body = new THREE.Group();
-  body.position.y = .32;
+  body.position.y = .37;
   root.add(body);
-  block(body, .18, .16, .36, M.deer, 0, 0, 0);
-  block(body, .15, .1, .16, M.deerLight, 0, .01, .17);
-  const neck = block(body, .08, .22, .09, M.deer, 0, .16, .17, -.22);
+  orb(body, .15, .12, .3, M.deer, 0, 0, 0);
+  orb(body, .145, .12, .14, M.deer, 0, .01, .18);
+  orb(body, .14, .115, .14, M.deer, 0, .005, -.17);
+  orb(body, .06, .05, .045, M.deerLight, 0, -.03, .215);
+  orb(body, .012, .007, .018, M.cream, -.055, .135, .06);
+  orb(body, .01, .006, .016, M.cream, .065, .13, -.04);
+  cylBetween(root, new THREE.Vector3(0, .43, .16), new THREE.Vector3(0, .61, .27), .052, .042, M.deer, 8);
   const head = new THREE.Group();
-  head.position.set(0, .27, .23);
-  body.add(head);
-  block(head, .115, .105, .17, M.deer, 0, .02, .03);
-  block(head, .07, .055, .075, M.deerLight, 0, -.008, .125);
-  block(head, .026, .045, .025, M.deerLight, -.055, .075, -.01, 0, 0, -.25);
-  block(head, .026, .045, .025, M.deerLight, .055, .075, -.01, 0, 0, .25);
-  block(head, .022, .022, .016, M.black, -.04, .04, .095);
-  block(head, .022, .022, .016, M.black, .04, .04, .095);
+  head.position.set(0, .64, .29);
+  root.add(head);
+  orb(head, .075, .07, .12, M.deer, 0, 0, .02);
+  orb(head, .048, .038, .085, M.deerLight, 0, -.012, .105);
+  orb(head, .018, .013, .018, M.black, 0, -.006, .188);
   for (const side of [-1, 1]){
+    orb(head, .012, .012, .01, M.black, side * .05, .028, .072);
+    orb(head, .028, .062, .016, M.deer, side * .062, .075, -.012, 0, 0, side * .38);
+    orb(head, .015, .036, .009, M.deerLight, side * .066, .08, .002, 0, 0, side * .38);
     const a = new THREE.Group();
-    a.position.set(side * .045, .09, .0);
+    a.position.set(side * .042, .115, -.005);
     head.add(a);
-    cylBetween(a, new THREE.Vector3(0, 0, 0), new THREE.Vector3(side * .06, .14, -.03), .01, .007, M.antler, 4);
-    cylBetween(a, new THREE.Vector3(side * .04, .08, -.018), new THREE.Vector3(side * .11, .12, .02), .007, .004, M.antler, 4);
-    cylBetween(a, new THREE.Vector3(side * .045, .1, -.02), new THREE.Vector3(side * .055, .15, -.09), .007, .004, M.antler, 4);
+    cylBetween(a, new THREE.Vector3(0, 0, 0), new THREE.Vector3(side * .035, .145, -.035), .011, .006, M.antler, 5);
+    cylBetween(a, new THREE.Vector3(side * .018, .06, -.015), new THREE.Vector3(side * .09, .095, .02), .008, .004, M.antler, 4);
+    cylBetween(a, new THREE.Vector3(side * .022, .1, -.025), new THREE.Vector3(side * .05, .165, -.055), .007, .004, M.antler, 4);
+    cylBetween(a, new THREE.Vector3(side * .03, .128, -.03), new THREE.Vector3(side * .11, .14, -.02), .006, .003, M.antler, 4);
   }
-  const hips = [[-.075, .13], [.075, .13], [-.075, -.13], [.075, -.13]];
+  const hips = [[-.075, .18], [.075, .18], [-.085, -.16], [.085, -.16]];
   for (const [hx, hz] of hips){
     const leg = new THREE.Group();
-    leg.position.set(hx, .3, hz);
+    leg.position.set(hx, .35, hz);
     root.add(leg);
-    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.27, 0), .015, .011, M.deerDark, 5);
-    block(leg, .04, .025, .06, M.deerDark, 0, -.285, .012);
+    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.17, 0), .024, .016, M.deer, 7);
+    cylBetween(leg, new THREE.Vector3(0, -.17, 0), new THREE.Vector3(0, -.315, 0), .015, .01, M.deerDark, 7);
+    orb(leg, .022, .019, .034, M.deerDark, 0, -.33, .012);
     parts.legs.push(leg);
   }
-  const tail = block(root, .035, .06, .03, M.deerLight, 0, .31, -.2, .35);
+  const tail = new THREE.Group();
+  tail.position.set(0, .41, -.31);
+  root.add(tail);
+  orb(tail, .028, .05, .025, M.deerLight, 0, 0, 0, .4, 0, 0);
   parts.head = head;
   parts.tail = tail;
   root.castShadow = true;
@@ -1561,96 +1600,132 @@ function makeDeer(){
 function makeBear(){
   const root = new THREE.Group();
   const parts = { kind: 'bear', speed: .3, name: '熊', root, legs: [] };
-  const body = blob(root, .24, .23, .34, M.bear, 0, .27, 0, 1);
-  body.castShadow = true;
-  blob(root, .19, .17, .2, M.bear, 0, .37, .15, 1);
-  const head = new THREE.Group();
-  head.position.set(0, .42, .27);
-  root.add(head);
-  blob(head, .12, .11, .12, M.bear, 0, 0, 0, 1);
-  blob(head, .06, .05, .07, M.bearSnout, 0, -.002, .095, 1);
-  const nose = block(head, .03, .022, .02, M.black, 0, .015, .14, 0, 0, 0, false);
-  for (const side of [-1, 1]){
-    blob(head, .035, .035, .02, M.bearDark, side * .075, .07, -.01, 0);
-    block(head, .014, .014, .012, M.black, side * .04, .025, .075, 0, 0, 0, false);
-  }
-  for (const [x, z] of [[-.11, .13], [.11, .13], [-.11, -.13], [.11, -.13]]){
+  for (const [x, z] of [[-.14, .2], [.14, .2], [-.15, -.17], [.15, -.17]]){
     const leg = new THREE.Group();
-    leg.position.set(x, .18, z);
+    leg.position.set(x, .29, z);
     root.add(leg);
-    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.16, 0), .032, .026, M.bearDark, 5);
-    block(leg, .07, .035, .09, M.bearDark, 0, -.17, .012);
+    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.23, 0), .06, .048, M.bear, 8);
+    orb(leg, .065, .03, .09, M.bearDark, 0, -.25, .02);
     parts.legs.push(leg);
   }
-  const tail = blob(root, .04, .04, .035, M.bearDark, 0, .3, -.2, 0);
+  orb(root, .235, .2, .34, M.bear, 0, .35, .01);
+  orb(root, .18, .15, .19, M.bear, 0, .44, .12);
+  orb(root, .19, .17, .17, M.bear, 0, .34, -.19);
+  orb(root, .16, .15, .14, M.bear, 0, .35, .24);
+  orb(root, .08, .07, .06, M.bearDark, 0, .4, .27);
+  const head = new THREE.Group();
+  head.position.set(0, .49, .34);
+  root.add(head);
+  orb(head, .14, .13, .135, M.bear, 0, 0, 0);
+  orb(head, .08, .065, .1, M.bearSnout, 0, -.025, .12);
+  orb(head, .03, .022, .03, M.black, 0, -.018, .215);
+  for (const side of [-1, 1]){
+    orb(head, .055, .06, .035, M.bear, side * .09, .115, -.015, 0, 0, side * .16);
+    orb(head, .028, .035, .014, M.bearDark, side * .09, .115, .008, 0, 0, side * .16);
+    orb(head, .012, .013, .012, M.black, side * .055, .035, .118);
+  }
+  const tail = orb(root, .05, .04, .04, M.bearDark, 0, .43, -.36);
   parts.head = head;
   parts.tail = tail;
+  root.castShadow = true;
+  root.traverse(o => { if (o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
   return parts;
 }
 function makeFox(){
   const root = new THREE.Group();
   const parts = { kind: 'fox', speed: .55, name: '赤狐', root, legs: [] };
-  const body = block(root, .11, .1, .28, M.fox, 0, .17, 0);
-  block(root, .08, .07, .11, M.foxLight, 0, .13, .12);
-  const head = new THREE.Group();
-  head.position.set(0, .24, .16);
-  root.add(head);
-  block(head, .1, .09, .13, M.fox, 0, 0, .02);
-  block(head, .055, .04, .06, M.foxLight, 0, -.025, .1);
-  block(head, .02, .018, .016, M.black, 0, -.005, .135, 0, 0, 0, false);
-  for (const side of [-1, 1]){
-    const ear = block(head, .035, .065, .025, M.fox, side * .04, .075, -.01, 0, 0, side * .12);
-    block(head, .02, .025, .012, M.foxDark, side * .04, .04, .075, 0, 0, 0, false);
-  }
-  for (const [x, z] of [[-.04, .1], [.04, .1], [-.04, -.1], [.04, -.1]]){
+  for (const [x, z] of [[-.05, .14], [.05, .14], [-.055, -.13], [.055, -.13]]){
     const leg = new THREE.Group();
-    leg.position.set(x, .13, z);
+    leg.position.set(x, .16, z);
     root.add(leg);
-    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.12, 0), .011, .008, M.foxDark, 4);
+    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.13, 0), .016, .011, M.foxDark, 6);
+    orb(leg, .022, .014, .03, M.foxDark, 0, -.145, .008);
     parts.legs.push(leg);
   }
+  orb(root, .12, .095, .29, M.fox, 0, .21, 0);
+  orb(root, .095, .085, .1, M.fox, 0, .22, -.11);
+  orb(root, .07, .06, .09, M.foxLight, 0, .185, .17);
+  cylBetween(root, new THREE.Vector3(0, .25, .14), new THREE.Vector3(0, .32, .24), .048, .035, M.fox, 7);
+  const head = new THREE.Group();
+  head.position.set(0, .34, .27);
+  root.add(head);
+  orb(head, .082, .07, .095, M.fox, 0, 0, .01);
+  orb(head, .045, .038, .04, M.foxLight, 0, -.022, .075);
+  cylBetween(head, new THREE.Vector3(0, -.012, .07), new THREE.Vector3(0, -.022, .195), .04, .012, M.foxLight, 7);
+  orb(head, .018, .014, .016, M.black, 0, -.012, .215);
+  for (const side of [-1, 1]){
+    cone(head, .055, .1, M.fox, side * .052, .088, -.018, -.05, 0, side * .2);
+    cone(head, .026, .06, M.foxDark, side * .054, .09, -.002, -.05, 0, side * .2);
+    orb(head, .012, .013, .012, M.black, side * .042, .022, .058);
+  }
   const tail = new THREE.Group();
-  tail.position.set(0, .22, -.16);
+  tail.position.set(0, .24, -.2);
   root.add(tail);
-  const t1 = blob(tail, .055, .05, .13, M.fox, 0, .02, -.06, 0);
-  t1.rotation.x = -.45;
-  const t2 = blob(tail, .045, .04, .07, M.foxLight, 0, .07, -.15, 0);
-  t2.rotation.x = -.25;
+  const tailBase = new THREE.Group();
+  tailBase.rotation.y = .5;
+  tail.add(tailBase);
+  curveTube(tailBase, [
+    new THREE.Vector3(0, .01, 0),
+    new THREE.Vector3(.02, .04, -.11),
+    new THREE.Vector3(.06, .09, -.21),
+    new THREE.Vector3(.09, .15, -.29),
+    new THREE.Vector3(.1, .21, -.33)
+  ], .068, M.fox, 20, 9);
+  orb(tailBase, .06, .06, .07, M.fox, 0, .01, -.02, -.5, 0, 0);
+  orb(tailBase, .04, .04, .055, M.foxLight, .1, .22, -.34, -.1, 0, 0);
   parts.head = head;
   parts.tail = tail;
+  root.castShadow = true;
+  root.traverse(o => { if (o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
   return parts;
 }
 function makeSquirrel(){
   const root = new THREE.Group();
   const parts = { kind: 'squirrel', speed: .48, name: '松鼠', root, legs: [] };
-  block(root, .075, .1, .1, M.squirrel, 0, .1, 0);
-  block(root, .055, .05, .06, M.squirrelLight, 0, .1, .05);
-  const head = new THREE.Group();
-  head.position.set(0, .18, .04);
-  root.add(head);
-  block(head, .075, .07, .085, M.squirrel, 0, 0, .02);
-  block(head, .04, .03, .035, M.squirrelLight, 0, -.015, .07);
-  block(head, .018, .016, .012, M.black, 0, .015, .065, 0, 0, 0, false);
-  for (const side of [-1, 1]){
-    block(head, .022, .035, .014, M.squirrel, side * .03, .055, -.005, 0, 0, side * .14);
-    block(head, .012, .012, .01, M.black, side * .028, .02, .055, 0, 0, 0, false);
-  }
-  for (const [x, z] of [[-.03, .04], [.03, .04], [-.03, -.04], [.03, -.04]]){
+  for (const [x, z] of [[-.035, .025], [.035, .025], [-.04, -.03], [.04, -.03]]){
     const leg = new THREE.Group();
-    leg.position.set(x, .07, z);
+    leg.position.set(x, .12, z);
     root.add(leg);
-    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.06, 0), .009, .007, M.squirrel, 4);
+    cylBetween(leg, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -.1, 0), .014, .01, M.squirrel, 6);
+    orb(leg, .022, .012, .03, M.squirrelLight, 0, -.105, .008);
     parts.legs.push(leg);
   }
+  orb(root, .075, .11, .075, M.squirrel, 0, .14, 0);
+  orb(root, .05, .06, .05, M.squirrel, 0, .1, -.03);
+  orb(root, .042, .055, .014, M.squirrelLight, 0, .145, .062);
+  orb(root, .015, .018, .012, M.squirrelLight, -.05, .155, .058);
+  orb(root, .015, .018, .012, M.squirrelLight, .05, .155, .058);
+  const head = new THREE.Group();
+  head.position.set(0, .265, .02);
+  root.add(head);
+  orb(head, .07, .065, .07, M.squirrel, 0, 0, 0);
+  orb(head, .035, .028, .04, M.squirrelLight, 0, -.008, .07);
+  orb(head, .012, .01, .012, M.black, 0, -.002, .112);
+  for (const side of [-1, 1]){
+    orb(head, .026, .02, .026, M.squirrelLight, side * .043, .01, .045);
+    orb(head, .011, .011, .01, M.black, side * .032, .022, .052);
+    cone(head, .024, .06, M.squirrel, side * .045, .068, -.008, 0, 0, side * .14);
+    cone(head, .012, .035, M.squirrelLight, side * .045, .075, .004, 0, 0, side * .14);
+  }
   const tail = new THREE.Group();
-  tail.position.set(0, .14, -.06);
+  tail.position.set(0, .17, -.07);
   root.add(tail);
-  blob(tail, .055, .09, .05, M.squirrel, 0, .06, -.05, 0).rotation.x = -.35;
-  blob(tail, .045, .08, .04, M.squirrel, 0, .14, -.09, 0).rotation.x = -.2;
-  blob(tail, .026, .042, .026, M.squirrel, 0, .2, -.1, 0);
-  blob(tail, .014, .02, .014, M.squirrelLight, 0, .235, -.105, 0);
+  const tailBase = new THREE.Group();
+  tailBase.rotation.y = .42;
+  tail.add(tailBase);
+  curveTube(tailBase, [
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, .06, -.09),
+    new THREE.Vector3(.015, .14, -.16),
+    new THREE.Vector3(.03, .22, -.2),
+    new THREE.Vector3(.035, .295, -.16)
+  ], .064, M.squirrel, 22, 9);
+  orb(tailBase, .05, .05, .05, M.squirrel, 0, .01, -.02, 0, 0, 0);
+  orb(tailBase, .032, .04, .03, M.squirrelLight, .035, .3, -.155, 0, 0, 0);
   parts.head = head;
   parts.tail = tail;
+  root.castShadow = true;
+  root.traverse(o => { if (o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
   return parts;
 }
 animalModels.deer = makeDeer();
@@ -1661,8 +1736,8 @@ for (const key in animalModels){
   const a = animalModels[key];
   a.root.visible = false;
   jarRig.add(a.root);
-  const proxy = new THREE.Mesh(new THREE.SphereGeometry(key === 'deer' ? .3 : key === 'bear' ? .28 : key === 'fox' ? .18 : .14, 8, 6), new THREE.MeshBasicMaterial({ transparent:true, opacity:0, depthWrite:false, colorWrite:false }));
-  proxy.position.set(0, key === 'squirrel' ? .12 : .25, 0);
+  const proxy = new THREE.Mesh(new THREE.SphereGeometry(key === 'deer' ? .34 : key === 'bear' ? .38 : key === 'fox' ? .22 : .16, 10, 8), new THREE.MeshBasicMaterial({ transparent:true, opacity:0, depthWrite:false, colorWrite:false }));
+  proxy.position.set(0, key === 'deer' ? .34 : key === 'bear' ? .33 : key === 'fox' ? .22 : .18, 0);
   proxy.visible = true;
   proxy.userData.kind = 'animal';
   proxy.userData.animal = key;
@@ -1954,7 +2029,7 @@ canvas.addEventListener('pointermove', (e) => {
   prevPointer = { x: e.clientX, y: e.clientY };
   pointerTravel += Math.abs(dx) + Math.abs(dy);
   view.tAz = clamp(view.tAz - dx * .0046, -.62, .62);
-  view.tPolar = clamp(view.tPolar + dy * .0032, .91, 1.43);
+  view.tPolar = clamp(view.tPolar - dy * .0032, .91, 1.43);
   noteInteraction();
 });
 function endPointer(e, allowClick){

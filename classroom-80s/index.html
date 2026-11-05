@@ -2588,7 +2588,7 @@ canvas.addEventListener('pointermove', (e) => {
   prevPointer = { x: e.clientX, y: e.clientY };
   pointerMoved += Math.abs(dx) + Math.abs(dy);
   view.tAz = clamp(view.tAz - dx * .004, -.16, .48);
-  view.tPolar = clamp(view.tPolar + dy * .0026, 1.37, 1.49);
+  view.tPolar = clamp(view.tPolar - dy * .0026, 1.37, 1.49);
 });
 function endPointer(e, allowClick){
   const wasDragging = dragging;

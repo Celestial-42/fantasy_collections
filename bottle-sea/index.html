@@ -4599,7 +4599,7 @@ canvas.addEventListener('pointermove', (e)=>{
   prevPointer.x = e.clientX;
   prevPointer.y = e.clientY;
   view.tAz -= dx * .0052;
-  view.tPolar = clamp(view.tPolar + dy * .0036, .56, 1.42);
+  view.tPolar = clamp(view.tPolar - dy * .0036, .56, 1.42);
   noteInteraction();
 });
 function endDrag(e){

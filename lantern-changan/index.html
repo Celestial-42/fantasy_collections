@@ -1977,7 +1977,7 @@ canvas.addEventListener('pointermove', (e) => {
     spinVel = clamp(-dx * .09, -1.5, 1.5);
   } else {
     view.tAz = clamp(view.tAz - dx * .0044, -.58, .58);
-    view.tPolar = clamp(view.tPolar + dy * .003, .9, 1.27);
+    view.tPolar = clamp(view.tPolar - dy * .003, .9, 1.27);
   }
   noteInteraction();
 });

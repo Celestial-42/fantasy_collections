@@ -3790,7 +3790,7 @@ canvas.addEventListener('pointermove', (e) => {
   prevPointer = { x: e.clientX, y: e.clientY };
   pointerMoved += Math.abs(dx) + Math.abs(dy);
   view.tAz = clamp(view.tAz - dx * .0052, -1.05, 1.05);
-  view.tPolar = clamp(view.tPolar + dy * .0036, .82, 1.43);
+  view.tPolar = clamp(view.tPolar - dy * .0036, .82, 1.43);
   noteInteraction();
 });
 
