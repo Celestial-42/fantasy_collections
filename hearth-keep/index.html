@@ -1465,71 +1465,68 @@ dog.scale.setScalar(.9);
 room.add(dog);
 const dogBody = new THREE.Group();
 dog.add(dogBody);
-const fur = std(0xc08a45, .94, 0);
-const furLight = std(0xe2c18a, .94, 0);
-const furDark = std(0x9d6a32, .95, 0);
-const dogTorso = sphere(.22, fur, 0, .18, 0, dogBody);
-dogTorso.scale.set(1.2, .55, .92);
-const dogChest = sphere(.16, furLight, .2, .17, .01, dogBody);
-dogChest.scale.set(.82, .76, .96);
-const saddle = sphere(.2, furDark, -.05, .285, 0, dogBody, false);
-saddle.scale.set(.9, .17, .72);
-// head turned a little toward the room so the sleeping face reads
+const fur = std(0xc9974f, .93, 0);
+const furLight = std(0xe6c794, .94, 0);
+const furCream = std(0xf0dcb8, .95, 0);
+const dogTorso = sphere(.22, fur, -.01, .17, 0, dogBody);
+dogTorso.scale.set(1.2, .55, .9);
+const dogRump = sphere(.16, fur, -.2, .15, -.01, dogBody);
+dogRump.scale.set(.85, .66, .94);
+const dogChest = sphere(.14, furLight, .15, .16, .03, dogBody);
+dogChest.scale.set(.82, .74, .92);
+const haunch = sphere(.11, fur, -.13, .13, .12, dogBody);
+haunch.scale.set(1.08, .78, .98);
+const farHaunch = sphere(.09, fur, -.16, .125, -.12, dogBody);
+farHaunch.scale.set(1.0, .7, .9);
+// head curled toward the room, chin resting near the forepaws
 const dogHeadGroup = new THREE.Group();
-dogHeadGroup.position.set(.3, .245, .04);
-dogHeadGroup.rotation.y = -.45;
+dogHeadGroup.position.set(.2, .235, .13);
+dogHeadGroup.rotation.set(0, -1.16, .14);
 dogBody.add(dogHeadGroup);
-const dogHead = sphere(.14, fur, 0, .015, 0, dogHeadGroup);
-dogHead.scale.set(.98, .92, .9);
-const browFur = sphere(.085, fur, -.045, .075, .01, dogHeadGroup);
-browFur.scale.set(.9, .6, .85);
-const muzzle = sphere(.085, furLight, .105, -.035, .02, dogHeadGroup);
-muzzle.scale.set(1.45, .62, .9);
-sphere(.034, M.black, .195, -.035, .02, dogHeadGroup, false).scale.set(1, .75, .9);
-// nose bridge and a closed smile
-box(.08, .022, .06, furLight, .1, .025, .015, dogHeadGroup, false).rotation.z = -.08;
-box(.06, .004, .004, M.black, .11, -.075, .075, dogHeadGroup, false).rotation.z = .08;
+const dogHead = sphere(.13, fur, 0, 0, 0, dogHeadGroup);
+dogHead.scale.set(1.08, .95, .9);
+const browFur = sphere(.07, fur, .035, .045, 0, dogHeadGroup);
+browFur.scale.set(.9, .55, .95);
+const muzzle = sphere(.072, std(0xe0c494, .94, 0), .115, -.028, .005, dogHeadGroup);
+muzzle.scale.set(1.25, .66, .88);
+const chin = sphere(.05, furCream, .11, -.062, .005, dogHeadGroup);
+chin.scale.set(1.0, .42, .82);
+sphere(.026, M.black, .19, -.033, .005, dogHeadGroup, false).scale.set(1.15, .7, 1.0);
+// a soft stop and the ridge of the snout
+box(.06, .012, .045, furLight, .07, .012, .005, dogHeadGroup, false).rotation.z = -.1;
+box(.075, .006, .034, std(0xa8773f, .95, 0), .1, .022, .005, dogHeadGroup, false);
+// closed eyes, soft brows and long ears hanging down the cheeks
 for (const side of [-1, 1]){
-  // floppy ears hang from the sides, away from the eyes
-  const ear = sphere(.075, std(0x9f703d, .95, 0), -.02, .035, side * .1, dogHeadGroup);
-  ear.scale.set(.56, 1.35, .34);
-  ear.rotation.z = side * .18;
-  ear.rotation.x = side * -.12;
-  const innerEar = sphere(.04, std(0xbd8a5a, .95, 0), -.015, .02, side * .118, dogHeadGroup, false);
-  innerEar.scale.set(.45, 1.1, .22);
-  // closed eyes and brows on both sides
-  box(.042, .004, .004, M.black, .075, .055, side * .105, dogHeadGroup, false).rotation.z = -.12;
-  box(.048, .006, .006, furDark, .075, .078, side * .095, dogHeadGroup, false).rotation.z = .05;
-  sphere(.006, M.cream, .09, .06, side * .11, dogHeadGroup, false);
+  const eye = box(.046, .005, .006, M.black, .076, .024, side * .06, dogHeadGroup, false);
+  eye.rotation.z = -.08;
+  const brow = sphere(.026, fur, .073, .052, side * .062, dogHeadGroup, false);
+  brow.scale.set(1.1, .5, .8);
+  const ear = sphere(.074, std(0xb08145, .95, 0), -.02, -.018, side * .105, dogHeadGroup);
+  ear.scale.set(.62, 1.28, .42);
+  ear.rotation.z = side * .55;
+  ear.rotation.x = side * .05;
+  const innerEar = sphere(.042, std(0xc9965f, .95, 0), -.005, -.026, side * .118, dogHeadGroup, false);
+  innerEar.scale.set(.45, 1.0, .2);
 }
-// neck joining head and shoulders
-const dogNeck = sphere(.13, fur, .22, .205, .01, dogBody);
-dogNeck.scale.set(.9, .78, .85);
-// front paws stretched out
-for (const z of [-.1, .1]){
-  const paw = sphere(.07, furLight, .4, .085, z, dogBody, false);
-  paw.scale.set(1.55, .5, .8);
-}
-// hind haunch and tucked paw
-for (const z of [-.14, .14]){
-  const hind = sphere(.11, fur, -.17, .13, z, dogBody);
-  hind.scale.set(1.05, .72, .95);
-  const paw = sphere(.06, furLight, -.27, .075, z, dogBody, false);
-  paw.scale.set(1.35, .45, .8);
-}
-// collar and tag
-const dogCollar = new THREE.Mesh(new THREE.TorusGeometry(.1, .022, 6, 18), std(0xa34b3b, .9, 0));
-dogCollar.position.set(.255, .21, .035);
-dogCollar.rotation.y = Math.PI / 2;
-dogBody.add(dogCollar);
-sphere(.023, M.brass, .29, .13, .11, dogBody, false);
-// feathered tail curling round the near side of the bed
-const dogTail = tube([[-.18, .14, -.08], [-.28, .1, -.04], [-.33, .07, .04], [-.3, .06, .14], [-.21, .06, .18]], .021, fur, dogBody, 18);
-const tailTip = sphere(.045, furLight, -.19, .06, .19, dogBody, false);
-tailTip.scale.set(1.3, .65, 1.0);
+const dogNeck = sphere(.12, fur, .2, .215, .055, dogBody);
+dogNeck.scale.set(.92, .82, .82);
+// forepaws tucked under the chin
+const nearPaw = sphere(.06, furLight, .29, .085, .21, dogBody, false);
+nearPaw.scale.set(1.25, .42, 1.25);
+const farPaw = sphere(.055, furLight, .34, .08, .14, dogBody, false);
+farPaw.scale.set(1.4, .4, .8);
+// hind paws just visible under the tucked haunch
+const hindPaw = sphere(.05, furLight, -.24, .072, .2, dogBody, false);
+hindPaw.scale.set(1.3, .4, .8);
+const farHindPaw = sphere(.045, furLight, -.26, .068, -.13, dogBody, false);
+farHindPaw.scale.set(1.2, .38, .7);
+// feathered tail tucked along the far side of the bed
+const dogTail = tube([[-.2, .13, -.02], [-.29, .09, -.12], [-.34, .065, -.02], [-.31, .06, .1], [-.25, .06, .18]], .025, fur, dogBody, 18);
+const tailTip = sphere(.05, furLight, -.24, .062, .19, dogBody, false);
+tailTip.scale.set(1.1, .6, 1.0);
 for (let i = 0; i < 4; i++){
-  const feather = sphere(.025, furLight, -.22 + i * .008, .065, .17 - i * .018, dogBody, false);
-  feather.scale.set(.65, .6, 1.5);
+  const feather = sphere(.026, furLight, -.245 + i * .012, .063, .165 - i * .02, dogBody, false);
+  feather.scale.set(.7, .55, 1.3);
 }
 clickProxy(-.42, .32, .74, .4, 'dog');
 clickProxy(0, 1.0, -.4, .24, 'chair', chairBody);
@@ -1731,6 +1728,11 @@ scene.add(windowFill);
 const armorFill = new THREE.PointLight(0xb9d4e6, 1.5, 2.8, 2.0);
 armorFill.position.set(1.25, 1.3, .1);
 scene.add(armorFill);
+
+// a low warm bounce so the sleeping dog's face reads from the room side
+const dogFill = new THREE.PointLight(0xffb877, .42, 1.25, 2.0);
+dogFill.position.set(-.34, .68, 1.05);
+scene.add(dogFill);
 
 // --- fire flames -----------------------------------------------------------
 const flameSprites = [];
