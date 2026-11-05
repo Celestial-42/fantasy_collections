@@ -675,10 +675,10 @@ runner.position.y = .004;
 runner.receiveShadow = true;
 scene.add(runner);
 
-const baseBody = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.4, .48, 64), std(0xffffff, .82));
+const baseBody = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.4, .45, 64), std(0xffffff, .82));
 baseBody.material.map = baseWoodTex;
 baseBody.material.color.set(0x916444);
-baseBody.position.y = BASE_TOP - .24;
+baseBody.position.y = BASE_TOP - .255;
 baseBody.castShadow = true;
 baseBody.receiveShadow = true;
 baseGroup.add(baseBody);
