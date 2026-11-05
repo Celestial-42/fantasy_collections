@@ -1979,6 +1979,17 @@ function makeKid(team, index, role, baseX, baseZ){
     root, body, legs, arms, headPivot,
     home: { x: baseX, z: baseZ },
     state: 'play', phase: rand(0, TAU), moveSpeed: 0, walkPhase: rand(0, TAU), vx: 0, vz: 0, runBlend: 0,
+    // every kid gets slightly different legs, reaction time and top speed, so the
+    // team never turns or steps in lockstep
+    speedMul: (role === 'FW' ? 1.04 : role === 'DF' ? .98 : .9) * rand(.94, 1.06),
+    accelMul: rand(.9, 1.1),
+    gait: rand(.88, 1.12), stride: rand(.9, 1.08), armGain: rand(.6, .85),
+    reactionDelay: rand(.1, .26), scanPhase: rand(0, TAU),
+    task: 'shape', pendingTask: null, pendingDelay: 0, taskAge: 0,
+    thinkTimer: rand(.2, .6), targetTask: 'shape', pauseTimer: 0,
+    targetX: baseX, targetZ: baseZ,
+    faceX: baseX, faceZ: baseZ,
+    focusX: 0, focusZ: FZ,
     reaction: 0, stumble: 0, decision: rand(.2, .6), shootCooldown: 0,
     tackleCooldown: rand(.2, .8), inside: false, scoring: false
   };
@@ -2232,7 +2243,8 @@ const match = {
   scoring: null,
   bell: 0,
   boardClock: 0,
-  endedEarly: false
+  endedEarly: false,
+  stats: { shots: 0, passes: 0, clears: 0, tackles: 0, saves: 0 }
 };
 
 let toastTimer = 0;
@@ -2344,8 +2356,28 @@ function resetPositions(){
   ball.isShot = false;
   ball.saveResolved = true;
   ball.pos.set(0, GROUND + BALL_R, FZ);
-  roles.timer = 0;
-  roles.redChaser = roles.blueChaser = roles.redPress = roles.bluePress = null;
+  roles.red.timer = 0;
+  roles.blue.timer = .18;
+  for (const team of ['red', 'blue']){
+    roles[team].chaser = roles[team].presser = roles[team].mark = null;
+    roles[team].mode = 'loose';
+    roles[team].side = 1;
+  }
+  for (const p of players){
+    p.task = 'shape';
+    p.pendingTask = null;
+    p.pendingDelay = 0;
+    p.taskAge = 0;
+    p.thinkTimer = rand(.2, .6);
+    p.targetTask = 'shape';
+    p.pauseTimer = 0;
+    p.targetX = p.home.x;
+    p.targetZ = p.home.z;
+    p.faceX = p.home.x;
+    p.faceZ = p.home.z;
+    p.focusX = ball.pos.x;
+    p.focusZ = ball.pos.z;
+  }
   ballMesh.rotation.set(0, 0, 0);
   ballGroup.visible = true;
 }
@@ -2398,6 +2430,7 @@ function resetMatch(){
   match.scoring = null;
   match.bell = 0;
   match.endedEarly = false;
+  match.stats = { shots: 0, passes: 0, clears: 0, tackles: 0, saves: 0 };
   resetPositions();
   for (const sp of spectators){
     sp.root.visible = true;
@@ -2441,19 +2474,6 @@ function scoreGoal(team, side){
   playWhistle(.35, .3);
 }
 
-function nearestToBall(team, includeKeeper = false){
-  let best = null, bd = Infinity;
-  for (const p of players){
-    if (p.state !== 'play' || p.team !== team) continue;
-    if (p.isKeeper && !includeKeeper && Math.abs(ball.pos.x) < FIELD.fx - .35) continue;
-    const dx = p.root.position.x - ball.pos.x;
-    const dz = p.root.position.z - ball.pos.z;
-    const d = Math.hypot(dx, dz);
-    if (d < bd){ bd = d; best = p; }
-  }
-  return best;
-}
-
 function attackDir(p){
   return p.team === 'red' ? 1 : -1;
 }
@@ -2482,27 +2502,56 @@ function kickBall(p, tx, tz, speed, isShot = false){
 }
 
 function shootBall(p){
-  const side = attackDir(p);
-  const tz = FZ + rand(-GOAL_HALF * .48, GOAL_HALF * .48);
-  kickBall(p, side * GOAL_X, tz, rand(1.45, 1.7), true);
+  const info = TEAM_INFO[p.team];
+  match.stats.shots++;
+  const keeper = players.find(q => q.team !== p.team && q.isKeeper && q.state === 'play');
+  let tz;
+  if (keeper){
+    // shoot away from the keeper instead of straight at the middle
+    tz = FZ - Math.sign(keeper.root.position.z - FZ || rand(-1, 1)) * rand(.11, .22);
+  } else {
+    tz = FZ + rand(-.22, .22);
+  }
+  tz = clamp(tz, FZ - GOAL_HALF + .03, FZ + GOAL_HALF - .03);
+  kickBall(p, info.goalX, tz, rand(1.45, 1.7), true);
+}
+
+function laneClearance(team, ax, az, bx, bz){
+  const dx = bx - ax, dz = bz - az;
+  const len2 = dx * dx + dz * dz || 1;
+  let clearance = 1;
+  for (const q of players){
+    if (q.team === team || q.state !== 'play') continue;
+    const t = clamp(((q.root.position.x - ax) * dx + (q.root.position.z - az) * dz) / len2, 0, 1);
+    const d = Math.hypot(ax + dx * t - q.root.position.x, az + dz * t - q.root.position.z);
+    clearance = Math.min(clearance, d);
+  }
+  return clearance;
 }
 
 function passBall(p){
+  const info = TEAM_INFO[p.team];
+  match.stats.passes++;
   let best = null, bestScore = -Infinity;
-  const dir = attackDir(p);
   for (const q of players){
     if (q === p || q.team !== p.team || q.state !== 'play' || q.isKeeper) continue;
-    const ahead = (q.root.position.x - p.root.position.x) * dir;
-    const dz = Math.abs(q.root.position.z - p.root.position.z);
-    const score = ahead * .75 - dz * .5 + (q.role === 'FW' ? .25 : 0) + rand(0, .25);
+    const leadX = q.root.position.x + q.vx * .22;
+    const leadZ = q.root.position.z + q.vz * .22;
+    const ahead = (leadX - p.root.position.x) * info.dir;
+    const dist = Math.hypot(leadX - p.root.position.x, leadZ - p.root.position.z);
+    const lane = laneClearance(p.team, p.root.position.x, p.root.position.z, leadX, leadZ);
+    const open = nearestOpponentDist(p.team, leadX, leadZ);
+    const roleBonus = q.task === 'support' ? .3 : q.task === 'width' ? .16 : 0;
+    const score = ahead * .9 - dist * .07 + Math.min(lane, .5) * 1.1 + Math.min(open, .3) * .5 + roleBonus + rand(0, .2);
     if (score > bestScore){ bestScore = score; best = q; }
   }
   if (!best) return false;
-  kickBall(p, best.root.position.x + attackDir(p) * .1, best.root.position.z, rand(.96, 1.18), false);
+  kickBall(p, best.root.position.x + best.vx * .22 + info.dir * .08, best.root.position.z + best.vz * .22, rand(.96, 1.18), false);
   return true;
 }
 
 function clearBall(p){
+  match.stats.clears++;
   const dir = attackDir(p);
   const targetZ = FZ + rand(-.32, .32);
   kickBall(p, p.root.position.x + dir * 1.1, targetZ, rand(1.0, 1.3), false);
@@ -2512,18 +2561,61 @@ function clearBall(p){
 // Match update
 // -------------------------------------------------------------------------
 
-const _targets = { x: 0, z: 0 };
-const roles = { redChaser: null, blueChaser: null, redPress: null, bluePress: null, timer: 0 };
+// Team geometry, following the RoboCup convention of attacking direction and
+// own/opponent goal coordinates rather than hard-coded left/right.
+const TEAM_INFO = {
+  red: { dir: 1, ownX: -GOAL_X, goalX: GOAL_X },
+  blue: { dir: -1, ownX: GOAL_X, goalX: -GOAL_X }
+};
 
-function nearestPlayerTo(team, x, z, includeKeeper = false){
-  let best = null, bd = Infinity;
-  for (const p of players){
-    if (p.team !== team || p.state !== 'play') continue;
-    if (p.isKeeper && !includeKeeper) continue;
-    const d = Math.hypot(p.root.position.x - x, p.root.position.z - z);
-    if (d < bd){ bd = d; best = p; }
+// Each team keeps a small role board. Only one kid chases or presses; the
+// other three hold different jobs (support, width, cover / mark, outlet).
+const roles = {
+  red: { chaser: null, presser: null, mark: null, mode: 'loose', timer: 0, side: 1 },
+  blue: { chaser: null, presser: null, mark: null, mode: 'loose', timer: .18, side: 1 }
+};
+
+// The ball loses speed at 2.1/s (see updateBall), so the distance it covers in
+// t seconds is v * (1 - e^-2.1t) / 2.1. Used for interception, not chasing the
+// ball's current position.
+function ballPointAt(t){
+  const k = (1 - Math.exp(-2.1 * t)) / 2.1;
+  return { x: ball.pos.x + ball.vel.x * k, z: ball.pos.z + ball.vel.z * k };
+}
+
+function etaTo(p, x, z, speed){
+  return Math.hypot(x - p.root.position.x, z - p.root.position.z) / Math.max(.05, speed);
+}
+
+function interceptFor(p, speed){
+  let t = .1;
+  for (let i = 0; i < 3; i++){
+    const q = ballPointAt(t);
+    t = etaTo(p, q.x, q.z, speed);
+  }
+  const q = ballPointAt(t);
+  return { x: q.x, z: q.z, t };
+}
+
+function nearestOpponentDist(team, x, z){
+  let best = 1;
+  for (const q of players){
+    if (q.team === team || q.state !== 'play') continue;
+    best = Math.min(best, Math.hypot(q.root.position.x - x, q.root.position.z - z));
   }
   return best;
+}
+
+// Position a defender goal-side of the opponent he is marking.
+function goalSidePoint(mark, team, dist = .14){
+  const info = TEAM_INFO[team];
+  const dx = info.ownX - mark.root.position.x;
+  const dz = FZ - mark.root.position.z;
+  const d = Math.hypot(dx, dz) || 1;
+  return {
+    x: mark.root.position.x + dx / d * dist,
+    z: mark.root.position.z + dz / d * dist
+  };
 }
 
 // Lightweight steering: seek/arrive for the current role, plus a small
@@ -2582,45 +2674,286 @@ function steerPlayer(p, tx, tz, dt, maxSpeed, allowOut = false, avoid = true, ac
   if (speed > .025){
     targetYaw = Math.atan2(p.vx, p.vz);
   } else {
-    targetYaw = Math.atan2(ball.pos.x - p.root.position.x, ball.pos.z - p.root.position.z);
+    // once a kid stops, he turns to his own focus (the ball, his mark or the
+    // goal), not to a shared ball vector for the whole team
+    targetYaw = Math.atan2(p.faceX - p.root.position.x, p.faceZ - p.root.position.z);
   }
   const diff = Math.atan2(Math.sin(targetYaw - p.root.rotation.y), Math.cos(targetYaw - p.root.rotation.y));
   p.root.rotation.y += diff * Math.min(1, dt * (speed > .025 ? 10 : 3.5));
   p.moveSpeed = speed;
-  if (speed > .02) p.walkPhase += dt * (3 + speed * 22);
-  else p.walkPhase += dt * .8;
+  if (speed > .02) p.walkPhase += dt * (3 + speed * 22) * p.gait;
+  else p.walkPhase += dt * (.55 + p.gait * .35);
 }
 
-function distToBall(p){
-  return Math.hypot(p.root.position.x - ball.pos.x, p.root.position.z - ball.pos.z);
+function teamMode(team){
+  const o = ball.owner;
+  if (!o) return 'loose';
+  return o.team === team ? 'attack' : 'defend';
 }
 
-function updateRoles(){
-  const owner = ball.owner;
-  if (owner && owner.state === 'play'){
-    roles.redChaser = roles.blueChaser = null;
-    const oppTeam = owner.team === 'red' ? 'blue' : 'red';
-    let press = nearestPlayerTo(oppTeam, owner.root.position.x, owner.root.position.z, false);
-    const prev = oppTeam === 'red' ? roles.redPress : roles.bluePress;
-    if (prev && prev.state === 'play' && press){
-      const dPrev = Math.hypot(prev.root.position.x - owner.root.position.x, prev.root.position.z - owner.root.position.z);
-      const dNew = Math.hypot(press.root.position.x - owner.root.position.x, press.root.position.z - owner.root.position.z);
-      if (dPrev <= dNew + .16) press = prev;
+function keepGoal(p){
+  const info = TEAM_INFO[p.team];
+  let z = FZ + (ball.pos.z - FZ) * .55;
+  if (ball.owner && ball.owner.team !== p.team && Math.abs(ball.pos.x - info.ownX) < .42){
+    z = FZ + (ball.pos.z - FZ) * .78;
+  }
+  return {
+    x: info.ownX + info.dir * .12,
+    z: clamp(z, FZ - GOAL_HALF + .04, FZ + GOAL_HALF - .04)
+  };
+}
+
+// The team's shape slides up and down the pitch with possession. Anchoring
+// width/cover to this line (instead of to the ball itself) keeps the whole
+// team from collapsing onto the ball near a corner.
+function fieldProgress(team){
+  const info = TEAM_INFO[team];
+  return clamp((ball.pos.x * info.dir + FX) / (2 * FX), 0, 1);
+}
+
+function attackLine(team){
+  const info = TEAM_INFO[team];
+  return info.ownX + info.dir * (.55 + 1.05 * fieldProgress(team));
+}
+
+function defendLine(team){
+  const info = TEAM_INFO[team];
+  return info.ownX + info.dir * (.45 + .45 * fieldProgress(team));
+}
+
+// Attacking shape: a support option ahead of the ball, a winger on the far
+// touchline, and a cover player behind the line.
+function supportTarget(team){
+  const info = TEAM_INFO[team];
+  const side = roles[team].side;
+  const line = attackLine(team) - info.dir * .05;
+  const ahead = info.goalX - info.dir * .2;
+  const x = clamp(ball.pos.x + info.dir * .44, Math.min(line, ahead), Math.max(line, ahead));
+  const z = clamp(FZ + (ball.pos.z - FZ) * .5 + side * .22, FZ - .5, FZ + .5);
+  return { x, z };
+}
+
+function widthTarget(team){
+  const info = TEAM_INFO[team];
+  return {
+    x: clamp(attackLine(team) + info.dir * .26, -FX + .14, FX - .14),
+    z: roles[team].side > 0 ? FZ - .52 : FZ + .52
+  };
+}
+
+function coverTarget(team){
+  const info = TEAM_INFO[team];
+  const side = roles[team].side;
+  return {
+    x: clamp(attackLine(team) - info.dir * .25, -FX + .12, FX - .12),
+    z: clamp(FZ - (ball.pos.z - FZ) * .45 - side * .2, FZ - .45, FZ + .45)
+  };
+}
+
+// Counter-attacking outlet when the other team has the ball: hold the far
+// touchline around the halfway line instead of following the ball upfield.
+function outletTarget(team){
+  const info = TEAM_INFO[team];
+  return {
+    x: clamp(defendLine(team) + info.dir * .22, -FX + .12, FX - .12),
+    z: roles[team].side > 0 ? FZ - .52 : FZ + .52
+  };
+}
+
+function defensiveCoverTarget(team){
+  const info = TEAM_INFO[team];
+  const deep = info.ownX + info.dir * .3;
+  return {
+    x: clamp((ball.pos.x + info.ownX) / 2 + info.dir * .06, Math.min(deep, ball.pos.x), Math.max(deep, ball.pos.x)),
+    z: clamp(FZ + (ball.pos.z - FZ) * .3, FZ - .4, FZ + .4)
+  };
+}
+
+function assignmentTarget(team, name, st){
+  if (name === 'mark'){
+    return st.mark && st.mark.state === 'play' ? goalSidePoint(st.mark, team) : defensiveCoverTarget(team);
+  }
+  if (name === 'support') return supportTarget(team);
+  if (name === 'width') return widthTarget(team);
+  if (name === 'outlet') return outletTarget(team);
+  return st.mode === 'defend' ? defensiveCoverTarget(team) : coverTarget(team);
+}
+
+function taskTarget(p){
+  const team = p.team, st = roles[team], info = TEAM_INFO[team];
+  switch (p.task){
+    case 'chase':
+      return interceptFor(p, .46 * p.speedMul);
+    case 'press': {
+      const o = ball.owner;
+      if (!o || o.state !== 'play') return interceptFor(p, .44 * p.speedMul);
+      const dx = info.ownX - o.root.position.x;
+      const dz = FZ - o.root.position.z;
+      const d = Math.hypot(dx, dz) || 1;
+      return {
+        x: o.root.position.x + dx / d * .05 + o.vx * .06,
+        z: o.root.position.z + dz / d * .05 + o.vz * .06
+      };
     }
-    if (oppTeam === 'red'){ roles.redPress = press; roles.bluePress = null; }
-    else { roles.bluePress = press; roles.redPress = null; }
+    case 'mark':
+      return st.mark && st.mark.state === 'play' ? goalSidePoint(st.mark, team) : defensiveCoverTarget(team);
+    case 'support': return supportTarget(team);
+    case 'width': return widthTarget(team);
+    case 'outlet': return outletTarget(team);
+    case 'cover': return st.mode === 'defend' ? defensiveCoverTarget(team) : coverTarget(team);
+    case 'keeper': return keepGoal(p);
+  }
+  return { x: p.home.x, z: p.home.z };
+}
+
+function taskSpeed(p){
+  switch (p.task){
+    case 'chase': return .46;
+    case 'press': return .36;
+    case 'support': return .38;
+    case 'mark': return .36;
+    case 'outlet': return .4;
+    case 'width': return .4;
+    case 'cover': return .33;
+    case 'keeper': return .29;
+  }
+  return .28;
+}
+
+function giveTask(p, task, delay = 0){
+  if (p.task === task) return;
+  if (delay <= 0){
+    p.task = task;
+    p.pendingTask = null;
+    p.pendingDelay = 0;
+    p.thinkTimer = 0;
+    p.pauseTimer = 0;
   } else {
-    roles.redPress = roles.bluePress = null;
-    let red = nearestToBall('red');
-    let blue = nearestToBall('blue');
-    if (roles.redChaser && roles.redChaser.state === 'play' && red){
-      if (distToBall(roles.redChaser) <= distToBall(red) + .18) red = roles.redChaser;
+    p.pendingTask = task;
+    p.pendingDelay = delay;
+  }
+}
+
+function pickChaser(team){
+  const prev = roles[team].chaser;
+  let best = null, bestEta = Infinity;
+  for (const p of players){
+    if (p.team !== team || p.isKeeper || p.state !== 'play') continue;
+    let eta = interceptFor(p, .46 * p.speedMul).t;
+    if (p === prev) eta *= .84;
+    if (eta < bestEta){ bestEta = eta; best = p; }
+  }
+  return best;
+}
+
+function pickPresser(team, owner){
+  const prev = roles[team].presser;
+  const qx = owner.root.position.x + owner.vx * .16;
+  const qz = owner.root.position.z + owner.vz * .16;
+  let best = null, bestEta = Infinity;
+  for (const p of players){
+    if (p.team !== team || p.isKeeper || p.state !== 'play') continue;
+    let eta = etaTo(p, qx, qz, .44 * p.speedMul);
+    if (p === prev) eta *= .84;
+    if (eta < bestEta){ bestEta = eta; best = p; }
+  }
+  return best;
+}
+
+function pickMark(team, owner){
+  const info = TEAM_INFO[team];
+  const prev = roles[team].mark;
+  let best = null, bestDanger = Infinity;
+  for (const q of players){
+    if (q.team === team || q.isKeeper || q.state !== 'play' || q === owner) continue;
+    const danger = Math.hypot(q.root.position.x - info.ownX, q.root.position.z - FZ);
+    if (danger < bestDanger){ bestDanger = danger; best = q; }
+  }
+  if (prev && prev.state === 'play' && prev !== owner){
+    const prevDanger = Math.hypot(prev.root.position.x - info.ownX, prev.root.position.z - FZ);
+    if (prevDanger <= bestDanger + .12) best = prev;
+  }
+  return best;
+}
+
+const PERM2 = [[0, 1], [1, 0]];
+const PERM3 = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+
+// Assign the three off-ball jobs to the three remaining kids by trying every
+// permutation (a 3x3 Hungarian assignment). This is the idea RoboCup teams use
+// so that the closest kid takes each job instead of everyone drifting to the
+// ball.
+function updateRoles(team){
+  const st = roles[team];
+  const mode = teamMode(team);
+  const modeChanged = st.mode !== mode;
+  st.mode = mode;
+  st.timer = .85 + rand(0, .3);
+  // which flank the ball is on; a deadband keeps wingers from swapping sides
+  // every time the ball wobbles across the centre line
+  if (Math.abs(ball.pos.z - FZ) > .1) st.side = ball.pos.z >= FZ ? 1 : -1;
+  let chaser = null, presser = null;
+  if (mode === 'defend'){
+    presser = pickPresser(team, ball.owner);
+    st.mark = pickMark(team, ball.owner);
+    st.chaser = null;
+    st.presser = presser;
+    if (presser) giveTask(presser, 'press');
+  } else if (mode === 'loose'){
+    chaser = pickChaser(team);
+    st.chaser = chaser;
+    st.presser = null;
+    st.mark = null;
+    if (chaser) giveTask(chaser, 'chase');
+  } else {
+    st.chaser = st.presser = st.mark = null;
+  }
+  // a turnover should never leave two kids both chasing or both pressing;
+  // clear the old job before handing out the new ones so a pending task is
+  // not immediately overwritten
+  for (const p of players){
+    if (p.team !== team || p === chaser || p === presser) continue;
+    if (p.task === 'chase' || p.task === 'press'){
+      p.task = mode === 'attack' ? 'support' : 'cover';
+      p.pendingTask = null;
+      p.pendingDelay = 0;
+      p.thinkTimer = 0;
     }
-    if (roles.blueChaser && roles.blueChaser.state === 'play' && blue){
-      if (distToBall(roles.blueChaser) <= distToBall(blue) + .18) blue = roles.blueChaser;
+  }
+  const rest = [];
+  for (const p of players){
+    if (p.team !== team || p.isKeeper || p.state !== 'play') continue;
+    if (p === chaser || p === presser || p === ball.owner) continue;
+    rest.push(p);
+  }
+  const allNames = mode === 'defend' ? ['mark', 'cover', 'outlet'] : ['support', 'width', 'cover'];
+  const names = allNames.slice(0, rest.length);
+  if (!names.length) return;
+  const targets = names.map(name => assignmentTarget(team, name, st));
+  if (rest.length > names.length){
+    // keeper has the ball: three outfielders take the jobs, the fourth holds shape
+    for (const extra of rest.splice(names.length)) giveTask(extra, mode === 'defend' ? 'cover' : 'support', modeChanged ? 0 : extra.reactionDelay);
+  }
+  const perms = rest.length === 3 ? PERM3 : rest.length === 2 ? PERM2 : [[0]];
+  let best = perms[0], bestCost = Infinity;
+  for (const perm of perms){
+    let cost = 0;
+    for (let i = 0; i < rest.length; i++){
+      const p = rest[i], name = names[perm[i]], t = targets[perm[i]];
+      const d = Math.hypot(t.x - p.root.position.x, t.z - p.root.position.z);
+      const pref = p.role === 'DF' && (name === 'cover' || name === 'mark') ? -.06
+        : p.role === 'FW' && (name === 'support' || name === 'width' || name === 'outlet') ? -.06 : 0;
+      // keep the current job unless another kid is clearly a better fit;
+      // without this the three jobs swap every second and nobody settles
+      const stick = p.task === name ? -.2 : 0;
+      cost += d + pref + stick;
     }
-    roles.redChaser = red;
-    roles.blueChaser = blue;
+    if (cost < bestCost){ bestCost = cost; best = perm; }
+  }
+  for (let i = 0; i < rest.length; i++){
+    // on a turnover the new jobs are taken immediately; between turnovers
+    // each kid still has his own reaction delay
+    giveTask(rest[i], names[best[i]], modeChanged ? 0 : rest[i].reactionDelay);
   }
 }
 
@@ -2656,10 +2989,14 @@ function updatePlayerForms(dt, time){
     return;
   }
 
-  roles.timer -= dt;
-  if (roles.timer <= 0){
-    updateRoles();
-    roles.timer = .3;
+  // Each team re-plans on its own cadence; the two boards never flip together.
+  // A possession change triggers an immediate re-plan, otherwise the roles
+  // would lag behind the ball for up to a second.
+  for (const team of ['red', 'blue']){
+    const st = roles[team];
+    if (st.mode !== teamMode(team)) st.timer = 0;
+    st.timer -= dt;
+    if (st.timer <= 0) updateRoles(team);
   }
 
   const owner = ball.owner;
@@ -2669,17 +3006,30 @@ function updatePlayerForms(dt, time){
     p.tackleCooldown = Math.max(0, p.tackleCooldown - dt);
     p.reaction = Math.max(0, p.reaction - dt);
     p.stumble = Math.max(0, p.stumble - dt);
-    const dir = attackDir(p);
+    const info = TEAM_INFO[p.team];
     const speedScale = p.stumble > 0 ? .35 : 1;
-    let tx, tz, maxSpeed = .25, accel = 7;
+    let tx, tz, maxSpeed = .28, accel = 7;
+
+    p.taskAge += dt;
+    if (p.pendingTask && (p.pendingDelay -= dt) <= 0){
+      p.task = p.pendingTask;
+      p.pendingTask = null;
+      p.taskAge = 0;
+      p.thinkTimer = 0;
+      p.pauseTimer = 0;
+    }
+    if (owner !== p && p.task === 'carry'){
+      p.task = 'cover';
+      p.thinkTimer = 0;
+    }
+
+    let focusX = ball.pos.x, focusZ = ball.pos.z;
 
     if (p.isKeeper){
-      const lineX = p.team === 'red' ? -KEEPER_X : KEEPER_X;
-      tx = lineX;
-      tz = clamp(ball.pos.z + ball.vel.z * .1, FZ - GOAL_HALF + .04, FZ + GOAL_HALF - .04);
-      if (ball.owner && ball.owner.team !== p.team && Math.abs(ball.pos.x) < FX - .18){
-        tz = clamp(ball.pos.z, FZ - .28, FZ + .28);
-      }
+      p.task = 'keeper';
+      const kt = keepGoal(p);
+      tx = kt.x;
+      tz = kt.z;
       maxSpeed = .29;
       accel = 8;
       if (owner === p){
@@ -2687,64 +3037,94 @@ function updatePlayerForms(dt, time){
         if (p.decision <= 0) clearBall(p);
       }
     } else if (owner === p){
+      p.task = 'carry';
+      p.pendingTask = null;
       let avoidZ = 0;
       for (const q of players){
         if (q.team === p.team || q.state !== 'play') continue;
         const dx = q.root.position.x - p.root.position.x;
         const dz = q.root.position.z - p.root.position.z;
         const d = Math.hypot(dx, dz);
-        if (d < .38) avoidZ -= Math.sign(dz || 1) * (.38 - d) * .45;
+        if (d < .4) avoidZ -= Math.sign(dz || 1) * (.4 - d) * .5;
       }
-      const goalZ = clamp(FZ + Math.sin(time * 1.2 + p.phase) * .07 + avoidZ, FZ - GOAL_HALF + .04, FZ + GOAL_HALF - .04);
-      tx = dir * (GOAL_X - .09);
+      const goalZ = clamp(FZ + Math.sin(time * 1.1 + p.phase) * .06 + avoidZ, FZ - GOAL_HALF + .04, FZ + GOAL_HALF - .04);
+      tx = info.dir * (GOAL_X - .09);
       tz = goalZ;
-      maxSpeed = .34;
+      maxSpeed = .4;
+      accel = 7.5;
       p.decision -= dt;
-      if (p.decision <= 0){
-        const goalDist = Math.abs(ball.pos.x - dir * GOAL_X);
-        if (goalDist < .44 && Math.abs(ball.pos.z - FZ) < GOAL_HALF + .08 && Math.random() < .4){
+      const goalDist = Math.abs(ball.pos.x - info.goalX);
+      const inRange = goalDist < .5 && Math.abs(ball.pos.z - FZ) < GOAL_HALF + .12;
+      // shoot as soon as the carrier reaches the box, not only when an old
+      // decision timer happens to expire there
+      if (inRange && p.shootCooldown <= 0 && Math.random() < dt * 1.9){
+        shootBall(p);
+      } else if (p.decision <= 0){
+        if (inRange && Math.random() < .42){
           shootBall(p);
-        } else if (Math.random() < .62 && passBall(p)){
+        } else if (Math.random() < .66 && passBall(p)){
           // pass
         } else {
           p.decision = rand(.35, .7);
         }
       }
-    } else if (owner){
-      const sameTeam = owner.team === p.team;
-      if (!sameTeam && p === (p.team === 'red' ? roles.redPress : roles.bluePress)){
-        tx = owner.root.position.x + owner.vx * .1 - dir * .06;
-        tz = owner.root.position.z + owner.vz * .1;
-        maxSpeed = .41;
-        accel = 8.5;
-      } else {
-        const push = sameTeam ? dir * .12 : -dir * .12;
-        tx = p.home.x + push + ball.pos.x * .04;
-        tz = p.home.z + (ball.pos.z - FZ) * .12;
-        maxSpeed = sameTeam ? .26 : .27;
-      }
     } else {
-      const chaser = p.team === 'red' ? roles.redChaser : roles.blueChaser;
-      if (p === chaser){
-        tx = ball.pos.x + ball.vel.x * .12;
-        tz = ball.pos.z + ball.vel.z * .12;
-        maxSpeed = .46;
-        accel = 9;
-      } else {
-        tx = p.home.x + dir * .06 + ball.pos.x * .05;
-        tz = p.home.z + (ball.pos.z - FZ) * .12;
-        maxSpeed = .25;
+      // Only the chaser and presser track the ball every frame. Everyone else
+      // commits to a spot for a beat (each kid on his own clock), then looks
+      // around and adjusts; that is what breaks the lockstep movement.
+      p.thinkTimer -= dt;
+      const live = p.task === 'chase' || p.task === 'press';
+      if (live || p.thinkTimer <= 0 || p.targetTask !== p.task){
+        const t = taskTarget(p);
+        p.targetX = t.x;
+        p.targetZ = t.z;
+        p.targetTask = p.task;
+        p.thinkTimer = p.task === 'mark' ? rand(.25, .5) : rand(.4, .85);
+      }
+      tx = p.targetX;
+      tz = p.targetZ;
+      p.pauseTimer = Math.max(0, p.pauseTimer - dt);
+      if (!live && p.pauseTimer <= 0 && Math.hypot(tx - p.root.position.x, tz - p.root.position.z) < .26 && Math.random() < dt * .9){
+        p.pauseTimer = rand(.3, .65);
+      }
+      if (p.pauseTimer > 0){
+        // stop for a beat, look around, then jog on to the spot
+        tx = p.root.position.x;
+        tz = p.root.position.z;
+      }
+      maxSpeed = taskSpeed(p);
+      accel = p.task === 'chase' ? 9.2 : p.task === 'press' ? 8.6 : p.task === 'support' ? 7.6 : 7;
+
+      if (p.task === 'mark' && roles[p.team].mark){
+        const m = roles[p.team].mark;
+        focusX = m.root.position.x;
+        focusZ = m.root.position.z;
+      } else if (p.task === 'width'){
+        focusX = info.goalX;
+        focusZ = FZ;
+      } else if (p.task === 'cover' || p.task === 'outlet'){
+        // scan between the ball and the own goal instead of staring at the ball
+        const scan = .5 + Math.sin(time * .55 + p.phase) * .5;
+        focusX = ball.pos.x * scan + info.ownX * (1 - scan);
+        focusZ = ball.pos.z * scan + FZ * (1 - scan);
       }
     }
 
-    steerPlayer(p, tx, tz, dt, maxSpeed * speedScale, false, true, accel);
+    const faceRate = Math.min(1, dt * (2.2 + (p.task === 'chase' || p.task === 'press' || p.task === 'carry' ? 2.2 : 0)));
+    p.faceX += (focusX - p.faceX) * faceRate;
+    p.faceZ += (focusZ - p.faceZ) * faceRate;
+    p.focusX += (focusX - p.focusX) * Math.min(1, dt * 4.5);
+    p.focusZ += (focusZ - p.focusZ) * Math.min(1, dt * 4.5);
+
+    steerPlayer(p, tx, tz, dt, maxSpeed * p.speedMul * speedScale, false, true, accel * p.accelMul);
   }
 
   if (owner && owner.state === 'play'){
     for (const p of players){
       if (p.team === owner.team || p.state !== 'play' || p.tackleCooldown > 0) continue;
       const d = Math.hypot(p.root.position.x - owner.root.position.x, p.root.position.z - owner.root.position.z);
-      if (d < .095 && Math.random() < dt * 1.4){
+      if (d < .09 && Math.random() < dt * 1.1){
+        match.stats.tackles++;
         ball.owner = p;
         p.decision = rand(.18, .35);
         p.tackleCooldown = .85;
@@ -2805,7 +3185,8 @@ function updateBall(dt){
       }
       if (keeperSave && Math.abs(ball.pos.x) > .68){
         ball.saveResolved = true;
-        if (Math.random() < .82){
+        if (Math.random() < .88){
+          match.stats.saves = (match.stats.saves || 0) + 1;
           ball.owner = keeperSave;
           ball.vel.set(0, 0, 0);
           ball.noTouch = .15;
@@ -2897,24 +3278,26 @@ function updateMatchVisuals(dt, time){
     const speed = p.moveSpeed;
     const runTarget = speed > .03 ? 1 : 0;
     p.runBlend += (runTarget - p.runBlend) * Math.min(1, dt * 8);
-    const swing = Math.sin(p.walkPhase) * (.035 + .585 * p.runBlend);
+    const swing = Math.sin(p.walkPhase) * (.035 + .585 * p.runBlend) * p.stride;
     p.legs[0].rotation.x = swing;
     p.legs[1].rotation.x = -swing;
-    p.arms[0].rotation.x = -swing * .72;
-    p.arms[1].rotation.x = swing * .72;
+    p.arms[0].rotation.x = -swing * p.armGain;
+    p.arms[1].rotation.x = swing * p.armGain;
     const bob = Math.abs(Math.sin(p.walkPhase)) * (.0025 + .0055 * p.runBlend);
     const celebrateJump = match.status === 'celebrate' && p.scoring ? Math.max(0, Math.sin(time * 9 + p.phase)) * .035 : 0;
     const reactionJump = p.reaction > 0 ? Math.max(0, Math.sin(p.reaction * 15)) * .028 : 0;
     p.body.position.y = bob + celebrateJump + reactionJump;
     p.body.rotation.x = -.07 * p.runBlend;
-    p.body.rotation.z = Math.sin(p.walkPhase) * .025 * p.runBlend;
+    p.body.rotation.z = Math.sin(p.walkPhase + .6) * .025 * p.runBlend * p.gait;
     let headYaw, headPitch;
     if (p.isKeeper && match.status === 'play'){
       headYaw = clamp((ball.pos.x - p.root.position.x) * .9, -.5, .5);
       headPitch = clamp((ball.pos.z - p.root.position.z) * -.5, -.35, .35);
     } else {
-      const lookYaw = Math.atan2(ball.pos.x - p.root.position.x, ball.pos.z - p.root.position.z) - p.root.rotation.y;
-      headYaw = Math.atan2(Math.sin(lookYaw), Math.cos(lookYaw)) * .35;
+      // every kid watches his own focus; when standing he also scans the field
+      const lookYaw = Math.atan2(p.focusX - p.root.position.x, p.focusZ - p.root.position.z) - p.root.rotation.y;
+      const scan = p.moveSpeed < .04 ? Math.sin(time * .7 + p.scanPhase) * .14 : 0;
+      headYaw = clamp(Math.atan2(Math.sin(lookYaw), Math.cos(lookYaw)) * .4 + scan, -.55, .55);
       headPitch = Math.sin(time * 1.2 + p.phase) * .03;
     }
     p.headPivot.rotation.y += (headYaw - p.headPivot.rotation.y) * Math.min(1, dt * 6);
@@ -3536,6 +3919,7 @@ function animate(){
 window.__RECESS_DEBUG__ = {
   THREE, scene, camera, renderer, view, target, jarRig, baseGroup, glass, building,
   bellPivot, bellProxy, players, spectators, ball, match, goals, ui, clickables,
+  roles, taskTarget,
   setCamera(az, polar, dist, tx = 0, ty = 1.92, tz = 0){
     target.set(tx, ty, tz);
     view.tAz = view.az = az;
@@ -3575,7 +3959,7 @@ window.__RECESS_DEBUG__ = {
       d: +h.distance.toFixed(2)
     }));
   },
-  step(seconds = 1, stepDt = 1 / 60){
+  step(seconds = 1, stepDt = 1 / 60, doRender = true){
     const total = Math.max(0, Math.min(seconds, 30));
     const n = Math.max(1, Math.round(total / stepDt));
     const dt = Math.min(stepDt, .05);
@@ -3591,7 +3975,12 @@ window.__RECESS_DEBUG__ = {
       updateDust(dt);
       updateGlass(timeNow);
     }
-    renderer.render(scene, camera);
+    if (doRender) renderer.render(scene, camera);
+    if (!ready){
+      ready = true;
+      window.__RECESS_READY__ = true;
+      document.getElementById('loading').classList.add('done');
+    }
     return this.snapshot();
   },
   snapshot(){
@@ -3604,8 +3993,11 @@ window.__RECESS_DEBUG__ = {
       status: match.status,
       time: +match.time.toFixed(2),
       score: { ...match.score },
+      stats: { ...match.stats },
       owner: ball.owner ? `${ball.owner.team}${ball.owner.index}` : null,
       ball: ball.pos.toArray().map(v => +v.toFixed(2)),
+      mode: { red: roles.red.mode, blue: roles.blue.mode },
+      tasks: players.map(p => `${p.team[0]}${p.index}:${p.task}`).join(' '),
       playersVisible: players.filter(p => p.root.visible).length,
       spectatorsVisible: spectators.filter(p => p.root.visible).length,
       audio: { on: Sound.on, state: Sound.ctx ? Sound.ctx.state : 'none' }
