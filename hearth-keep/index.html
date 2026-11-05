@@ -1086,6 +1086,10 @@ const M = {
 };
 M.stone.color.setHex(0xbdae9b);
 M.stone.map.anisotropy = 8;
+// keep the plank and rug patterns sharp at grazing angles
+floorTex.anisotropy = 8;
+rugTex.anisotropy = 8;
+M.floor.bumpScale = .007;
 
 const T = {
   rug: new THREE.MeshStandardMaterial({ map: rugTex, roughness: 1, metalness: 0 }),
@@ -1135,7 +1139,12 @@ scene.add(room);
 
 // stone base / display plinth
 box(3.96, .2, 2.96, M.stoneDark, 0, -.13, 0, room);
-box(3.72, .05, 2.74, M.stone, 0, -.025, 0, room);
+// the stone border frames the oak floor instead of running underneath it,
+// so there is no coplanar surface for the floor texture to fight with
+box(3.72, .05, .06, M.stone, 0, -.027, -1.34, room);
+box(3.72, .05, .06, M.stone, 0, -.027, 1.34, room);
+box(.15, .05, 2.62, M.stone, -1.785, -.027, 0, room);
+box(.15, .05, 2.62, M.stone, 1.785, -.027, 0, room);
 box(4.02, .04, 3.02, M.woodDeep, 0, -.24, 0, room);
 box(3.9, .02, 2.9, M.brass, 0, -.225, 0, room, false);
 for (const [x, z] of [[-1.94, -1.44], [1.94, -1.44], [-1.94, 1.44], [1.94, 1.44]]){
@@ -1454,7 +1463,7 @@ clickProxy(.02, .62, .08, .19, 'cat', chairBody);
 // --- sleeping golden retriever --------------------------------------------
 const dog = new THREE.Group();
 const dogBed = new THREE.Group();
-dogBed.position.set(-.47, 0, .74);
+dogBed.position.set(-.47, .004, .74);
 room.add(dogBed);
 cyl(.42, .44, .055, 24, std(0x35251e, .98, 0), 0, .028, 0, dogBed, false);
 cyl(.35, .38, .04, 24, std(0x7d5a43, .98, 0), 0, .065, 0, dogBed, false);
@@ -1709,6 +1718,7 @@ fireSpot.target.position.set(-.1, .35, .75);
 fireSpot.castShadow = true;
 fireSpot.shadow.mapSize.set(1024, 1024);
 fireSpot.shadow.bias = -.0008;
+fireSpot.shadow.normalBias = .015;
 fireSpot.shadow.camera.near = .1;
 fireSpot.shadow.camera.far = 7;
 scene.add(fireSpot, fireSpot.target);
