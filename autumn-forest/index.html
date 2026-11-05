@@ -2115,11 +2115,16 @@ let pinchStart = 0;
 let pinchBase = 0;
 let pinched = false;
 let lastInteract = performance.now();
+let autoDriftDir = 1;
 
 function noteInteraction(){ lastInteract = performance.now(); }
 function updateCamera(dt){
   const now = performance.now();
-  if (!dragging && now - lastInteract > 7000) view.tAz += dt * .018;
+  if (!dragging && now - lastInteract > 7000){
+    view.tAz += autoDriftDir * dt * .018;
+    if (view.tAz > .58){ view.tAz = .58; autoDriftDir = -1; }
+    else if (view.tAz < -.58){ view.tAz = -.58; autoDriftDir = 1; }
+  }
   const k = 1 - Math.pow(.0016, dt);
   view.az = lerp(view.az, view.tAz, k);
   view.polar = lerp(view.polar, view.tPolar, k);
