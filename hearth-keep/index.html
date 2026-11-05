@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0705" />
+<title>炉火长夜 · A Fire in the Keep</title>
+<meta name="description" content="幻想藏品 No.09《炉火长夜》：长夜堡的冬夜会客厅，壁炉里的柴火噼啪作响，铠甲守在窗边，猫趴在摇椅上打盹，金毛睡在炉边的地毯上，窗外大雪纷飞。" />
+<style>
+  :root{
+    --ink:#0a0705;
+    --ink-deep:#050302;
+    --bone:#f3e7d2;
+    --bone-dim:#d6c3a4;
+    --muted:#9a8871;
+    --accent:#d9a05f;
+    --accent-hot:#ffd79a;
+    --ember:#e2763c;
+    --steel:#9db2c2;
+    --moss:#7f8d74;
+    --line:rgba(243,231,210,.15);
+    --line-soft:rgba(243,231,210,.065);
+    --panel:rgba(16,11,7,.72);
+    --serif:"Iowan Old Style","Baskerville","Palatino Linotype","Songti SC","STSong","Noto Serif CJK SC",serif;
+    --sans:"Avenir Next","Helvetica Neue","PingFang SC","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{width:100%;height:100%;margin:0;}
+  html{background:var(--ink);}
+  body{
+    overflow:hidden;
+    background:
+      radial-gradient(74% 66% at 22% 10%, rgba(135,76,35,.2), transparent 64%),
+      radial-gradient(64% 60% at 84% 22%, rgba(48,78,102,.18), transparent 68%),
+      radial-gradient(120% 92% at 50% 100%, #171008 0%, #0b0805 62%, #040302 100%);
+    color:var(--bone);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  #stage{position:fixed;inset:0;}
+  #scene{display:block;width:100%;height:100%;outline:none;cursor:grab;touch-action:none;}
+  #scene.dragging{cursor:grabbing;}
+  .vignette,.grain{position:fixed;inset:0;pointer-events:none;}
+  .vignette{
+    z-index:2;
+    background:
+      radial-gradient(ellipse at 50% 46%, transparent 32%, rgba(5,4,2,.16) 66%, rgba(3,2,1,.78) 100%),
+      linear-gradient(180deg, rgba(5,4,2,.58), transparent 30%, transparent 66%, rgba(3,2,1,.7));
+  }
+  .grain{
+    z-index:3;opacity:.11;mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.62'/%3E%3C/svg%3E");
+  }
+
+  .masthead{
+    position:fixed;z-index:10;
+    top:clamp(22px,4vw,52px);
+    left:clamp(22px,4.5vw,64px);
+    right:clamp(22px,4.5vw,64px);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:28px;
+    pointer-events:none;
+  }
+  .brand{
+    display:flex;align-items:flex-start;gap:17px;
+    max-width:min(620px,56vw);
+    text-shadow:0 2px 26px rgba(0,0,0,.55);
+  }
+  .brand-mark{width:32px;height:40px;flex:0 0 auto;opacity:.9;margin-top:2px;color:var(--accent);}
+  .brand-copy .eyebrow{
+    margin:0 0 10px;color:var(--accent);
+    font-size:9px;font-weight:600;line-height:1.2;letter-spacing:.34em;
+    text-transform:uppercase;
+  }
+  h1{margin:0;font-family:var(--serif);font-weight:400;font-size:clamp(42px,5.7vw,82px);line-height:.94;letter-spacing:.06em;}
+  .latin{margin:13px 0 0;color:var(--bone-dim);font-size:9px;font-weight:500;letter-spacing:.46em;line-height:1;text-transform:uppercase;}
+  .chapter{margin:16px 0 0;color:rgba(243,231,210,.56);font-family:var(--serif);font-size:12px;letter-spacing:.1em;}
+
+  .keep-panel{
+    pointer-events:auto;width:min(292px,34vw);
+    padding:17px 18px 16px;
+    border:1px solid var(--line);
+    background:
+      linear-gradient(160deg, rgba(128,78,38,.2), transparent 48%),
+      var(--panel);
+    backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
+    box-shadow:0 24px 70px rgba(0,0,0,.42);
+    position:relative;
+  }
+  .keep-panel::before,.keep-panel::after{content:"";position:absolute;width:9px;height:9px;border:1px solid rgba(217,160,95,.46);}
+  .keep-panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0;}
+  .keep-panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0;}
+  .panel-top{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding-bottom:11px;border-bottom:1px solid var(--line-soft);}
+  .place{color:var(--bone-dim);font-family:var(--serif);font-size:13px;letter-spacing:.1em;}
+  .time{color:var(--accent-hot);font-family:var(--serif);font-size:21px;line-height:1;letter-spacing:.02em;}
+  .panel-sub{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:var(--muted);font-size:8px;letter-spacing:.13em;}
+  .panel-sub b{font-weight:500;color:var(--accent);}
+  .fire-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(217,160,95,.11);}
+  .fire-name{color:var(--bone);font-family:var(--serif);font-size:15px;letter-spacing:.08em;}
+  .fire-state{flex:0 0 auto;color:var(--accent);font-size:8px;letter-spacing:.18em;}
+  .fire-meter{height:2px;margin-top:8px;background:rgba(243,225,196,.1);overflow:hidden;}
+  .fire-meter i{display:block;height:100%;width:72%;background:linear-gradient(90deg, rgba(157,178,194,.32), var(--ember), var(--accent-hot));transition:width .7s ease;box-shadow:0 0 12px rgba(226,118,60,.55);}
+  .sound-strip{
+    display:flex;align-items:center;gap:7px;width:100%;
+    margin-top:11px;padding:5px 0;border:0;
+    border-top:1px solid rgba(217,160,95,.1);border-bottom:1px solid rgba(217,160,95,.06);
+    background:transparent;color:rgba(214,195,164,.58);
+    font-family:var(--sans);font-size:8px;letter-spacing:.16em;text-align:left;
+    cursor:pointer;transition:color .25s ease,border-color .25s ease;
+  }
+  .sound-strip:hover{color:var(--accent-hot);border-color:rgba(217,160,95,.3);}
+  .sound-icon{display:grid;place-items:center;width:16px;color:rgba(217,160,95,.84);}
+  .sound-strip .wave{display:block;}
+  .sound-strip .slash{display:none;}
+  .sound-strip:not(.on) .wave{display:none;}
+  .sound-strip:not(.on) .slash{display:block;}
+  .sound-state{margin-left:auto;color:rgba(154,136,113,.72);font-size:7px;letter-spacing:.18em;text-transform:uppercase;}
+  .sound-strip.on .sound-state{color:var(--moss);}
+  .sound-icon.hint{animation:soundPulse 2.2s ease-in-out infinite;}
+  @keyframes soundPulse{0%,100%{opacity:.5;}50%{opacity:1;filter:drop-shadow(0 0 6px rgba(217,160,95,.55));}}
+
+  .panel-rule{height:1px;margin:13px 0 11px;background:var(--line-soft);}
+  .panel-actions{display:flex;align-items:center;gap:8px;}
+  .panel-actions button{
+    appearance:none;cursor:pointer;font-family:var(--sans);
+    font-size:9px;letter-spacing:.13em;padding:9px 10px;
+    border:1px solid var(--line);background:transparent;color:var(--bone-dim);
+    transition:border-color .25s ease,color .25s ease,background .25s ease;
+    white-space:nowrap;
+  }
+  .panel-actions button:hover{border-color:rgba(217,160,95,.52);color:var(--accent-hot);background:rgba(217,160,95,.07);}
+  .panel-actions button:focus-visible{outline:1px solid var(--accent);outline-offset:3px;}
+  .panel-actions .primary{
+    flex:1;border-color:rgba(217,160,95,.38);color:var(--accent-hot);
+    display:inline-flex;align-items:center;justify-content:space-between;gap:9px;
+  }
+  .panel-actions .primary:active{border-color:rgba(255,215,154,.68);background:rgba(217,160,95,.12);}
+  .panel-actions kbd{font-family:var(--sans);font-size:7px;letter-spacing:.1em;color:var(--muted);border:1px solid rgba(217,160,95,.14);padding:2px 4px;}
+  .back-index{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    margin-top:11px;padding:8px 10px;
+    border:1px solid rgba(217,160,95,.2);
+    background:rgba(8,5,3,.2);
+    color:rgba(214,195,164,.64);
+    font-family:var(--sans);font-size:8px;letter-spacing:.2em;line-height:1;
+    text-decoration:none;pointer-events:auto;
+    transition:border-color .25s ease,color .25s ease,background .25s ease;
+  }
+  .back-index .arrow{font-size:11px;line-height:1;transition:transform .25s ease;}
+  .back-index:hover{border-color:rgba(217,160,95,.5);color:var(--accent-hot);background:rgba(217,160,95,.07);}
+  .back-index:hover .arrow{transform:translateX(-3px);}
+  .back-index:focus-visible{outline:1px solid var(--accent);outline-offset:3px;}
+
+  .hintbar{
+    position:fixed;z-index:10;left:clamp(22px,4.5vw,64px);right:clamp(22px,4.5vw,64px);
+    bottom:clamp(18px,3.6vw,42px);
+    display:flex;align-items:flex-end;justify-content:space-between;gap:26px;
+    pointer-events:none;color:var(--muted);
+  }
+  .hints{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:9px;letter-spacing:.08em;text-shadow:0 1px 14px rgba(0,0,0,.65);}
+  .hints span.key{color:var(--bone-dim);border:1px solid rgba(217,160,95,.17);padding:4px 7px;margin-right:2px;letter-spacing:.14em;}
+  .hint-sub{margin-top:10px;color:rgba(154,136,113,.64);font-size:8px;letter-spacing:.17em;text-transform:uppercase;}
+  .piece-no{font-family:var(--serif);font-size:10px;letter-spacing:.3em;color:rgba(214,195,164,.52);writing-mode:vertical-rl;text-transform:uppercase;}
+  .toast{
+    position:fixed;z-index:11;left:clamp(22px,4.5vw,64px);bottom:clamp(88px,11vh,128px);
+    transform:translateY(10px);
+    padding:10px 18px;border:1px solid rgba(217,160,95,.24);
+    background:rgba(16,11,7,.78);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    color:var(--accent-hot);font-family:var(--serif);font-size:13px;letter-spacing:.08em;
+    opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  .loading{
+    position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 42% 40%, #2a1c0f 0%, #120d06 48%, #050403 100%);
+    opacity:1;visibility:visible;transition:opacity .9s ease,visibility .9s;
+  }
+  .loading.done{opacity:0;visibility:hidden;pointer-events:none;}
+  .loading-inner{width:min(340px,64vw);text-align:center;}
+  .loading-mark{width:46px;height:58px;margin:0 auto 26px;opacity:.86;color:var(--accent);animation:float 4s ease-in-out infinite;}
+  .loading-title{margin:0;font-family:var(--serif);font-size:22px;letter-spacing:.34em;color:var(--bone);margin-left:.34em;}
+  .loading-en{margin:13px 0 25px;color:rgba(243,231,210,.3);font-size:7px;letter-spacing:.42em;text-transform:uppercase;}
+  .loading-track{position:relative;height:1px;overflow:hidden;background:rgba(217,160,95,.12);}
+  .loading-track::after{content:"";position:absolute;top:0;left:-40%;width:40%;height:100%;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:scan 1.8s cubic-bezier(.7,0,.3,1) infinite;}
+  .loading-status{margin:24px 0 0;color:rgba(243,231,210,.28);font-size:8px;letter-spacing:.22em;}
+  @keyframes scan{to{left:110%;}}
+  @keyframes float{0%,100%{transform:translateY(-2px) rotate(-1deg);}50%{transform:translateY(4px) rotate(1deg);}}
+
+  #fallback{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:#0a0705;color:var(--bone-dim);text-align:center;font-family:var(--serif);font-size:15px;line-height:2;letter-spacing:.08em;padding:28px;}
+
+  @media (max-width:1080px){
+    .brand{max-width:58vw;}
+    .keep-panel{width:min(258px,36vw);padding:14px 15px;}
+    .time{font-size:19px;}
+    .chapter{display:none;}
+  }
+  @media (max-width:700px){
+    .masthead{top:19px;left:20px;right:20px;gap:12px;}
+    .brand{gap:11px;max-width:49vw;}
+    .brand-mark{width:23px;height:33px;margin-top:2px;}
+    .brand-copy .eyebrow{font-size:6px;letter-spacing:.08em;margin-bottom:8px;max-width:42vw;line-height:1.5;}
+    h1{font-size:clamp(29px,7.8vw,38px);letter-spacing:.03em;white-space:nowrap;}
+    .latin{font-size:7px;letter-spacing:.24em;margin-top:9px;}
+    .keep-panel{width:min(166px,43vw);padding:11px 11px 10px;backdrop-filter:blur(10px);}
+    .panel-top{padding-bottom:8px;}
+    .place{font-size:10px;letter-spacing:.06em;}
+    .time{font-size:16px;}
+    .panel-sub{margin-top:7px;font-size:7px;letter-spacing:.06em;}
+    .panel-sub span:last-child{display:none;}
+    .fire-line{margin-top:9px;padding-top:8px;}
+    .fire-name{font-size:11px;letter-spacing:.04em;}
+    .fire-state{font-size:6.5px;}
+    .fire-meter{margin-top:6px;}
+    .sound-strip{margin-top:7px;font-size:7px;}
+    .sound-state{font-size:6px;}
+    .panel-rule{margin:9px 0 8px;}
+    .panel-actions button{padding:7px 8px;font-size:8px;}
+    .panel-actions kbd{display:none;}
+    .back-index{margin-top:9px;padding:7px 8px;font-size:7px;letter-spacing:.16em;}
+    .hintbar{left:20px;right:20px;bottom:16px;}
+    .hints{font-size:8px;gap:5px;letter-spacing:.03em;line-height:1.8;}
+    .hints span.key{padding:3px 5px;}
+    .hint-sub{display:none;}
+    .piece-no{display:none;}
+    .toast{left:20px;bottom:76px;font-size:11px;}
+  }
+  @media (max-width:420px){
+    .brand{max-width:46vw;}
+    .keep-panel{width:150px;}
+    .hints span.key{padding:3px 4px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .loading-mark{animation:none;}
+    .loading-track::after{animation-duration:3.6s;}
+    *{transition-duration:.01ms !important;}
+  }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="scene" role="img" aria-label="长夜堡的冬夜会客厅，壁炉里的柴火噼啪作响，铠甲守在窗边，猫趴在摇椅上打盹，金毛睡在炉边的地毯上，窗外大雪纷飞"></canvas></div>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<header class="masthead">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 40" width="30" height="38" fill="none" stroke="currentColor" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 34h22M7 34v3M25 34v3"/>
+        <path d="M8 34V18c0-6.2 3.6-10.4 8-10.4S24 11.8 24 18v16"/>
+        <path d="M12 34V19c0-4 1.7-6.4 4-6.4s4 2.4 4 6.4v15" opacity=".38"/>
+        <path d="M16 32.4c-3-2.4-3.8-5.6-2.3-8.6 1.5 4.1 3.7 2.4 4.3-.6.9 3.2 1.6 6.1-2 9.2z"/>
+      </svg>
+    </span>
+    <div class="brand-copy">
+      <p class="eyebrow">Atelier No. 09 · Hearth Keep</p>
+      <h1>炉火长夜</h1>
+      <p class="latin">A Fire in the Keep</p>
+      <p class="chapter">长夜堡的会客厅，窗外雪落无声。</p>
+    </div>
+  </div>
+
+  <aside class="keep-panel" aria-label="长夜堡会客厅与炉火">
+    <div class="panel-top">
+      <span class="place">长夜堡 · 会客厅</span>
+      <span class="time">23:47</span>
+    </div>
+    <div class="panel-sub">
+      <span>冬夜 · 大雪 / −6°C</span>
+      <span><b id="fireText">炉火 正旺</b></span>
+    </div>
+    <div class="fire-line">
+      <span class="fire-name">壁炉 · 橡木柴</span>
+      <span class="fire-state" id="fireState">噼啪作响</span>
+    </div>
+    <div class="fire-meter"><i id="fireFill"></i></div>
+    <button class="sound-strip" id="audioBtn" type="button" aria-label="开启炉边环境声" aria-pressed="false" title="开启炉边环境声">
+      <span class="sound-icon hint" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 9.3h3.4L12 5.1v13.8l-4.6-4.2H4z"/>
+          <path class="wave" d="M15.4 9.2a4.1 4.1 0 0 1 0 5.6M18 6.7a7.7 7.7 0 0 1 0 10.6"/>
+          <path class="slash" d="M5 19.5 19.5 4.5"/>
+        </svg>
+      </span>
+      <span>炉边声</span>
+      <span class="sound-state" id="audioState">点击开启</span>
+    </button>
+    <div class="panel-rule"></div>
+    <div class="panel-actions">
+      <button class="primary" id="stokeBtn" type="button">
+        <span>添一根柴</span><kbd>F</kbd>
+      </button>
+    </div>
+    <a class="back-index" href="../" aria-label="返回总集目录">
+      <span class="arrow" aria-hidden="true">←</span>
+      <span>总集目录</span>
+    </a>
+  </aside>
+</header>
+
+<footer class="hintbar">
+  <div>
+    <div class="hints">
+      <span class="key">拖拽</span><span>环视</span>
+      <span class="key">滚轮</span><span>推近</span>
+      <span class="key">点击</span><span>铠甲 · 炉火 · 猫狗</span>
+      <span class="key">F</span><span>添柴</span>
+      <span class="key">双击</span><span>归位</span>
+    </div>
+    <div class="hint-sub">A winter keep kept warm — 把一场雪关在窗外</div>
+  </div>
+  <div class="piece-no">No. 09 / A Fire in the Keep</div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="loading" id="loading">
+  <div class="loading-inner">
+    <div class="loading-mark">
+      <svg viewBox="0 0 32 40" width="46" height="58" fill="none" stroke="currentColor" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 34h22M7 34v3M25 34v3"/>
+        <path d="M8 34V18c0-6.2 3.6-10.4 8-10.4S24 11.8 24 18v16"/>
+        <path d="M12 34V19c0-4 1.7-6.4 4-6.4s4 2.4 4 6.4v15" opacity=".38"/>
+        <path d="M16 32.4c-3-2.4-3.8-5.6-2.3-8.6 1.5 4.1 3.7 2.4 4.3-.6.9 3.2 1.6 6.1-2 9.2z"/>
+      </svg>
+    </div>
+    <p class="loading-title">正在生火</p>
+    <p class="loading-en">Lighting the hearth · No. 09</p>
+    <div class="loading-track"></div>
+    <p class="loading-status" id="loadingStatus">Waking the coals · 把长夜留在炉边</p>
+  </div>
+</div>
+<div id="fallback">
+  <p>这间会客厅需要 WebGL 与网络连接。<br>请用最新版 Chrome 打开，并确认网络可访问 CDN 后重试。</p>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// -------------------------------------------------------------------------
+// Setup, camera, controls
+// -------------------------------------------------------------------------
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.17;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x090604);
+scene.fog = new THREE.FogExp2(0x130d08, .022);
+
+const camera = new THREE.PerspectiveCamera(38, 1, .05, 60);
+const target = new THREE.Vector3(0, 1.12, 0);
+const HOME = { az: .16, polar: 1.22, dist: 6.4 };
+const view = { az: HOME.az, polar: HOME.polar, dist: HOME.dist, tAz: HOME.az, tPolar: HOME.polar, tDist: HOME.dist };
+
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const TAU = Math.PI * 2;
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32(20261105);
+
+function canvasOf(w, h = w){
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return [c, c.getContext('2d')];
+}
+function textureFrom(c, rx = 1, ry = 1, srgb = true){
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(rx, ry);
+  t.anisotropy = 4;
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+const loadingEl = document.getElementById('loading');
+const loadingStatus = document.getElementById('loadingStatus');
+const toastEl = document.getElementById('toast');
+const audioBtn = document.getElementById('audioBtn');
+const audioStateEl = document.getElementById('audioState');
+const fireTextEl = document.getElementById('fireText');
+const fireStateEl = document.getElementById('fireState');
+const fireFillEl = document.getElementById('fireFill');
+const stokeBtn = document.getElementById('stokeBtn');
+
+let timeNow = 0, toastTimer = 0;
+function showToast(text, duration = 1700){
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
+}
+
+function updateCamera(dt){
+  const k = 1 - Math.pow(.0015, dt);
+  view.az = lerp(view.az, view.tAz, k);
+  view.polar = lerp(view.polar, view.tPolar, k);
+  view.dist = lerp(view.dist, view.tDist, k);
+  const sp = Math.sin(view.polar);
+  camera.position.set(
+    target.x + Math.sin(view.az) * sp * view.dist,
+    target.y + Math.cos(view.polar) * view.dist,
+    target.z + Math.cos(view.az) * sp * view.dist
+  );
+  camera.lookAt(target);
+}
+function applyHomeView(immediate = false){
+  view.tAz = HOME.az;
+  view.tPolar = HOME.polar;
+  view.tDist = HOME.dist;
+  if (immediate){
+    view.az = HOME.az;
+    view.polar = HOME.polar;
+    view.dist = HOME.dist;
+  }
+}
+
+let userMoved = false;
+const markMoved = () => { userMoved = true; };
+canvas.addEventListener('pointerdown', markMoved);
+canvas.addEventListener('wheel', markMoved, { passive: true });
+
+let dragging = false;
+let pointerMoved = 0;
+let prevPointer = { x: 0, y: 0 };
+let pointerStart = 0;
+const activePointers = new Map();
+let pinchStart = 0;
+let pinchBase = 0;
+let pinched = false;
+
+canvas.addEventListener('pointerdown', (e) => {
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  if (activePointers.size === 1){
+    dragging = true;
+    pointerMoved = 0;
+    pinched = false;
+    pointerStart = performance.now();
+    prevPointer = { x: e.clientX, y: e.clientY };
+    canvas.classList.add('dragging');
+  } else {
+    dragging = false;
+    pinched = true;
+    const pts = [...activePointers.values()];
+    pinchStart = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    pinchBase = view.tDist;
+  }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!activePointers.has(e.pointerId)) return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activePointers.size >= 2){
+    const pts = [...activePointers.values()];
+    const sep = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    if (pinchStart > 0 && sep > 4) view.tDist = clamp(pinchBase * (pinchStart / sep), 3.7, 7.2);
+    return;
+  }
+  if (!dragging) return;
+  const dx = e.clientX - prevPointer.x;
+  const dy = e.clientY - prevPointer.y;
+  prevPointer = { x: e.clientX, y: e.clientY };
+  pointerMoved += Math.abs(dx) + Math.abs(dy);
+  view.tAz = clamp(view.tAz - dx * .004, -.55, .75);
+  view.tPolar = clamp(view.tPolar - dy * .0026, 1.03, 1.47);
+});
+function endPointer(e, allowClick){
+  activePointers.delete(e.pointerId);
+  try { if (canvas.hasPointerCapture?.(e.pointerId)) canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+  if (activePointers.size === 0){
+    if (allowClick && dragging && !pinched && pointerMoved < 8 && performance.now() - pointerStart < 560) handleSceneClick(e);
+    dragging = false;
+    canvas.classList.remove('dragging');
+  } else if (activePointers.size === 1){
+    const pt = [...activePointers.values()][0];
+    prevPointer = { x: pt.x, y: pt.y };
+    dragging = true;
+    pointerMoved = 99;
+  }
+}
+canvas.addEventListener('pointerup', (e) => endPointer(e, true));
+canvas.addEventListener('pointercancel', (e) => endPointer(e, false));
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  view.tDist = clamp(view.tDist * Math.exp(e.deltaY * .00105), 3.7, 7.2);
+}, { passive: false });
+canvas.addEventListener('dblclick', (e) => {
+  e.preventDefault();
+  userMoved = false;
+  applyHomeView();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest?.('button, a')) return;
+  if (e.code === 'KeyF' && !e.repeat){
+    e.preventDefault();
+    stokeFire();
+  } else if (e.code === 'KeyR' && !e.repeat){
+    applyHomeView();
+  }
+});
+
+function onResize(){
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  if (w < 700){
+    camera.fov = 48;
+    target.set(0, 1.08, 0);
+    HOME.az = .12; HOME.polar = 1.24; HOME.dist = 7.55;
+  } else {
+    camera.fov = 38;
+    target.set(0, 1.08, 0);
+    HOME.az = .16; HOME.polar = 1.22; HOME.dist = 6.4;
+  }
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  if (!userMoved) applyHomeView(true);
+  else {
+    view.tDist = clamp(view.tDist, 3.7, 7.2);
+  }
+  updateCamera(.016);
+}
+window.addEventListener('resize', onResize);
+
+// -------------------------------------------------------------------------
+// Procedural textures and materials
+// -------------------------------------------------------------------------
+
+function makeStoneTexture(){
+  const r = mulberry32(912);
+  const [c, x] = canvasOf(1024);
+  x.fillStyle = '#5d5549';
+  x.fillRect(0, 0, 1024, 1024);
+  let y = -20, row = 0;
+  while (y < 1044){
+    const h = 62 + r() * 38;
+    let xx = -r() * 150;
+    while (xx < 1044){
+      const w = 92 + r() * 150;
+      const v = (r() - .5) * 18;
+      x.fillStyle = `rgb(${92 + v | 0},${85 + v | 0},${74 + v | 0})`;
+      x.fillRect(xx + 3, y + 3, w - 6, h - 6);
+      x.fillStyle = 'rgba(255,238,210,.035)';
+      x.fillRect(xx + 5, y + 5, w - 10, 3);
+      x.fillStyle = 'rgba(0,0,0,.12)';
+      x.fillRect(xx + 3, y + h - 6, w - 6, 3);
+      // pitting
+      for (let i = 0; i < 7; i++){
+        x.fillStyle = `rgba(24,20,16,${.04 + r() * .08})`;
+        x.beginPath();
+        x.arc(xx + r() * w, y + r() * h, .6 + r() * 2.4, 0, TAU);
+        x.fill();
+      }
+      xx += w;
+    }
+    y += h;
+    row++;
+  }
+  // mortar
+  x.strokeStyle = 'rgba(28,24,19,.55)';
+  x.lineWidth = 5;
+  for (let yy = 0; yy < 1024; yy += 96){
+    x.beginPath(); x.moveTo(0, yy + .5); x.lineTo(1024, yy + .5); x.stroke();
+  }
+  // grime near the bottom
+  const grime = x.createLinearGradient(0, 700, 0, 1024);
+  grime.addColorStop(0, 'rgba(12,9,6,0)');
+  grime.addColorStop(1, 'rgba(12,9,6,.35)');
+  x.fillStyle = grime; x.fillRect(0, 700, 1024, 324);
+  return c;
+}
+
+function makeWoodTexture(seed = 4, base = '#4b2f1d', dark = '#28160c', light = '#815533'){
+  const r = mulberry32(seed);
+  const [c, x] = canvasOf(1024);
+  x.fillStyle = base; x.fillRect(0, 0, 1024, 1024);
+  const plankH = 118;
+  for (let row = -1; row < 10; row++){
+    const y = row * plankH;
+    let xx = -r() * 260;
+    while (xx < 1024){
+      const w = 240 + r() * 380;
+      const tint = (r() - .5) * 22;
+      x.fillStyle = `rgb(${75 + tint | 0},${48 + tint | 0},${30 + tint | 0})`;
+      x.fillRect(xx + 2, y + 2, w - 4, plankH - 4);
+      // grain
+      for (let g = 0; g < 9; g++){
+        x.strokeStyle = `rgba(${g < 4 ? '22,12,7' : '184,132,82'},${.04 + r() * .11})`;
+        x.lineWidth = .7 + r() * 1.5;
+        x.beginPath();
+        const gy = y + 8 + r() * (plankH - 16);
+        x.moveTo(xx + 4, gy);
+        x.bezierCurveTo(xx + w * .3, gy + (r() - .5) * 12, xx + w * .7, gy + (r() - .5) * 12, xx + w - 4, gy + (r() - .5) * 8);
+        x.stroke();
+      }
+      // knots
+      if (r() < .32){
+        const kx = xx + 30 + r() * (w - 60), ky = y + 20 + r() * (plankH - 40);
+        for (let k = 0; k < 3; k++){
+          x.strokeStyle = `rgba(26,14,8,${.14 - k * .03})`;
+          x.lineWidth = 1.2;
+          x.beginPath();
+          x.ellipse(kx, ky, 5 + k * 3.5, 2.5 + k * 2, .1, 0, TAU);
+          x.stroke();
+        }
+      }
+      // seam
+      x.fillStyle = 'rgba(13,7,3,.5)';
+      x.fillRect(xx, y, 2, plankH);
+      x.fillStyle = 'rgba(0,0,0,.4)';
+      x.fillRect(xx + 2, y, w - 4, 2);
+      xx += w;
+    }
+  }
+  const shade = x.createLinearGradient(0, 0, 1024, 1024);
+  shade.addColorStop(0, 'rgba(255,220,170,.04)');
+  shade.addColorStop(.55, 'rgba(0,0,0,0)');
+  shade.addColorStop(1, 'rgba(0,0,0,.2)');
+  x.fillStyle = shade; x.fillRect(0, 0, 1024, 1024);
+  return c;
+}
+
+function makeRugTexture(){
+  const r = mulberry32(78);
+  const [c, x] = canvasOf(1024, 768);
+  x.fillStyle = '#612c27'; x.fillRect(0, 0, 1024, 768);
+  x.fillStyle = '#242c37'; x.fillRect(22, 22, 980, 724);
+  x.strokeStyle = '#bfa574'; x.lineWidth = 5; x.strokeRect(36, 36, 952, 696);
+  x.strokeStyle = 'rgba(191,165,116,.4)'; x.lineWidth = 2; x.strokeRect(50, 50, 924, 668);
+  x.fillStyle = '#6b302b'; x.fillRect(62, 62, 900, 644);
+  // border motifs
+  for (let i = 0; i < 18; i++){
+    const px = 80 + i * 48;
+    x.strokeStyle = '#c6ab7b'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(px, 74); x.lineTo(px + 14, 88); x.lineTo(px, 102); x.lineTo(px - 14, 88); x.closePath(); x.stroke();
+    if (i < 12){
+      const py = 100 + i * 46;
+      x.beginPath(); x.moveTo(74, py); x.lineTo(88, py + 14); x.lineTo(74, py + 28); x.lineTo(60, py + 14); x.closePath(); x.stroke();
+    }
+  }
+  // field
+  x.fillStyle = '#7a3830';
+  x.beginPath(); x.roundRect(210, 132, 604, 504, 12); x.fill();
+  x.strokeStyle = '#c6ab7b'; x.lineWidth = 3; x.stroke();
+  // medallion
+  x.save(); x.translate(512, 384);
+  for (let i = 0; i < 4; i++){
+    x.strokeStyle = i % 2 ? '#2b3542' : '#cbb183';
+    x.lineWidth = i === 0 ? 5 : 2;
+    x.beginPath();
+    x.moveTo(0, -132 + i * 9); x.lineTo(132 - i * 9, 0); x.lineTo(0, 132 - i * 9); x.lineTo(-132 + i * 9, 0); x.closePath(); x.stroke();
+  }
+  x.fillStyle = '#2a3440';
+  x.beginPath(); x.moveTo(0, -52); x.lineTo(52, 0); x.lineTo(0, 52); x.lineTo(-52, 0); x.closePath(); x.fill();
+  x.fillStyle = '#cbb183';
+  for (const [sx, sy] of [[0,-78],[78,0],[0,78],[-78,0]]){ x.beginPath(); x.arc(sx, sy, 8, 0, TAU); x.fill(); }
+  x.restore();
+  // scattered motifs
+  x.strokeStyle = 'rgba(234,210,166,.35)'; x.lineWidth = 2;
+  for (let i = 0; i < 26; i++){
+    const px = 90 + r() * 844, py = 90 + r() * 588;
+    if (px > 190 && px < 834 && py > 120 && py < 648) continue;
+    x.beginPath(); x.moveTo(px - 8, py); x.lineTo(px, py - 8); x.lineTo(px + 8, py); x.lineTo(px, py + 8); x.closePath(); x.stroke();
+  }
+  // wear and shadow
+  const sh = x.createLinearGradient(0, 0, 1024, 768);
+  sh.addColorStop(0, 'rgba(255,238,203,.06)');
+  sh.addColorStop(.55, 'rgba(0,0,0,0)');
+  sh.addColorStop(1, 'rgba(0,0,0,.28)');
+  x.fillStyle = sh; x.fillRect(0, 0, 1024, 768);
+  return c;
+}
+
+function makeTartanTexture(){
+  const [c, x] = canvasOf(512);
+  x.fillStyle = '#6b3430'; x.fillRect(0, 0, 512, 512);
+  const bands = [
+    [0, 78, '#30483a', .9], [78, 94, '#d3c2a2', .85], [94, 116, '#6b3430', 0],
+    [226, 262, '#2b3c40', .95], [262, 274, '#d3c2a2', .8], [274, 314, '#6b3430', 0],
+    [420, 456, '#30483a', .9], [456, 468, '#d3c2a2', .8]
+  ];
+  for (const [a, b, col, alpha] of bands){ if (alpha){ x.globalAlpha = alpha; x.fillStyle = col; x.fillRect(a, 0, b - a, 512); } }
+  for (const [a, b, col, alpha] of bands){ if (alpha){ x.globalAlpha = alpha * .72; x.fillStyle = col; x.fillRect(0, a, 512, b - a); } }
+  x.globalAlpha = 1;
+  x.strokeStyle = 'rgba(237,220,188,.12)';
+  x.lineWidth = 1;
+  for (let i = 0; i < 512; i += 8){ x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 512); x.stroke(); }
+  x.strokeStyle = 'rgba(15,12,9,.08)';
+  for (let i = 0; i < 512; i += 16){ x.beginPath(); x.moveTo(0, i); x.lineTo(512, i); x.stroke(); }
+  return c;
+}
+
+function makeNightTexture(){
+  const r = mulberry32(41);
+  const [c, x] = canvasOf(1024, 1400);
+  const sky = x.createLinearGradient(0, 0, 0, 1400);
+  sky.addColorStop(0, '#07121f');
+  sky.addColorStop(.42, '#12293a');
+  sky.addColorStop(.72, '#273e4d');
+  sky.addColorStop(1, '#44565e');
+  x.fillStyle = sky; x.fillRect(0, 0, 1024, 1400);
+  // stars
+  for (let i = 0; i < 38; i++){
+    x.fillStyle = `rgba(220,236,250,${.12 + r() * .42})`;
+    x.beginPath(); x.arc(r() * 1024, r() * 780, .6 + r() * 1.4, 0, TAU); x.fill();
+  }
+  // moon
+  const mx = 742, my = 252;
+  const halo = x.createRadialGradient(mx, my, 12, mx, my, 210);
+  halo.addColorStop(0, 'rgba(236,244,240,.55)');
+  halo.addColorStop(.3, 'rgba(199,218,224,.16)');
+  halo.addColorStop(1, 'rgba(170,200,214,0)');
+  x.fillStyle = halo; x.beginPath(); x.arc(mx, my, 210, 0, TAU); x.fill();
+  const moon = x.createRadialGradient(mx - 16, my - 20, 4, mx, my, 62);
+  moon.addColorStop(0, '#fbf7e9'); moon.addColorStop(.7, '#e4e6dc'); moon.addColorStop(1, '#c2cbc8');
+  x.fillStyle = moon; x.beginPath(); x.arc(mx, my, 58, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(146,158,160,.18)';
+  for (const [sx, sy, sr] of [[-18,-16,9],[12,8,6],[24,-22,4],[-8,20,5]]){ x.beginPath(); x.arc(mx + sx, my + sy, sr, 0, TAU); x.fill(); }
+  // distant snowy hills
+  const hill = (base, amp, col) => {
+    x.fillStyle = col; x.beginPath(); x.moveTo(0, 1400);
+    for (let i = 0; i <= 1024; i += 16){
+      x.lineTo(i, base + Math.sin(i * .007 + amp) * 42 + Math.sin(i * .019) * 18);
+    }
+    x.lineTo(1024, 1400); x.closePath(); x.fill();
+  };
+  hill(1090, .3, 'rgba(69,86,93,.92)');
+  hill(1190, 1.8, 'rgba(38,55,62,.96)');
+  // castle keep on the left
+  x.fillStyle = '#18272e';
+  x.fillRect(40, 760, 250, 640);
+  x.fillRect(12, 690, 70, 710);
+  x.fillRect(258, 700, 78, 700);
+  x.beginPath(); x.moveTo(12, 690); x.lineTo(47, 620); x.lineTo(82, 690); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(258, 700); x.lineTo(297, 624); x.lineTo(336, 700); x.closePath(); x.fill();
+  x.fillStyle = '#142127';
+  for (let i = 0; i < 5; i++) x.fillRect(40 + i * 52, 742, 26, 22);
+  // tower windows
+  for (const [wx, wy] of [[56, 820],[286, 780],[296, 880],[120, 920]]){
+    const wg = x.createRadialGradient(wx, wy, 1, wx, wy, 18);
+    wg.addColorStop(0, 'rgba(255,196,112,.95)'); wg.addColorStop(1, 'rgba(255,170,80,0)');
+    x.fillStyle = wg; x.beginPath(); x.arc(wx, wy, 18, 0, TAU); x.fill();
+    x.fillStyle = 'rgba(255,214,146,.8)'; x.fillRect(wx - 3, wy - 6, 6, 12);
+  }
+  // pines
+  const pine = (px, base, h, col) => {
+    x.fillStyle = col;
+    x.fillRect(px - 4, base - h * .12, 8, h * .12);
+    for (let i = 0; i < 5; i++){
+      const yy = base - h * (.12 + i * .17);
+      const ww = h * (.11 + i * .032);
+      x.beginPath(); x.moveTo(px, yy - h * .23); x.lineTo(px + ww, yy); x.lineTo(px - ww, yy); x.closePath(); x.fill();
+    }
+    x.fillStyle = 'rgba(216,230,232,.18)';
+    x.beginPath(); x.moveTo(px, base - h * .92); x.lineTo(px + h * .055, base - h * .7); x.lineTo(px - h * .02, base - h * .62); x.closePath(); x.fill();
+  };
+  for (let i = 0; i < 9; i++){
+    const px = 80 + i * 112 + r() * 40;
+    pine(px, 1310 + r() * 40, 230 + r() * 230, i % 2 ? 'rgba(20,35,38,.85)' : 'rgba(24,40,42,.92)');
+  }
+  // falling snow in the painting
+  for (let i = 0; i < 90; i++){
+    x.fillStyle = `rgba(233,244,247,${.1 + r() * .34})`;
+    x.beginPath(); x.arc(r() * 1024, r() * 1400, .5 + r() * 2.2, 0, TAU); x.fill();
+  }
+  // glass mist at the edges
+  const mist = x.createLinearGradient(0, 0, 0, 1400);
+  mist.addColorStop(0, 'rgba(196,218,224,.18)');
+  mist.addColorStop(.15, 'rgba(196,218,224,0)');
+  mist.addColorStop(.85, 'rgba(210,230,234,0)');
+  mist.addColorStop(1, 'rgba(210,230,234,.12)');
+  x.fillStyle = mist; x.fillRect(0, 0, 1024, 1400);
+  return c;
+}
+
+function makeFlameTexture(seed = 1, lean = 0){
+  const r = mulberry32(seed);
+  const [c, x] = canvasOf(128, 256);
+  x.clearRect(0, 0, 128, 256);
+  x.save();
+  x.translate(64, 0);
+  x.rotate(lean * .18);
+  x.translate(-64, 0);
+  const grad = x.createRadialGradient(64, 196, 4, 64, 150, 112);
+  grad.addColorStop(0, 'rgba(255,252,220,.98)');
+  grad.addColorStop(.16, 'rgba(255,232,154,.96)');
+  grad.addColorStop(.38, 'rgba(255,174,70,.86)');
+  grad.addColorStop(.68, 'rgba(222,93,31,.5)');
+  grad.addColorStop(1, 'rgba(112,34,12,0)');
+  x.fillStyle = grad;
+  x.beginPath();
+  x.moveTo(64, 250);
+  x.bezierCurveTo(20 + lean * 16, 224, 14 + lean * 10, 174, 45 + lean * 8, 132);
+  x.bezierCurveTo(54 + lean * 6, 112, 63 + lean * 4, 84, 64 + lean * 2, 42 + r() * 18);
+  x.bezierCurveTo(78 + lean * 2, 92, 104 + lean * 4, 128, 103 + lean * 8, 172);
+  x.bezierCurveTo(102 + lean * 10, 216, 90, 244, 64, 250);
+  x.fill();
+  // inner hot core
+  x.globalCompositeOperation = 'lighter';
+  const core = x.createRadialGradient(64, 206, 2, 64, 188, 62);
+  core.addColorStop(0, 'rgba(255,255,240,.95)');
+  core.addColorStop(.4, 'rgba(255,232,154,.55)');
+  core.addColorStop(1, 'rgba(255,180,80,0)');
+  x.fillStyle = core;
+  x.beginPath();
+  x.moveTo(64, 246);
+  x.bezierCurveTo(38, 224, 40, 190, 58, 164);
+  x.bezierCurveTo(68, 150, 70, 138, 66, 122);
+  x.bezierCurveTo(86, 152, 94, 190, 82, 220);
+  x.bezierCurveTo(76, 236, 70, 244, 64, 246);
+  x.fill();
+  x.restore();
+  return c;
+}
+
+function makeGlowTexture(inner = 'rgba(255,255,255,1)', outer = 'rgba(255,255,255,0)'){
+  const [c, x] = canvasOf(128);
+  const g = x.createRadialGradient(64, 64, 1, 64, 64, 62);
+  g.addColorStop(0, inner);
+  g.addColorStop(.3, inner.replace(/[\d.]+\)$/, '.55)'));
+  g.addColorStop(1, outer);
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  return c;
+}
+
+function makeSnowStreakTexture(){
+  const [c, x] = canvasOf(64, 256);
+  x.clearRect(0, 0, 64, 256);
+  const g = x.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0, 'rgba(240,249,255,0)');
+  g.addColorStop(.18, 'rgba(240,249,255,.45)');
+  g.addColorStop(.6, 'rgba(255,255,255,.95)');
+  g.addColorStop(1, 'rgba(240,249,255,0)');
+  x.fillStyle = g;
+  x.beginPath();
+  x.ellipse(32, 128, 5, 116, 0, 0, TAU);
+  x.fill();
+  x.globalAlpha = .4;
+  x.beginPath(); x.ellipse(32, 128, 15, 124, 0, 0, TAU); x.fill();
+  return c;
+}
+
+function makePortraitTexture(){
+  const r = mulberry32(66);
+  const [c, x] = canvasOf(512, 640);
+  const bg = x.createLinearGradient(0, 0, 0, 640);
+  bg.addColorStop(0, '#2d2a22'); bg.addColorStop(1, '#12110e');
+  x.fillStyle = bg; x.fillRect(0, 0, 512, 640);
+  const light = x.createRadialGradient(260, 240, 10, 260, 240, 340);
+  light.addColorStop(0, 'rgba(183,151,101,.26)'); light.addColorStop(1, 'rgba(24,20,15,0)');
+  x.fillStyle = light; x.fillRect(0, 0, 512, 640);
+  // shoulders and coat
+  x.fillStyle = '#181b1e';
+  x.beginPath(); x.moveTo(72, 640); x.quadraticCurveTo(110, 430, 250, 400); x.quadraticCurveTo(392, 430, 440, 640); x.closePath(); x.fill();
+  x.fillStyle = '#24292c';
+  x.beginPath(); x.moveTo(190, 420); x.lineTo(250, 540); x.lineTo(318, 420); x.lineTo(300, 640); x.lineTo(212, 640); x.closePath(); x.fill();
+  // white ruff
+  x.fillStyle = '#d8d0bd';
+  for (let i = 0; i < 9; i++){
+    const px = 176 + i * 20;
+    x.beginPath(); x.ellipse(px, 406 + Math.sin(i * 1.7) * 4, 22, 12, Math.sin(i) * .2, 0, TAU); x.fill();
+  }
+  x.fillStyle = 'rgba(120,108,88,.35)';
+  for (let i = 0; i < 18; i++){ x.beginPath(); x.arc(170 + r() * 174, 396 + r() * 26, 1.5 + r() * 3, 0, TAU); x.fill(); }
+  // neck
+  x.fillStyle = '#b98761'; x.fillRect(224, 342, 64, 72);
+  // face
+  const skin = x.createRadialGradient(238, 244, 10, 256, 252, 118);
+  skin.addColorStop(0, '#d8ad83'); skin.addColorStop(.66, '#bd855f'); skin.addColorStop(1, '#754b36');
+  x.fillStyle = skin;
+  x.beginPath(); x.ellipse(256, 252, 87, 112, 0, 0, TAU); x.fill();
+  // hair
+  x.fillStyle = '#5b4b3c';
+  x.beginPath(); x.ellipse(256, 178, 94, 65, 0, Math.PI, TAU); x.fill();
+  x.fillStyle = '#3f3328';
+  x.beginPath(); x.ellipse(184, 248, 18, 60, -.2, 0, TAU); x.fill();
+  x.beginPath(); x.ellipse(328, 248, 18, 60, .2, 0, TAU); x.fill();
+  // beard
+  x.fillStyle = 'rgba(188,181,164,.75)';
+  x.beginPath(); x.moveTo(194, 282); x.quadraticCurveTo(256, 420, 318, 282); x.quadraticCurveTo(300, 366, 256, 382); x.quadraticCurveTo(212, 366, 194, 282); x.fill();
+  // eyes, brows, nose, mouth
+  x.fillStyle = '#2e2119';
+  for (const ex of [222, 290]){
+    x.beginPath(); x.ellipse(ex, 250, 9, 4, 0, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(51,35,25,.8)'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(ex - 15, 232); x.quadraticCurveTo(ex, 226, ex + 15, 232); x.stroke();
+  }
+  x.strokeStyle = 'rgba(107,68,48,.7)'; x.lineWidth = 2.4;
+  x.beginPath(); x.moveTo(256, 246); x.lineTo(246, 296); x.quadraticCurveTo(256, 306, 268, 298); x.stroke();
+  x.strokeStyle = 'rgba(79,42,34,.7)'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(230, 326); x.quadraticCurveTo(256, 338, 284, 325); x.stroke();
+  // chain
+  x.strokeStyle = 'rgba(196,160,99,.65)'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(210, 424); x.quadraticCurveTo(256, 482, 302, 424); x.stroke();
+  x.fillStyle = '#c7a35e'; x.beginPath(); x.arc(256, 478, 7, 0, TAU); x.fill();
+  // craquelure
+  x.strokeStyle = 'rgba(228,216,190,.075)'; x.lineWidth = .8;
+  for (let i = 0; i < 46; i++){
+    const px = r() * 512, py = r() * 640;
+    x.beginPath(); x.moveTo(px, py); x.lineTo(px + (r() - .5) * 46, py + (r() - .5) * 46); x.stroke();
+  }
+  x.fillStyle = 'rgba(0,0,0,.22)'; x.fillRect(0, 0, 512, 26);
+  return c;
+}
+
+function makeCrestTexture(){
+  const [c, x] = canvasOf(256, 320);
+  x.fillStyle = '#5b2724'; x.fillRect(0, 0, 256, 320);
+  x.fillStyle = 'rgba(0,0,0,.18)';
+  for (let i = 0; i < 320; i += 5) x.fillRect(0, i, 256, 1);
+  x.strokeStyle = '#c7a35e'; x.lineWidth = 7;
+  x.beginPath(); x.moveTo(128, 20); x.lineTo(224, 56); x.lineTo(208, 214); x.quadraticCurveTo(128, 290, 128, 298); x.quadraticCurveTo(128, 290, 48, 214); x.lineTo(32, 56); x.closePath(); x.stroke();
+  x.lineWidth = 3; x.strokeStyle = 'rgba(199,163,94,.55)';
+  x.beginPath(); x.moveTo(128, 38); x.lineTo(206, 68); x.lineTo(192, 204); x.quadraticCurveTo(128, 266, 128, 272); x.quadraticCurveTo(128, 266, 64, 204); x.lineTo(50, 68); x.closePath(); x.stroke();
+  // chevron
+  x.fillStyle = '#c7a35e';
+  x.beginPath(); x.moveTo(58, 176); x.lineTo(128, 112); x.lineTo(198, 176); x.lineTo(176, 202); x.lineTo(128, 156); x.lineTo(80, 202); x.closePath(); x.fill();
+  // crown
+  x.beginPath(); x.moveTo(94, 82); x.lineTo(104, 58); x.lineTo(118, 78); x.lineTo(128, 52); x.lineTo(138, 78); x.lineTo(152, 58); x.lineTo(162, 82); x.closePath(); x.fill();
+  // stars
+  for (const [sx, sy] of [[88, 224],[168, 224],[128, 248]]){
+    x.beginPath();
+    for (let i = 0; i < 5; i++){
+      const a = -Math.PI / 2 + i * TAU / 5;
+      const b = a + TAU / 10;
+      x.lineTo(sx + Math.cos(a) * 12, sy + Math.sin(a) * 12);
+      x.lineTo(sx + Math.cos(b) * 5, sy + Math.sin(b) * 5);
+    }
+    x.closePath(); x.fill();
+  }
+  return c;
+}
+
+function makeFrostTexture(){
+  const r = mulberry32(17);
+  const [c, x] = canvasOf(512, 768);
+  x.clearRect(0, 0, 512, 768);
+  x.strokeStyle = 'rgba(224,242,248,.42)';
+  for (let i = 0; i < 220; i++){
+    const edge = i % 4;
+    let px, py, dx, dy;
+    if (edge === 0){ px = r() * 512; py = r() * 60; dx = (r() - .5) * 40; dy = 20 + r() * 70; }
+    else if (edge === 1){ px = 512 - r() * 60; py = r() * 768; dx = -(20 + r() * 70); dy = (r() - .5) * 40; }
+    else if (edge === 2){ px = r() * 512; py = 768 - r() * 60; dx = (r() - .5) * 40; dy = -(20 + r() * 70); }
+    else { px = r() * 60; py = r() * 768; dx = 20 + r() * 70; dy = (r() - .5) * 40; }
+    x.lineWidth = .6 + r() * 1.2;
+    x.beginPath(); x.moveTo(px, py); x.lineTo(px + dx, py + dy); x.stroke();
+    if (r() < .4){
+      x.beginPath(); x.moveTo(px + dx * .4, py + dy * .4); x.lineTo(px + dx * .4 + dy * .3, py + dy * .4 - dx * .3); x.stroke();
+    }
+  }
+  const mist = x.createRadialGradient(256, 384, 100, 256, 384, 430);
+  mist.addColorStop(0, 'rgba(210,232,240,0)');
+  mist.addColorStop(1, 'rgba(210,232,240,.2)');
+  x.fillStyle = mist; x.fillRect(0, 0, 512, 768);
+  return c;
+}
+
+function makeTapestryTexture(){
+  const r = mulberry32(303);
+  const [c, x] = canvasOf(512, 768);
+  const bg = x.createLinearGradient(0, 0, 512, 768);
+  bg.addColorStop(0, '#203638'); bg.addColorStop(.55, '#274447'); bg.addColorStop(1, '#182b2e');
+  x.fillStyle = bg; x.fillRect(0, 0, 512, 768);
+  x.strokeStyle = 'rgba(190,155,91,.7)'; x.lineWidth = 5; x.strokeRect(18, 18, 476, 732);
+  x.strokeStyle = 'rgba(190,155,91,.28)'; x.lineWidth = 1; x.strokeRect(30, 30, 452, 708);
+  // woven texture
+  for (let y = 0; y < 768; y += 4){
+    x.fillStyle = `rgba(255,240,210,${.012 + r() * .02})`;
+    x.fillRect(0, y, 512, 1);
+  }
+  // tree of life
+  x.strokeStyle = '#c7a35e'; x.lineWidth = 8; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(256, 660); x.bezierCurveTo(248, 540, 264, 430, 256, 300); x.stroke();
+  x.lineWidth = 3;
+  const branch = (x1, y1, x2, y2, x3, y3) => { x.beginPath(); x.moveTo(x1, y1); x.bezierCurveTo(x2, y2, x3, y3, x3 + (x3 - x2) * .2, y3 + (y3 - y2) * .2); x.stroke(); };
+  for (const [bx, by, cx, cy] of [[256,430,180,330],[256,390,330,290],[256,340,190,250],[256,320,320,220],[256,280,250,190]]){
+    branch(256, by, (256 + bx) / 2 + 20, (by + cy) / 2, bx, cy);
+  }
+  // leaves and stars
+  for (let i = 0; i < 34; i++){
+    const px = 120 + r() * 272, py = 170 + r() * 300;
+    x.fillStyle = i % 3 ? 'rgba(202,174,112,.55)' : 'rgba(226,216,186,.7)';
+    x.beginPath(); x.arc(px, py, 1.5 + r() * 2.8, 0, TAU); x.fill();
+  }
+  // moon and stag silhouette
+  x.fillStyle = 'rgba(218,226,208,.65)'; x.beginPath(); x.arc(372, 180, 38, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(16,28,29,.8)';
+  x.beginPath(); x.ellipse(210, 610, 58, 28, 0, 0, TAU); x.fill();
+  x.fillRect(198, 560, 24, 74);
+  x.beginPath(); x.moveTo(210, 560); x.lineTo(184, 510); x.lineTo(200, 548); x.closePath(); x.fill();
+  for (const side of [-1, 1]){
+    x.strokeStyle = 'rgba(170,139,80,.7)'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(210 + side * 14, 552); x.lineTo(210 + side * 38, 514); x.lineTo(210 + side * 30, 494); x.moveTo(210 + side * 38, 514); x.lineTo(210 + side * 54, 506); x.stroke();
+  }
+  // bottom fringe shadow
+  const sh = x.createLinearGradient(0, 560, 0, 768);
+  sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(5,9,8,.5)');
+  x.fillStyle = sh; x.fillRect(0, 560, 512, 208);
+  return c;
+}
+
+function makePlaqueTexture(){
+  const [c, x] = canvasOf(768, 160);
+  x.fillStyle = '#211a13'; x.fillRect(0, 0, 768, 160);
+  x.strokeStyle = '#b08a51'; x.lineWidth = 3; x.strokeRect(9, 9, 750, 142);
+  x.strokeStyle = 'rgba(176,138,81,.42)'; x.lineWidth = 1; x.strokeRect(18, 18, 732, 124);
+  x.fillStyle = '#d4b77e'; x.textAlign = 'center';
+  x.font = '36px "Songti SC","STSong",serif';
+  x.fillText('炉火长夜', 384, 76);
+  x.fillStyle = 'rgba(201,177,130,.7)';
+  x.font = '13px "Avenir Next",sans-serif';
+  x.letterSpacing = '4px';
+  x.fillText('A FIRE IN THE KEEP  ·  NO. 09', 384, 116);
+  return c;
+}
+
+const stoneTex = textureFrom(makeStoneTexture(), 2.4, 1.8);
+const floorTex = textureFrom(makeWoodTexture(4), 2.4, 2.0);
+const woodTex = textureFrom(makeWoodTexture(8, '#3b2415', '#1b0d06', '#6e4628'), 1, 1);
+const rugTex = textureFrom(makeRugTexture(), 1, 1);
+const tartanTex = textureFrom(makeTartanTexture(), 3.2, 3.2);
+const nightTex = textureFrom(makeNightTexture(), 1, 1);
+const portraitTex = textureFrom(makePortraitTexture(), 1, 1);
+const crestTex = textureFrom(makeCrestTexture(), 1, 1);
+const frostTex = textureFrom(makeFrostTexture(), 1, 1);
+const tapestryTex = textureFrom(makeTapestryTexture(), 1, 1);
+const plaqueTex = textureFrom(makePlaqueTexture(), 1, 1);
+const flameTexA = textureFrom(makeFlameTexture(3, -1), 1, 1);
+const flameTexB = textureFrom(makeFlameTexture(7, 0), 1, 1);
+const flameTexC = textureFrom(makeFlameTexture(11, 1), 1, 1);
+const glowTex = textureFrom(makeGlowTexture(), 1, 1);
+const snowStreakTex = textureFrom(makeSnowStreakTexture(), 1, 1);
+const warmGlowTex = textureFrom(makeGlowTexture('rgba(255,190,120,1)', 'rgba(255,120,40,0)'), 1, 1);
+
+function std(color, roughness = .85, metalness = 0, extra = {}){
+  return new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra });
+}
+const M = {
+  stone: std(0xc7baa7, .94, 0, { map: stoneTex, bumpMap: stoneTex, bumpScale: .022 }),
+  stoneDark: std(0x827666, .97, 0, { map: stoneTex, bumpMap: stoneTex, bumpScale: .018 }),
+  floor: std(0xa98462, .82, 0, { map: floorTex, bumpMap: floorTex, bumpScale: .012 }),
+  wood: std(0x9b7047, .72, 0, { map: woodTex, bumpMap: woodTex, bumpScale: .01 }),
+  woodDark: std(0x4b321f, .8, 0, { map: woodTex }),
+  woodDeep: std(0x2d1d12, .86, 0, { map: woodTex }),
+  iron: std(0x2a2a2b, .55, .65),
+  brass: std(0xb08a51, .38, .8),
+  steel: std(0xb9c2c7, .3, .78),
+  steelDark: std(0x6b7378, .4, .7),
+  leather: std(0x2f2118, .9, 0),
+  fabric: std(0x30483a, .95, 0),
+  cushion: std(0x59624f, .96, 0),
+  cream: std(0xe3d4b8, .9, 0),
+  skin: std(0xd4a57f, .88, 0),
+  hairSilver: std(0x757873, .96, 0),
+  black: std(0x120e0a, .95, 0),
+  soot: std(0x0e0c0a, 1, 0),
+  tabard: std(0xffffff, .92, 0, { map: crestTex }),
+  ember: std(0xff8a3a, 1, 0, { emissive: 0xe85a17, emissiveIntensity: 1.7 }),
+  candle: std(0xffe9c2, .65, 0, { emissive: 0xffc06a, emissiveIntensity: .38 }),
+  gold: std(0xc7a35e, .35, .75)
+};
+M.stone.color.setHex(0xbdae9b);
+M.stone.map.anisotropy = 8;
+
+const T = {
+  rug: new THREE.MeshStandardMaterial({ map: rugTex, roughness: 1, metalness: 0 }),
+  tartan: new THREE.MeshStandardMaterial({ map: tartanTex, roughness: 1, metalness: 0 }),
+  night: new THREE.MeshBasicMaterial({ map: nightTex }),
+  portrait: new THREE.MeshBasicMaterial({ map: crestTex }),
+  crest: new THREE.MeshStandardMaterial({ map: crestTex, roughness: .9, metalness: 0 }),
+  frost: new THREE.MeshBasicMaterial({ map: frostTex, transparent: true, opacity: .55, depthWrite: false }),
+  plaque: new THREE.MeshStandardMaterial({ map: plaqueTex, roughness: .5, metalness: .45, emissive: 0x2a1b0a, emissiveIntensity: .35 })
+};
+
+function box(w, h, d, mat, x = 0, y = 0, z = 0, parent = scene, shadow = true){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.castShadow = shadow; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function cyl(rt, rb, h, seg, mat, x = 0, y = 0, z = 0, parent = scene, shadow = true){
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+  m.position.set(x, y, z);
+  m.castShadow = shadow; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function sphere(r, mat, x = 0, y = 0, z = 0, parent = scene, shadow = true){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), mat);
+  m.position.set(x, y, z);
+  m.castShadow = shadow; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+function tube(points, radius, mat, parent = scene, segments = 28){
+  const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, 5, false), mat);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m);
+  return m;
+}
+
+// -------------------------------------------------------------------------
+// The keep: shell, window, fireplace
+// -------------------------------------------------------------------------
+
+const room = new THREE.Group();
+scene.add(room);
+
+// stone base / display plinth
+box(3.96, .2, 2.96, M.stoneDark, 0, -.13, 0, room);
+box(3.72, .05, 2.74, M.stone, 0, -.025, 0, room);
+box(4.02, .04, 3.02, M.woodDeep, 0, -.24, 0, room);
+box(3.9, .02, 2.9, M.brass, 0, -.225, 0, room, false);
+for (const [x, z] of [[-1.94, -1.44], [1.94, -1.44], [-1.94, 1.44], [1.94, 1.44]]){
+  box(.09, .11, .09, M.brass, x, -.18, z, room, false);
+}
+const plaque = new THREE.Mesh(new THREE.PlaneGeometry(.92, .185), T.plaque);
+plaque.position.set(0, -.04, 1.487);
+room.add(plaque);
+box(1.0, .22, .025, M.brass, 0, -.04, 1.476, room, false);
+
+// floor
+box(3.42, .08, 2.62, M.floor, 0, -.04, 0, room);
+box(3.42, .18, .05, M.woodDeep, 0, .09, -1.245, room, false);
+box(.05, .18, 2.55, M.woodDeep, -1.695, .09, -.02, room, false);
+box(.05, .18, 2.55, M.woodDeep, 1.695, .09, -.02, room, false);
+
+// walls
+box(3.5, 2.5, .14, M.stone, 0, 1.25, -1.33, room);
+box(.14, 2.5, 2.72, M.stone, -1.76, 1.25, 0, room);
+box(.14, 2.5, 2.72, M.stone, 1.76, 1.25, 0, room);
+box(3.5, .12, 2.72, M.woodDeep, 0, 2.52, 0, room, false);
+
+// ceiling beams
+for (let i = 0; i < 4; i++){
+  const z = -1.02 + i * .68;
+  box(3.56, .13, .12, M.woodDeep, 0, 2.4, z, room, true);
+  box(.18, .22, .18, M.woodDeep, -1.55, 2.3, z, room, false);
+  box(.18, .22, .18, M.woodDeep, 1.55, 2.3, z, room, false);
+}
+box(.12, .2, 2.72, M.woodDeep, 0, 2.4, -.05, room, false);
+
+// rug
+const rug = new THREE.Mesh(new THREE.PlaneGeometry(1.72, 1.16), T.rug);
+rug.rotation.x = -Math.PI / 2;
+rug.position.set(.02, .012, .37);
+rug.receiveShadow = true;
+room.add(rug);
+for (const z of [-.215, .955]){
+  for (let i = 0; i < 12; i++) box(.012, .006, .055, M.cream, -.78 + i * .145, .012, z, room, false);
+}
+
+// --- window ----------------------------------------------------------------
+const WIN = { x: .72, y: 1.45, w: .92, h: 1.38, z: -1.255 };
+const night = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w - .035, WIN.h - .025), T.night);
+night.position.set(WIN.x, WIN.y, WIN.z);
+room.add(night);
+const frost = new THREE.Mesh(new THREE.PlaneGeometry(WIN.w, WIN.h), T.frost);
+frost.position.set(WIN.x, WIN.y, WIN.z + .012);
+room.add(frost);
+box(.11, WIN.h + .2, .16, M.stoneDark, WIN.x - WIN.w / 2 - .05, WIN.y, -1.19, room);
+box(.11, WIN.h + .2, .16, M.stoneDark, WIN.x + WIN.w / 2 + .05, WIN.y, -1.19, room);
+box(WIN.w + .32, .11, .24, M.stone, WIN.x, .75, -1.17, room);
+box(.045, WIN.h, .05, M.iron, WIN.x, WIN.y, -1.175, room, false);
+box(WIN.w, .035, .05, M.iron, WIN.x, WIN.y + .05, -1.175, room, false);
+const arch = new THREE.Mesh(new THREE.TorusGeometry(WIN.w / 2 + .06, .055, 8, 30, Math.PI), M.stone);
+arch.position.set(WIN.x, WIN.y + WIN.h / 2 - .02, -1.19);
+arch.scale.y = .46;
+arch.castShadow = true;
+room.add(arch);
+const archInner = new THREE.Mesh(new THREE.TorusGeometry(WIN.w / 2 - .02, .018, 6, 24, Math.PI), M.iron);
+archInner.position.set(WIN.x, WIN.y + WIN.h / 2 - .02, -1.17);
+archInner.scale.y = .46;
+room.add(archInner);
+const curtainMat = std(0x3d211e, .98, 0);
+for (const side of [-1, 1]){
+  const cx = WIN.x + side * (WIN.w / 2 + .24);
+  for (let i = 0; i < 4; i++){
+    const c = cyl(.055 + i * .005, .075, WIN.h + .5, 8, curtainMat, cx + side * i * .055, WIN.y + .03, -1.13, room, true);
+    c.rotation.z = side * .035;
+  }
+  tube([[cx, WIN.y + .73, -1.12], [cx + side * .07, WIN.y + .42, -1.1], [cx - side * .02, WIN.y + .02, -1.12]], .018, M.brass, room, 12);
+}
+box(WIN.w + .9, .035, .035, M.brass, WIN.x, WIN.y + WIN.h / 2 + .18, -1.12, room, false);
+for (const side of [-1, 1]) sphere(.045, M.brass, WIN.x + side * (WIN.w / 2 + .43), WIN.y + WIN.h / 2 + .18, -1.12, room, false);
+cyl(.055, .045, .09, 8, std(0x574334, .9, 0), WIN.x - .27, .82, -1.12, room, false);
+for (let i = 0; i < 5; i++){
+  const leaf = sphere(.035, std(0x3d5642, .95, 0), WIN.x - .27 + (i % 2 ? .03 : -.03), .88 + i * .025, -1.1, room, false);
+  leaf.scale.set(1, .55, .7);
+}
+
+// snow dusted on the sill
+box(.84, .018, .05, std(0xe3edf1, .95, 0), WIN.x, .79, -1.11, room, false);
+for (let i = 0; i < 4; i++){
+  const snowMound = sphere(.06 - i * .008, std(0xdfeaf0, .95, 0), WIN.x - .34 + i * .21, .785, -1.11, room, false);
+  snowMound.scale.set(1.2, .25, .6);
+}
+
+// --- fireplace -------------------------------------------------------------
+const FP = { x: -.73, z: -1.14 };
+box(1.28, 2.34, .26, M.stone, FP.x, 1.17, FP.z - .02, room);
+box(.68, .82, .018, M.soot, FP.x, .5, FP.z + .13, room, false);
+box(.14, 1.12, .26, M.stoneDark, FP.x - .43, .56, FP.z + .08, room);
+box(.14, 1.12, .26, M.stoneDark, FP.x + .43, .56, FP.z + .08, room);
+box(1.0, .18, .34, M.stone, FP.x, 1.14, FP.z + .07, room);
+box(1.28, .1, .56, M.stone, FP.x, .045, FP.z + .35, room);
+box(1.24, .07, .22, M.stoneDark, FP.x, .16, FP.z + .4, room, false);
+cyl(.012, .012, .66, 6, M.iron, FP.x + .7, .34, FP.z + .28, room, false).rotation.z = -.18;
+box(.13, .03, .1, M.iron, FP.x + .62, .05, FP.z + .32, room, false);
+cyl(.015, .015, .56, 6, M.iron, FP.x + .8, .28, FP.z + .22, room, false).rotation.z = .12;
+cyl(.18, .14, .22, 12, M.woodDeep, FP.x + .88, .13, FP.z + .48, room);
+for (let i = 0; i < 5; i++){
+  const a = i * 1.2;
+  const log = cyl(.035, .04, .42, 7, M.wood, FP.x + .88 + Math.cos(a) * .08, .25 + (i % 2) * .035, FP.z + .48 + Math.sin(a) * .08, room, false);
+  log.rotation.z = Math.PI / 2;
+  log.rotation.y = a;
+}
+const candleFlames = [];
+function candlestick(x, z, h = .28, lit = true){
+  const g = new THREE.Group();
+  g.position.set(x, 1.19, z);
+  room.add(g);
+  cyl(.055, .075, .035, 10, M.brass, 0, .018, 0, g, false);
+  cyl(.018, .024, h, 8, M.brass, 0, .035 + h / 2, 0, g, false);
+  cyl(.035, .045, .04, 8, M.brass, 0, .045 + h, 0, g, false);
+  const candle = cyl(.022, .022, .18, 8, M.candle, 0, .075 + h + .09, 0, g, false);
+  if (lit){
+    const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: warmGlowTex, color: 0xffd9a0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .8 }));
+    flame.position.set(0, .17 + h + .18, 0);
+    flame.scale.set(.12, .16, 1);
+    g.add(flame);
+    candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y });
+  }
+  return g;
+}
+candlestick(FP.x - .4, FP.z + .22, .3);
+candlestick(FP.x - .25, FP.z + .19, .22);
+candlestick(FP.x + .36, FP.z + .22, .34);
+const clockGroup = new THREE.Group();
+clockGroup.position.set(FP.x + .58, 1.21, FP.z + .2);
+room.add(clockGroup);
+cyl(.105, .115, .055, 18, M.brass, 0, .045, 0, clockGroup, false).rotation.x = Math.PI / 2;
+const clockFace = new THREE.Mesh(new THREE.CircleGeometry(.088, 24), std(0xe6d3a9, .75, 0, { emissive: 0x2a1c0d, emissiveIntensity: .3 }));
+clockFace.position.set(0, .045, .032);
+clockGroup.add(clockFace);
+for (let i = 0; i < 12; i++){
+  const a = i / 12 * TAU;
+  box(.006, .014, .004, M.woodDeep, Math.sin(a) * .06, .045 + Math.cos(a) * .06, .037, clockGroup, false).rotation.z = -a;
+}
+const clockHand1 = box(.006, .055, .003, M.woodDeep, 0, .045 + .022, .041, clockGroup, false);
+const clockHand2 = box(.005, .04, .003, M.woodDeep, 0, .045 + .015, .043, clockGroup, false);
+clockHand1.rotation.z = -.45;
+clockHand2.rotation.z = 2.1;
+for (let i = 0; i < 3; i++){
+  const b = box(.25 - i * .02, .035, .17, [M.leather, std(0x4c3f2d, .9), std(0x6b3b31, .9)][i], FP.x + .02, 1.205 + i * .036, FP.z + .18, room, false);
+  b.rotation.y = .04 + i * .02;
+}
+for (let i = 0; i < 9; i++){
+  const gx = FP.x - .5 + i * .125;
+  const leaf = sphere(.035 + (i % 2) * .012, std(0x314a37, .96, 0), gx, 1.21 + (i % 3) * .014, FP.z + .3 + (i % 2) * .03, room, false);
+  leaf.scale.set(1.2, .45, .6);
+  if (i % 3 === 0) sphere(.012, std(0x9c3830, .9, 0), gx, 1.24, FP.z + .31, room, false);
+}
+const portrait = new THREE.Mesh(new THREE.PlaneGeometry(.52, .66), T.portrait);
+portrait.position.set(FP.x, 1.83, FP.z + .15);
+room.add(portrait);
+box(.62, .76, .055, M.gold, FP.x, 1.83, FP.z + .1, room, false);
+box(.55, .69, .06, M.woodDeep, FP.x, 1.83, FP.z + .105, room, false);
+box(.5, .64, .062, M.gold, FP.x, 1.83, FP.z + .108, room, false);
+for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]){
+  const orn = sphere(.035, M.gold, FP.x + sx * .3, 1.83 + sy * .36, FP.z + .16, room, false);
+  orn.scale.set(1, .5, .5);
+}
+
+// wall sconces
+const sconces = [];
+for (const sx of [-1.43, 1.43]){
+  const g = new THREE.Group();
+  g.position.set(sx, 1.62, -1.24);
+  room.add(g);
+  box(.05, .22, .04, M.iron, 0, 0, 0, g, false);
+  box(.18, .025, .04, M.iron, sx < 0 ? -.06 : .06, -.07, .06, g, false);
+  cyl(.055, .04, .035, 8, M.brass, sx < 0 ? -.13 : .13, -.08, .06, g, false);
+  cyl(.022, .022, .22, 8, M.candle, sx < 0 ? -.13 : .13, .03, .06, g, false);
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: warmGlowTex, color: 0xffd7a0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .8 }));
+  flame.position.set(sx < 0 ? -.13 : .13, .18, .06);
+  flame.scale.set(.12, .17, 1);
+  g.add(flame);
+  candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y });
+  sconces.push(g);
+}
+
+// tapestry on the left wall
+const tapestry = new THREE.Mesh(new THREE.PlaneGeometry(.86, 1.2), new THREE.MeshStandardMaterial({ map: tapestryTex, roughness: 1, side: THREE.DoubleSide }));
+tapestry.position.set(-1.682, 1.45, .04);
+tapestry.rotation.y = Math.PI / 2;
+room.add(tapestry);
+box(.045, .045, 1.04, M.woodDeep, -1.67, 2.08, .04, room, false);
+for (const z of [-.52, .6]) sphere(.05, M.brass, -1.67, 2.08, z, room, false);
+
+// chandelier
+const chand = new THREE.Group();
+chand.position.set(.08, 2.05, -.12);
+room.add(chand);
+cyl(.018, .018, .46, 6, M.iron, 0, .23, 0, chand, false);
+const chandRing = new THREE.Mesh(new THREE.TorusGeometry(.28, .014, 6, 24), M.iron);
+chandRing.rotation.x = Math.PI / 2;
+chand.add(chandRing);
+for (let i = 0; i < 4; i++){
+  const a = i / 4 * TAU + .4;
+  const gx = Math.cos(a) * .28, gz = Math.sin(a) * .28;
+  cyl(.035, .05, .04, 8, M.brass, gx, .03, gz, chand, false);
+  cyl(.02, .02, .16, 8, M.candle, gx, .12, gz, chand, false);
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: warmGlowTex, color: 0xffd9a0, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .75 }));
+  flame.position.set(gx, .25, gz);
+  flame.scale.set(.12, .16, 1);
+  chand.add(flame);
+  candleFlames.push({ sprite: flame, phase: rng() * TAU, baseY: flame.position.y });
+}
+for (let i = 0; i < 4; i++){
+  const a = i / 4 * TAU + .4;
+  tube([[0, .48, 0], [Math.cos(a) * .12, .36, Math.sin(a) * .12], [Math.cos(a) * .28, .24, Math.sin(a) * .28]], .006, M.iron, chand, 8);
+}
+
+// logs in fireplace
+const fireLogs = new THREE.Group();
+fireLogs.position.set(FP.x, .12, FP.z + .23);
+room.add(fireLogs);
+for (let i = 0; i < 4; i++){
+  const log = cyl(.045, .055, .48, 8, i % 2 ? M.woodDeep : M.wood, 0, .05 + i * .035, (i - 1.5) * .055, fireLogs);
+  log.rotation.z = Math.PI / 2;
+  log.rotation.y = (i - 1.5) * .1;
+  sphere(.028, M.ember, 0, .04 + i * .035, (i - 1.5) * .055 + .04, fireLogs, false).scale.set(1.2, .35, .7);
+}
+for (let i = -3; i <= 3; i++) box(.012, .12, .012, M.iron, FP.x + i * .1, .1, FP.z + .34, room, false);
+for (let i = -2; i <= 2; i++) box(.03, .012, .34, M.iron, FP.x + i * .2, .17, FP.z + .34, room, false);
+
+
+// -------------------------------------------------------------------------
+// Rocking chair, cat and dog
+// -------------------------------------------------------------------------
+
+const INVISIBLE_MAT = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false });
+const clickTargets = [];
+function clickProxy(x, y, z, r, kind, parent = room){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), INVISIBLE_MAT);
+  m.position.set(x, y, z);
+  m.userData.kind = kind;
+  parent.add(m);
+  clickTargets.push(m);
+  return m;
+}
+
+const chair = new THREE.Group();
+chair.position.set(.3, 0, .44);
+chair.rotation.y = -.78;
+room.add(chair);
+const chairBody = new THREE.Group();
+chair.add(chairBody);
+
+// curved rockers
+tube([[-.3, .12, -.44], [-.3, .06, -.22], [-.3, .06, .22], [-.3, .12, .44]], .022, M.wood, chairBody, 26);
+tube([[.3, .12, -.44], [.3, .06, -.22], [.3, .06, .22], [.3, .12, .44]], .022, M.wood, chairBody, 26);
+for (const x of [-.27, .27]){
+  for (const z of [-.26, .22]){
+    box(.05, .34, .05, M.wood, x, .28, z, chairBody, true);
+  }
+}
+box(.62, .075, .58, M.wood, 0, .45, -.01, chairBody);
+box(.56, .075, .5, M.cushion, 0, .51, .01, chairBody);
+// back posts
+for (const x of [-.29, .29]){
+  const post = box(.055, 1.02, .055, M.wood, x, .9, -.37, chairBody);
+  post.rotation.x = -.3;
+}
+for (const [y, z] of [[.68, -.25], [.88, -.33], [1.08, -.41], [1.26, -.47]]){
+  const slat = box(.54 - (1.26 - y) * .04, .055, .04, M.wood, 0, y, z, chairBody);
+  slat.rotation.x = -.3;
+}
+box(.62, .075, .07, M.wood, 0, 1.4, -.5, chairBody);
+// armrests
+for (const x of [-.31, .31]){
+  const arm = box(.055, .045, .5, M.wood, x, .73, -.02, chairBody);
+  arm.rotation.x = .03;
+  box(.04, .2, .04, M.wood, x, .62, .19, chairBody);
+}
+// padded back and a knitted throw over it
+const backCushion = box(.5, .58, .06, std(0x46584c, .98, 0), 0, 1.03, -.39, chairBody, false);
+const headCushion = box(.29, .16, .07, std(0x3d4d43, .98, 0), 0, 1.12, -.45, chairBody, false);
+headCushion.rotation.x = -.3;
+for (const bx of [-.15, .15]) for (const by of [.86, 1.02, 1.18]) sphere(.013, M.brass, bx, by, -.355, chairBody, false);
+backCushion.rotation.x = -.3;
+
+// --- sleeping cat ----------------------------------------------------------
+const cat = new THREE.Group();
+cat.position.set(.02, .705, .2);
+cat.scale.setScalar(.92);
+chair.add(cat);
+const catBody = sphere(.155, std(0xc8884e, .95, 0), 0, .05, 0, cat);
+catBody.scale.set(1.1, .58, .9);
+const catChest = sphere(.105, std(0xdca46b, .95, 0), 0, .045, .07, cat);
+catChest.scale.set(1.05, .7, .9);
+const catHead = sphere(.09, std(0xd79a60, .95, 0), .02, .09, .12, cat);
+catHead.scale.set(1, .9, .95);
+for (const side of [-1, 1]){
+  const ear = new THREE.Mesh(new THREE.ConeGeometry(.036, .07, 4), std(0xc8884e, .95, 0));
+  ear.position.set(.02 + side * .052, .16, .11);
+  ear.rotation.z = side * -.22;
+  ear.rotation.x = -.08;
+  cat.add(ear);
+  const inner = new THREE.Mesh(new THREE.ConeGeometry(.02, .04, 4), std(0xb46f4e, .95, 0));
+  inner.position.set(.02 + side * .052, .155, .125);
+  inner.rotation.z = side * -.22;
+  cat.add(inner);
+  box(.025, .0025, .003, M.woodDeep, .02 + side * .032, .095, .197, cat, false).rotation.z = side * -.08;
+}
+const catNose = sphere(.012, std(0xb8736a, .9, 0), .02, .072, .202, cat);
+catNose.scale.set(1, .7, .8);
+for (let i = 0; i < 3; i++){
+  const stripe = box(.032, .007, .18, std(0x9e6538, .95, 0), -.07 + i * .065, .105 + (i % 2) * .008, -.01, cat, false);
+  stripe.rotation.x = -.12;
+}
+const catTail = tube([[.13, .07, -.04], [.21, .04, -.01], [.24, .035, .07], [.17, .04, .12], [.1, .045, .09]], .022, std(0xc8884e, .95, 0), cat, 18);
+catTail.castShadow = true;
+clickProxy(.02, .65, .09, .19, 'cat', chair);
+
+// --- sleeping golden retriever --------------------------------------------
+const dog = new THREE.Group();
+const dogBed = new THREE.Group();
+dogBed.position.set(-.47, 0, .74);
+room.add(dogBed);
+cyl(.42, .44, .055, 24, std(0x35251e, .98, 0), 0, .028, 0, dogBed, false);
+cyl(.35, .38, .04, 24, std(0x7d5a43, .98, 0), 0, .065, 0, dogBed, false);
+cyl(.29, .31, .022, 24, std(0xa88c68, .98, 0), 0, .085, 0, dogBed, false);
+dog.position.set(-.47, .055, .74);
+dog.rotation.y = .05;
+dog.scale.setScalar(.9);
+room.add(dog);
+const dogBody = new THREE.Group();
+dog.add(dogBody);
+const fur = std(0xc08a45, .94, 0);
+const furLight = std(0xe2c18a, .94, 0);
+const furDark = std(0x9d6a32, .95, 0);
+const dogTorso = sphere(.22, fur, 0, .18, 0, dogBody);
+dogTorso.scale.set(1.2, .55, .92);
+const dogChest = sphere(.16, furLight, .2, .17, .01, dogBody);
+dogChest.scale.set(.82, .76, .96);
+const saddle = sphere(.2, furDark, -.05, .285, 0, dogBody, false);
+saddle.scale.set(.9, .17, .72);
+const dogHead = sphere(.135, fur, .33, .245, .035, dogBody);
+dogHead.scale.set(.98, .92, .95);
+const muzzle = sphere(.085, furLight, .425, .205, .055, dogBody);
+muzzle.scale.set(1.35, .66, .9);
+sphere(.032, M.black, .505, .21, .055, dogBody, false).scale.set(.9, .75, 1);
+// floppy ears: one near, one far
+const earNear = sphere(.07, std(0x9f703d, .95, 0), .29, .285, .08, dogBody);
+earNear.scale.set(.52, 1.35, .34);
+earNear.rotation.z = -.24;
+const earFar = sphere(.075, std(0x9f703d, .95, 0), .29, .285, -.055, dogBody);
+earFar.scale.set(.52, 1.3, .34);
+earFar.rotation.z = .18;
+// closed eye and brow on the near side
+box(.04, .0035, .004, M.black, .39, .285, .13, dogBody, false).rotation.z = -.12;
+box(.045, .006, .006, furDark, .39, .31, .12, dogBody, false).rotation.z = .05;
+box(.03, .0025, .003, M.black, .455, .195, .13, dogBody, false).rotation.z = .1;
+// front paws stretched out
+for (const z of [-.1, .1]){
+  const paw = sphere(.07, furLight, .4, .085, z, dogBody, false);
+  paw.scale.set(1.55, .5, .8);
+}
+// hind haunch and tucked paw
+for (const z of [-.14, .14]){
+  const hind = sphere(.11, fur, -.17, .13, z, dogBody);
+  hind.scale.set(1.05, .72, .95);
+  const paw = sphere(.06, furLight, -.27, .075, z, dogBody, false);
+  paw.scale.set(1.35, .45, .8);
+}
+// collar and tag
+const dogCollar = new THREE.Mesh(new THREE.TorusGeometry(.098, .021, 6, 18), std(0x7d3d34, .9, 0));
+dogCollar.position.set(.255, .21, .035);
+dogCollar.rotation.y = Math.PI / 2;
+dogBody.add(dogCollar);
+sphere(.023, M.brass, .29, .13, .11, dogBody, false);
+// feathered tail curling round the near side of the bed
+const dogTail = tube([[-.18, .14, -.08], [-.28, .1, -.04], [-.33, .07, .04], [-.3, .06, .14], [-.21, .06, .18]], .021, fur, dogBody, 18);
+const tailTip = sphere(.045, furLight, -.19, .06, .19, dogBody, false);
+tailTip.scale.set(1.3, .65, 1.0);
+clickProxy(-.42, .32, .74, .4, 'dog');
+
+// --- tea table -------------------------------------------------------------
+const table = new THREE.Group();
+table.position.set(-.6, 0, .3);
+room.add(table);
+cyl(.245, .245, .035, 20, M.wood, 0, .52, 0, table);
+cyl(.05, .07, .45, 10, M.wood, 0, .28, 0, table);
+cyl(.16, .2, .04, 12, M.wood, 0, .04, 0, table);
+// teacup
+cyl(.055, .045, .065, 12, M.cream, .04, .57, .03, table, false);
+const handle = new THREE.Mesh(new THREE.TorusGeometry(.028, .007, 5, 12, Math.PI), M.cream);
+handle.position.set(.11, .575, .03);
+handle.rotation.z = -Math.PI / 2;
+table.add(handle);
+cyl(.09, .09, .008, 16, M.cream, .04, .535, .03, table, false);
+// little book
+const tableBook = box(.2, .035, .14, std(0x4b3b2b, .9, 0), -.09, .56, -.06, table, false);
+tableBook.rotation.y = .4;
+box(.18, .022, .12, M.cream, -.09, .578, -.06, table, false).rotation.y = .4;
+
+// --- plate armor -----------------------------------------------------------
+const armor = new THREE.Group();
+const armorSteel = std(0x8796a1, .42, .52);
+const armorDark = std(0x5c6871, .5, .48);
+armor.position.set(1.16, 0, -.25);
+armor.rotation.y = -.52;
+room.add(armor);
+box(.52, .08, .46, M.stoneDark, 0, .04, 0, armor);
+box(.44, .05, .38, M.woodDeep, 0, .095, 0, armor, false);
+for (const side of [-1, 1]){
+  // sabatons and greaves
+  const foot = box(.09, .06, .2, armorDark, side * .12, .13, .06, armor);
+  foot.rotation.x = -.05;
+  cyl(.05, .065, .24, 8, armorSteel, side * .12, .29, 0, armor);
+  sphere(.065, armorDark, side * .12, .42, 0, armor);
+  cyl(.06, .075, .18, 8, armorSteel, side * .12, .52, 0, armor);
+  // poleyn
+  sphere(.06, armorSteel, side * .12, .43, .045, armor);
+  // tassets
+  const tasset = box(.16, .2, .05, armorSteel, side * .1, .59, .1, armor);
+  tasset.rotation.x = .1;
+}
+// skirt / fauld and belt
+cyl(.2, .24, .18, 10, armorDark, 0, .66, 0, armor);
+for (const y of [.58, .63]) box(.34, .045, .18, armorSteel, 0, y, .07, armor, false);
+const belt = cyl(.205, .215, .05, 12, M.leather, 0, .69, .01, armor, false);
+box(.09, .06, .02, M.brass, 0, .69, .21, armor, false);
+// breastplate
+const breast = new THREE.Mesh(new THREE.CylinderGeometry(.16, .22, .38, 10), armorSteel);
+breast.position.set(0, .88, 0);
+breast.castShadow = true; breast.receiveShadow = true;
+armor.add(breast);
+box(.26, .3, .035, T.crest, 0, .84, .185, armor, false);
+// gorget
+cyl(.12, .15, .09, 10, armorDark, 0, 1.08, -.01, armor);
+// pauldrons
+for (const side of [-1, 1]){
+  const p = sphere(.085, armorSteel, side * .21, 1.04, 0, armor);
+  p.scale.set(1.02, .58, 1.06);
+  box(.12, .04, .15, armorDark, side * .23, .98, .02, armor).rotation.z = side * .18;
+  box(.1, .035, .13, armorSteel, side * .23, .94, .02, armor).rotation.z = side * .2;
+  sphere(.014, M.brass, side * .23, 1.075, .04, armor, false);
+}
+// left arm
+const armL = new THREE.Group();
+armL.position.set(-.24, 1.0, 0);
+armor.add(armL);
+cyl(.045, .055, .22, 8, armorSteel, 0, -.12, 0, armL);
+sphere(.05, armorDark, 0, -.25, 0, armL);
+cyl(.04, .05, .2, 8, armorSteel, 0, -.37, .01, armL);
+box(.075, .09, .07, armorDark, 0, -.49, .02, armL);
+// right arm (animated): upper arm + elbow so the gauntlet can come to the chest
+const armorArm = new THREE.Group();
+armorArm.position.set(.24, 1.0, 0);
+armor.add(armorArm);
+cyl(.045, .055, .22, 8, armorSteel, 0, -.12, 0, armorArm);
+sphere(.05, armorDark, 0, -.25, 0, armorArm);
+const armorForearm = new THREE.Group();
+armorForearm.position.set(0, -.25, 0);
+armorArm.add(armorForearm);
+cyl(.04, .05, .2, 8, armorSteel, 0, -.11, .01, armorForearm);
+box(.075, .09, .07, armorDark, 0, -.23, .02, armorForearm);
+// helmet: a pointed bascinet with a beak visor
+const helmet = new THREE.Group();
+helmet.position.set(0, 1.18, -.005);
+helmet.scale.setScalar(.94);
+armor.add(helmet);
+const skull = new THREE.Mesh(new THREE.CylinderGeometry(.105, .127, .22, 9), armorSteel);
+skull.position.y = .02;
+skull.castShadow = true; skull.receiveShadow = true;
+helmet.add(skull);
+const crown = new THREE.Mesh(new THREE.ConeGeometry(.105, .12, 9), armorSteel);
+crown.position.y = .18;
+helmet.add(crown);
+cyl(.12, .145, .055, 9, armorDark, 0, -.1, 0, helmet, false);
+const visor = new THREE.Group();
+visor.position.set(0, .065, .075);
+helmet.add(visor);
+const beak = new THREE.Mesh(new THREE.ConeGeometry(.115, .18, 9), armorSteel);
+beak.rotation.x = Math.PI / 2;
+beak.position.set(0, -.045, .07);
+beak.castShadow = true;
+visor.add(beak);
+box(.145, .055, .026, armorSteel, 0, .035, .045, visor);
+box(.13, .014, .012, M.black, 0, .032, .06, visor, false);
+box(.012, .05, .01, armorSteel, 0, -.005, .105, visor, false);
+for (const side of [-1, 1]){
+  const hinge = cyl(.021, .021, .014, 8, M.brass, side * .095, .02, .015, visor, false);
+  hinge.rotation.z = Math.PI / 2;
+}
+// a single red plume at the back of the crown
+const plume = new THREE.Mesh(new THREE.ConeGeometry(.03, .22, 6), std(0x7b302b, .95, 0));
+plume.position.set(0, .27, -.07);
+plume.rotation.x = -.65;
+plume.castShadow = true;
+helmet.add(plume);
+clickProxy(0, .92, .02, .55, 'armor', armor);
+
+
+
+// -------------------------------------------------------------------------
+// Light, fire, snow and motes
+// -------------------------------------------------------------------------
+
+const hemi = new THREE.HemisphereLight(0x8fa6ba, 0x30190d, .85);
+scene.add(hemi);
+const ambient = new THREE.AmbientLight(0x422918, .42);
+scene.add(ambient);
+
+const moon = new THREE.DirectionalLight(0xa8c3df, 2.15);
+moon.position.set(2.4, 3.2, -.5);
+moon.target.position.set(-.4, .45, .85);
+moon.castShadow = true;
+moon.shadow.mapSize.set(1024, 1024);
+moon.shadow.camera.left = -2.8;
+moon.shadow.camera.right = 2.8;
+moon.shadow.camera.top = 3.2;
+moon.shadow.camera.bottom = -1.4;
+moon.shadow.camera.near = .2;
+moon.shadow.camera.far = 9;
+moon.shadow.bias = -.0006;
+scene.add(moon, moon.target);
+
+const fireSpot = new THREE.SpotLight(0xff8b43, 26, 6.2, 1.08, .82, 1.5);
+fireSpot.position.set(FP.x, .86, FP.z + .55);
+fireSpot.target.position.set(-.1, .35, .75);
+fireSpot.castShadow = true;
+fireSpot.shadow.mapSize.set(1024, 1024);
+fireSpot.shadow.bias = -.0008;
+fireSpot.shadow.camera.near = .1;
+fireSpot.shadow.camera.far = 7;
+scene.add(fireSpot, fireSpot.target);
+
+const fireFill = new THREE.PointLight(0xff7030, 3.4, 3.8, 2.0);
+fireFill.position.set(FP.x, .55, FP.z + .35);
+scene.add(fireFill);
+
+const chandLight = new THREE.PointLight(0xffc17a, 5.8, 4.6, 2.0);
+chandLight.position.set(.08, 1.95, -.12);
+scene.add(chandLight);
+
+const windowFill = new THREE.PointLight(0x9cbfe2, 2.0, 3.6, 2.0);
+windowFill.position.set(WIN.x, WIN.y, -.82);
+scene.add(windowFill);
+
+const armorFill = new THREE.PointLight(0xb9d4e6, 1.5, 2.8, 2.0);
+armorFill.position.set(1.18, 1.4, 1.0);
+scene.add(armorFill);
+
+// --- fire flames -----------------------------------------------------------
+const flameSprites = [];
+const flameTextures = [flameTexA, flameTexB, flameTexC];
+for (let i = 0; i < 15; i++){
+  const mat = new THREE.SpriteMaterial({
+    map: flameTextures[i % flameTextures.length],
+    color: i % 4 === 0 ? 0xffe0a8 : i % 4 === 1 ? 0xffb76a : 0xff9a50,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    opacity: .62
+  });
+  const sp = new THREE.Sprite(mat);
+  const col = i % 5, row = Math.floor(i / 5);
+  const bx = FP.x - .28 + col * .14 + (rng() - .5) * .035;
+  const by = .18 + row * .065 + (rng() - .5) * .025;
+  const bz = FP.z + .22 + (rng() - .5) * .035;
+  sp.position.set(bx, by, bz);
+  const sc = .12 + (col % 2) * .025 + row * .012;
+  sp.scale.set(sc, sc * (1.7 + (row % 2) * .55), 1);
+  sp.userData = { bx, by, bz, s: sc, phase: rng() * TAU, speed: .8 + rng() * .7 };
+  room.add(sp);
+  flameSprites.push(sp);
+}
+for (let i = 0; i < 9; i++){
+  const coal = sphere(.035 + (i % 3) * .012, M.ember, FP.x - .24 + (i % 5) * .12, .17 + (i % 2) * .015, FP.z + .26 + Math.floor(i / 5) * .04, room, false);
+  coal.scale.set(1.2, .32, .7);
+}
+for (const side of [-1, 1]){
+  const upright = cyl(.016, .02, .46, 7, M.iron, FP.x + side * .33, .38, FP.z + .32, room, false);
+  upright.rotation.z = side * .08;
+  sphere(.035, M.brass, FP.x + side * .34, .63, FP.z + .32, room, false);
+  box(.1, .025, .03, M.iron, FP.x + side * .29, .2, FP.z + .32, room, false);
+}
+const fireGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: warmGlowTex, color: 0xff9a4d, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .34 }));
+fireGlow.position.set(FP.x, .44, FP.z + .25);
+fireGlow.scale.set(1.0, 1.3, 1);
+room.add(fireGlow);
+
+// smoke
+const smokeSprites = [];
+for (let i = 0; i < 4; i++){
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x605347, transparent: true, depthWrite: false, opacity: .07 }));
+  sp.position.set(FP.x + (rng() - .5) * .16, 1.05 + i * .2, FP.z + .17);
+  sp.scale.set(.4 + i * .12, .3 + i * .08, 1);
+  sp.userData = { phase: rng() * TAU, baseX: sp.position.x, baseY: sp.position.y };
+  room.add(sp);
+  smokeSprites.push(sp);
+}
+
+// --- falling snow outside the window ---------------------------------------
+const SNOW_N = 360;
+const snowGeo = new THREE.BufferGeometry();
+const snowPos = new Float32Array(SNOW_N * 3);
+const snowData = [];
+for (let i = 0; i < SNOW_N; i++){
+  const x = .3 + rng() * .84;
+  const y = .78 + rng() * 1.34;
+  const z = -1.238 + rng() * .006;
+  snowPos[i * 3] = x; snowPos[i * 3 + 1] = y; snowPos[i * 3 + 2] = z;
+  snowData.push({ speed: .025 + rng() * .055, phase: rng() * TAU, sway: .006 + rng() * .018, x0: x, z0: z });
+}
+snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+const snowMat = new THREE.PointsMaterial({ map: glowTex, color: 0xddecf8, size: .022, transparent: true, opacity: .95, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+const snow = new THREE.Points(snowGeo, snowMat);
+room.add(snow);
+const bigFlakes = [];
+for (let i = 0; i < 34; i++){
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xf0f7ff, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  const x0 = .31 + rng() * .81;
+  const y = .8 + rng() * 1.3;
+  sp.position.set(x0, y, -1.232 + rng() * .006);
+  const size = .038 + rng() * .034;
+  sp.scale.set(size, size, 1);
+  sp.userData = { x0, y, z: sp.position.z, speed: .05 + rng() * .08, sway: .008 + rng() * .018, phase: rng() * TAU };
+  room.add(sp);
+  bigFlakes.push(sp);
+}
+
+
+// --- embers -----------------------------------------------------------------
+const EMBER_N = 54;
+const emberGeo = new THREE.BufferGeometry();
+const emberPos = new Float32Array(EMBER_N * 3);
+const emberData = [];
+for (let i = 0; i < EMBER_N; i++){
+  const x = FP.x - .26 + rng() * .5;
+  const y = .2 + rng() * .9;
+  const z = FP.z + .14 + (rng() - .5) * .15;
+  emberPos[i * 3] = x; emberPos[i * 3 + 1] = y; emberPos[i * 3 + 2] = z;
+  emberData.push({ speed: .05 + rng() * .12, phase: rng() * TAU, sway: .009 + rng() * .022, life: rng(), x0: x, z0: z });
+}
+emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
+const emberMat = new THREE.PointsMaterial({ map: warmGlowTex, color: 0xff9a45, size: .014, transparent: true, opacity: .85, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+const embers = new THREE.Points(emberGeo, emberMat);
+room.add(embers);
+
+// --- dust motes -------------------------------------------------------------
+const DUST_N = 90;
+const dustGeo = new THREE.BufferGeometry();
+const dustPos = new Float32Array(DUST_N * 3);
+const dustData = [];
+for (let i = 0; i < DUST_N; i++){
+  const x = -1.3 + rng() * 2.6;
+  const y = .25 + rng() * 1.8;
+  const z = -.7 + rng() * 1.6;
+  dustPos[i * 3] = x; dustPos[i * 3 + 1] = y; dustPos[i * 3 + 2] = z;
+  dustData.push({ phase: rng() * TAU, speed: .03 + rng() * .05, bx: x, by: y, bz: z });
+}
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: glowTex, color: 0xffd7a4, size: .009, transparent: true, opacity: .3, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true }));
+room.add(dust);
+
+let fireBoost = 0;
+let stokePulse = 0;
+let armorPulse = 0;
+let catPulse = 0;
+let dogPulse = 0;
+let armorSalute = false;
+
+
+// -------------------------------------------------------------------------
+// Interaction, life and light
+// -------------------------------------------------------------------------
+
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+
+function updateFireUi(){
+  const level = clamp(fireBoost, 0, 1);
+  fireFillEl.style.width = `${72 + level * 23}%`;
+  fireTextEl.textContent = level > .32 ? '炉火 更旺' : '炉火 正旺';
+  fireStateEl.textContent = level > .32 ? '火星四溅' : '噼啪作响';
+}
+function stokeFire(){
+  fireBoost = Math.min(1, fireBoost + .55);
+  stokePulse = 1;
+  Sound.stoke();
+  updateFireUi();
+  showToast('你添了一根柴，火星顺着烟道往上窜。', 1500);
+}
+function triggerSceneClick(kind){
+  if (kind === 'armor'){
+    armorSalute = true;
+    armorPulse = 2.5;
+    Sound.clank();
+    showToast('铠甲微微低头，面甲抬起一条缝，铁手套在身侧轻响。', 1900);
+  } else if (kind === 'fire'){
+    stokeFire();
+  } else if (kind === 'cat'){
+    catPulse = 1.8;
+    Sound.purr();
+    showToast('猫把尾巴收得更紧，喉咙里滚出一声呼噜。', 1700);
+  } else if (kind === 'dog'){
+    dogPulse = 1.9;
+    Sound.dogSigh();
+    showToast('金毛的尾巴在地毯上轻轻敲了两下，没睁眼。', 1800);
+  }
+}
+function handleSceneClick(e){
+  if (!e) return false;
+  const rect = canvas.getBoundingClientRect();
+  pointerNDC.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObjects(clickTargets, true);
+  for (const hit of hits){
+    let o = hit.object;
+    while (o){
+      if (o.userData && o.userData.kind){
+        triggerSceneClick(o.userData.kind);
+        return true;
+      }
+      o = o.parent;
+    }
+  }
+  return false;
+}
+// a click on the mantle/fire mouth also counts as poking the fire
+const fireProxy = clickProxy(FP.x, .52, FP.z + .34, .4, 'fire');
+
+stokeBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  stokeFire();
+});
+
+let armorLift = 0;
+let clockMinute = 2.1;
+function updateFire(dt, time){
+  fireBoost = Math.max(0, fireBoost - dt * .24);
+  stokePulse = Math.max(0, stokePulse - dt * .8);
+  const boost = fireBoost;
+  const flick = .88 + Math.sin(time * 17.3) * .045 + Math.sin(time * 31.1 + 1.2) * .028 + boost * .18;
+  fireSpot.intensity = 23 * flick + boost * 11;
+  fireFill.intensity = 3.0 * flick + boost * 1.6;
+  fireGlow.material.opacity = .26 + .06 * Math.sin(time * 6.7) + boost * .16;
+  fireGlow.scale.set(.92 + boost * .15, 1.2 + boost * .2, 1);
+  for (const sp of flameSprites){
+    const u = sp.userData;
+    const breathe = 1 + Math.sin(time * u.speed * 5.2 + u.phase) * .075 + boost * .22;
+    sp.scale.set(u.s * (1 + Math.sin(time * 3.2 + u.phase) * .06), u.s * (2.1 + (u.speed > 1.1 ? .35 : 0)) * breathe, 1);
+    sp.position.x = u.bx + Math.sin(time * 1.7 + u.phase) * .012;
+    sp.position.y = u.by + Math.sin(time * 2.6 + u.phase * 1.4) * .018 + boost * .03;
+    sp.material.opacity = .55 + Math.sin(time * 9 + u.phase) * .09 + boost * .2;
+  }
+  for (const sm of smokeSprites){
+    const u = sm.userData;
+    sm.position.y += dt * (.035 + boost * .055);
+    sm.position.x = u.baseX + Math.sin(time * .5 + u.phase) * .035;
+    if (sm.position.y > 1.85){
+      sm.position.y = 1.0;
+      sm.position.x = u.baseX;
+    }
+    sm.material.opacity = .035 + Math.sin(time * .6 + u.phase) * .012 + boost * .02;
+  }
+  for (const cf of candleFlames){
+    const s = .1 + Math.sin(time * 8.7 + cf.phase) * .012 + Math.sin(time * 19 + cf.phase * 2) * .005;
+    cf.sprite.scale.set(s, s * 1.4, 1);
+    cf.sprite.position.y = cf.baseY + Math.sin(time * 6 + cf.phase) * .005;
+    cf.sprite.material.opacity = .62 + Math.sin(time * 10 + cf.phase) * .1;
+  }
+  chandLight.intensity = 3.1 + Math.sin(time * 7.1) * .12 + Math.sin(time * 13.3) * .06;
+  moon.intensity = 1.5 + Math.sin(time * .23) * .04;
+  updateFireUi();
+  clockMinute += dt * .014;
+  clockHand1.rotation.z = -clockMinute;
+  clockHand2.rotation.z = 2.1 + clockMinute * .08;
+}
+
+function updateSnow(dt, time){
+  const pa = snow.geometry.attributes.position.array;
+  for (let i = 0; i < SNOW_N; i++){
+    const d = snowData[i];
+    pa[i * 3 + 1] -= d.speed * dt * (10 / 3);
+    if (pa[i * 3 + 1] < .77){
+      pa[i * 3 + 1] = 2.14;
+    }
+    pa[i * 3] = d.x0 + Math.sin(time * .45 + d.phase) * d.sway;
+  }
+  snow.geometry.attributes.position.needsUpdate = true;
+  for (const sp of bigFlakes){
+    const d = sp.userData;
+    sp.position.y -= d.speed * dt * (10 / 3);
+    if (sp.position.y < .78){
+      sp.position.y = 2.14;
+      sp.position.x = .31 + rng() * .81;
+      d.x0 = sp.position.x;
+    }
+    sp.position.x = d.x0 + Math.sin(time * .6 + d.phase) * d.sway;
+    sp.material.opacity = .5 + Math.sin(time * 1.2 + d.phase) * .16;
+  }
+
+
+  const ea = embers.geometry.attributes.position.array;
+  for (let i = 0; i < EMBER_N; i++){
+    const d = emberData[i];
+    ea[i * 3 + 1] += dt * d.speed * (1.5 + fireBoost * 2.6);
+    ea[i * 3] = d.x0 + Math.sin(time * 1.4 + d.phase) * d.sway;
+    ea[i * 3 + 2] = d.z0 + Math.cos(time * .9 + d.phase) * .012;
+    if (ea[i * 3 + 1] > 1.3){
+      ea[i * 3 + 1] = .2 + rng() * .08;
+      ea[i * 3] = FP.x - .25 + rng() * .5;
+    }
+  }
+  embers.geometry.attributes.position.needsUpdate = true;
+  emberMat.size = .012 + fireBoost * .006;
+
+  const da = dust.geometry.attributes.position.array;
+  for (let i = 0; i < DUST_N; i++){
+    const d = dustData[i];
+    da[i * 3] = d.bx + Math.sin(time * .1 + d.phase) * .05;
+    da[i * 3 + 1] = d.by + Math.sin(time * .13 + d.phase * 1.7) * .035;
+    da[i * 3 + 2] = d.bz + Math.cos(time * .11 + d.phase * .8) * .045;
+  }
+  dust.geometry.attributes.position.needsUpdate = true;
+}
+
+function updateLife(dt, time){
+  armorPulse = Math.max(0, armorPulse - dt);
+  if (armorPulse <= 0) armorSalute = false;
+  armorLift = lerp(armorLift, armorSalute ? 1 : 0, 1 - Math.pow(.006, dt));
+  armorArm.rotation.z = Math.sin(time * .6) * .006;
+  armorArm.rotation.x = 0;
+  armorForearm.rotation.x = 0;
+  armorForearm.rotation.z = 0;
+  visor.rotation.x = -armorLift * .6;
+  helmet.rotation.y = armorLift * .06;
+  helmet.rotation.x = armorLift * .17;
+  armor.rotation.z = Math.sin(time * .45) * .003;
+
+  catPulse = Math.max(0, catPulse - dt);
+  dogPulse = Math.max(0, dogPulse - dt);
+  const rock = Math.sin(time * .55) * .012 + Math.sin(time * 1.3) * .0012;
+  chairBody.rotation.x = rock;
+  catBody.scale.y = .58 * (1 + Math.sin(time * 1.45) * .035);
+  catHead.position.y = .09 + Math.sin(time * 1.45 + .4) * .004;
+  catTail.rotation.y = Math.sin(time * .7) * .06 + catPulse * .22;
+  catTail.rotation.z = catPulse * .1;
+  dogTorso.scale.y = .52 * (1 + Math.sin(time * .78) * .024);
+  dogHead.rotation.x = Math.sin(time * .5) * .018 + dogPulse * .12;
+  dogTail.rotation.y = Math.sin(time * .44) * .03 + dogPulse * Math.sin(time * 18) * .18;
+  dogBody.position.y = Math.sin(time * .44) * .003;
+}
+
+function setView({ az = view.tAz, polar = view.tPolar, dist = view.tDist, x = target.x, y = target.y, z = target.z } = {}){
+  target.set(x, y, z);
+  view.tAz = view.az = az;
+  view.tPolar = view.polar = polar;
+  view.tDist = view.dist = dist;
+  userMoved = true;
+  updateCamera(.016);
+  renderer.render(scene, camera);
+}
+
+// -------------------------------------------------------------------------
+// Sound
+// -------------------------------------------------------------------------
+
+const Sound = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const button = audioBtn;
+  let ctx = null, master = null, comp = null, analyser = null;
+  let sfx = null, ambient = null, reverb = null, reverbSend = null;
+  let noiseBuf = null;
+  let started = false, on = false;
+  let crackleTimer = 0, tickTimer = 0, gustTimer = 0;
+
+  function makeNoise(seconds = 4){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++){
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return buf;
+  }
+  function makeImpulse(seconds = 2.2, decay = 2.4){
+    const len = Math.floor(ctx.sampleRate * seconds);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++){
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+    return buf;
+  }
+  function build(){
+    ctx = new AC();
+    master = ctx.createGain(); master.gain.value = 0;
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -22; comp.knee.value = 18; comp.ratio.value = 3;
+    comp.attack.value = .01; comp.release.value = .3;
+    master.connect(comp); comp.connect(ctx.destination);
+    analyser = ctx.createAnalyser(); analyser.fftSize = 256;
+    comp.connect(analyser);
+    reverb = ctx.createConvolver(); reverb.buffer = makeImpulse();
+    reverbSend = ctx.createGain(); reverbSend.gain.value = .2;
+    reverb.connect(reverbSend); reverbSend.connect(master);
+    sfx = ctx.createGain(); sfx.gain.value = .82;
+    sfx.connect(master); sfx.connect(reverb);
+    ambient = ctx.createGain(); ambient.gain.value = .8;
+    ambient.connect(master);
+    noiseBuf = makeNoise(6);
+
+    // cold room / wind at the window
+    const windSrc = ctx.createBufferSource(); windSrc.buffer = noiseBuf; windSrc.loop = true;
+    const windFilter = ctx.createBiquadFilter(); windFilter.type = 'lowpass'; windFilter.frequency.value = 340; windFilter.Q.value = .7;
+    const windGain = ctx.createGain(); windGain.gain.value = .011;
+    windSrc.connect(windFilter).connect(windGain).connect(ambient);
+    windSrc.start();
+    const windLfo = ctx.createOscillator(); windLfo.type = 'sine'; windLfo.frequency.value = .06;
+    const windDepth = ctx.createGain(); windDepth.gain.value = .006;
+    windLfo.connect(windDepth).connect(windGain.gain); windLfo.start();
+
+    // fire bed
+    const fireSrc = ctx.createBufferSource(); fireSrc.buffer = noiseBuf; fireSrc.loop = true;
+    const fireFilter = ctx.createBiquadFilter(); fireFilter.type = 'bandpass'; fireFilter.frequency.value = 560; fireFilter.Q.value = .55;
+    const fireGain = ctx.createGain(); fireGain.gain.value = .018;
+    fireSrc.connect(fireFilter).connect(fireGain).connect(ambient);
+    fireSrc.start();
+    const fireHiss = ctx.createBufferSource(); fireHiss.buffer = noiseBuf; fireHiss.loop = true;
+    const hissFilter = ctx.createBiquadFilter(); hissFilter.type = 'highpass'; hissFilter.frequency.value = 1800;
+    const hissGain = ctx.createGain(); hissGain.gain.value = .0022;
+    fireHiss.connect(hissFilter).connect(hissGain).connect(ambient);
+    fireHiss.start();
+
+    // old clock somewhere behind the panel
+    tickTimer = setInterval(() => {
+      if (!enabled() || document.hidden) return;
+      const now = Date.now();
+      const tock = Math.floor(now / 1000) % 2;
+      burst({ dur: .018, peak: .005, type: 'highpass', freq: tock ? 2200 : 1700, q: .8, attack: .001 });
+      tone(tock ? 980 : 1180, .02, .0018, 'sine', 900);
+    }, 1000);
+    gustTimer = setInterval(() => {
+      if (!enabled() || document.hidden) return;
+      windGain.gain.setTargetAtTime(.022, ctx.currentTime, .8);
+      windGain.gain.setTargetAtTime(.011, ctx.currentTime + 2.2, 1.6);
+    }, 9000);
+  }
+  function enabled(){ return started && on; }
+  function burst({ dur = .08, peak = .03, type = 'bandpass', freq = 1400, q = 1.4, attack = .004 } = {}){
+    if (!enabled()) return;
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain();
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    src.connect(f).connect(g).connect(sfx);
+    src.start(t); src.stop(t + dur + .03);
+  }
+  function tone(freq, dur, peak, type = 'sine', endFreq = null, delay = 0){
+    if (!enabled()) return;
+    const osc = ctx.createOscillator(); osc.type = type;
+    const g = ctx.createGain();
+    const t = ctx.currentTime + delay;
+    osc.frequency.setValueAtTime(freq, t);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), t + dur);
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + .006);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    osc.connect(g).connect(sfx);
+    osc.start(t); osc.stop(t + dur + .04);
+  }
+  function scheduleCrackle(){
+    clearTimeout(crackleTimer);
+    if (!enabled()) return;
+    const delay = 120 + Math.random() * 650;
+    crackleTimer = setTimeout(() => {
+      if (!enabled() || document.hidden) return;
+      burst({ dur: .018 + Math.random() * .04, peak: .012 + Math.random() * .028, type: 'bandpass', freq: 800 + Math.random() * 2200, q: 1.1 + Math.random(), attack: .001 });
+      if (Math.random() < .22) tone(90 + Math.random() * 60, .08, .008, 'square', 55);
+      scheduleCrackle();
+    }, delay);
+  }
+  function startTimers(){
+    scheduleCrackle();
+  }
+  function stopTimers(){
+    clearTimeout(crackleTimer);
+    if (tickTimer) clearInterval(tickTimer);
+    if (gustTimer) clearInterval(gustTimer);
+    crackleTimer = tickTimer = gustTimer = 0;
+  }
+  function syncUi(){
+    if (!button) return;
+    button.classList.toggle('on', on);
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (audioStateEl) audioStateEl.textContent = on ? '已开启' : '点击开启';
+    const icon = button.querySelector('.sound-icon');
+    if (icon) icon.classList.toggle('hint', !started);
+  }
+  function enable(){
+    if (!AC || !button) return;
+    if (!ctx) build();
+    ctx.resume().catch(() => {});
+    started = true; on = true;
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setTargetAtTime(.82, ctx.currentTime, .22);
+    startTimers();
+    syncUi();
+  }
+  function disable(){
+    if (!ctx) return;
+    on = false;
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setTargetAtTime(.0001, ctx.currentTime, .18);
+    stopTimers();
+    syncUi();
+  }
+  function toggle(){ on ? disable() : enable(); }
+
+  function stoke(){
+    if (!enabled()) return;
+    burst({ dur: .34, peak: .045, type: 'lowpass', freq: 900, q: .8, attack: .01 });
+    tone(74, .24, .02, 'sine', 44);
+    for (let i = 0; i < 4; i++){
+      setTimeout(() => burst({ dur: .03, peak: .025, type: 'bandpass', freq: 1100 + Math.random() * 1800, q: 1.2, attack: .001 }), 90 + i * 95);
+    }
+  }
+  function clank(){
+    if (!enabled()) return;
+    burst({ dur: .07, peak: .03, type: 'highpass', freq: 2800, q: .8, attack: .001 });
+    tone(196, .5, .026, 'triangle', 142);
+    tone(392, .36, .012, 'sine', 310);
+    tone(587, .26, .006, 'sine', 520, .02);
+  }
+  function purr(){
+    if (!enabled()) return;
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 36;
+    const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.012, t + .12); g.gain.exponentialRampToValueAtTime(.0001, t + 1.1);
+    const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 24;
+    const lg = ctx.createGain(); lg.gain.value = .007;
+    lfo.connect(lg).connect(g.gain);
+    osc.connect(g).connect(sfx);
+    osc.start(t); lfo.start(t); osc.stop(t + 1.15); lfo.stop(t + 1.15);
+    burst({ dur: .6, peak: .004, type: 'lowpass', freq: 260, q: .5, attack: .1 });
+  }
+  function dogSigh(){
+    if (!enabled()) return;
+    burst({ dur: .5, peak: .018, type: 'bandpass', freq: 380, q: .8, attack: .08 });
+    tone(112, .48, .008, 'sine', 76);
+  }
+  function rustle(){
+    if (!enabled()) return;
+    burst({ dur: .3, peak: .012, type: 'bandpass', freq: 1800, q: .7, attack: .04 });
+  }
+
+  if (!AC || !button){
+    syncUi();
+    return { enable(){}, disable(){}, toggle(){}, stoke(){}, clank(){}, purr(){}, dogSigh(){}, rustle(){}, get on(){ return false; }, get started(){ return false; } };
+  }
+  button.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle(); });
+  function autoStart(e){
+    if (started || on) return;
+    if (e.target.closest?.('#audioBtn, .loading')) return;
+    if (loadingEl && !loadingEl.classList.contains('done')) return;
+    enable();
+  }
+  window.addEventListener('pointerdown', autoStart, { passive: true, capture: true });
+  window.addEventListener('keydown', (e) => {
+    if (started || on) return;
+    if (e.target.closest?.('#audioBtn')) return;
+    if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyF') autoStart(e);
+  }, { passive: true, capture: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden){
+      stopTimers();
+      if (ctx.state === 'running') ctx.suspend().catch(() => {});
+    } else if (on){
+      ctx.resume().then(() => { if (!tickTimer) buildTimers(); startTimers(); }).catch(() => {});
+    }
+  });
+  // build() also starts the clock intervals; buildTimers is a guard for resume
+  function buildTimers(){
+    tickTimer = setInterval(() => {
+      if (!enabled() || document.hidden) return;
+      const tock = Math.floor(Date.now() / 1000) % 2;
+      burst({ dur: .018, peak: .005, type: 'highpass', freq: tock ? 2200 : 1700, q: .8, attack: .001 });
+      tone(tock ? 980 : 1180, .02, .0018, 'sine', 900);
+    }, 1000);
+    gustTimer = setInterval(() => {
+      if (!enabled() || document.hidden) return;
+      const t = ctx.currentTime;
+      // gentle gust, no node bookkeeping needed
+      burst({ dur: 1.8, peak: .0045, type: 'lowpass', freq: 280, q: .5, attack: .5 });
+    }, 9000);
+  }
+  syncUi();
+  return {
+    enable, disable, toggle, stoke, clank, purr, dogSigh, rustle,
+    level(){
+      if (!analyser) return 0;
+      const data = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(data);
+      let s = 0;
+      for (let i = 0; i < data.length; i++){ const v = (data[i] - 128) / 128; s += v * v; }
+      return Math.sqrt(s / data.length);
+    },
+    get on(){ return on; },
+    get started(){ return started; },
+    get context(){ return ctx; }
+  };
+})();
+
+// -------------------------------------------------------------------------
+// Boot
+// -------------------------------------------------------------------------
+
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), .05);
+  timeNow += dt;
+  updateCamera(dt);
+  updateFire(dt, timeNow);
+  updateLife(dt, timeNow);
+  updateSnow(dt, timeNow);
+  renderer.render(scene, camera);
+}
+
+onResize();
+applyHomeView(true);
+updateCamera(.016);
+updateFireUi();
+updateFire(0, .016);
+updateLife(0, .016);
+updateSnow(0, .016);
+animate();
+
+window.__HEARTH_DEBUG__ = {
+  THREE, scene, camera, renderer, room, target, view, clickTargets, fireSpot, moon,
+  setView,
+  step(seconds = .5, dt = .033, doRender = true){
+    const n = Math.max(1, Math.round(seconds / dt));
+    for (let i = 0; i < n; i++){
+      timeNow += dt;
+      updateFire(dt, timeNow);
+      updateLife(dt, timeNow);
+      updateSnow(dt, timeNow);
+    }
+    if (doRender) renderer.render(scene, camera);
+    return this.snapshot();
+  },
+  render(){ renderer.render(scene, camera); },
+  stoke: stokeFire,
+  trigger: triggerSceneClick,
+  hideUI(hide = true){
+    document.querySelectorAll('.masthead,.hintbar,.toast,.loading').forEach(e => e.style.display = hide ? 'none' : '');
+  },
+  snapshot(){
+    return {
+      ready: !!window.__HEARTH_READY__,
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      pixelRatio: renderer.getPixelRatio(),
+      camera: camera.position.toArray().map(v => +v.toFixed(2)),
+      target: target.toArray().map(v => +v.toFixed(2)),
+      fireBoost: +fireBoost.toFixed(2),
+      armorPulse: +armorPulse.toFixed(2),
+      audioOn: Sound.on,
+      audioState: Sound.context ? Sound.context.state : 'idle'
+    };
+  }
+};
+
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    window.__HEARTH_READY__ = true;
+    setTimeout(() => loadingEl.classList.add('done'), 320);
+  });
+});
+
+
+
+
+</script>
+</body>
+</html>

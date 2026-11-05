@@ -36,6 +36,7 @@ jobs:
           cp -R tide-holiday _site/
           cp -R autumn-forest _site/
           cp -R recess-football _site/
+          cp -R hearth-keep _site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
