@@ -35,6 +35,7 @@ jobs:
           cp -R classroom-80s _site/
           cp -R tide-holiday _site/
           cp -R autumn-forest _site/
+          cp -R recess-football _site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

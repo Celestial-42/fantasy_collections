@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#080706" />
 <title>幻想藏品 · 横向藏品长廊</title>
-<meta name="description" content="幻想藏品 · 横向藏品长廊：七件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市、《幻灯年代》的 1998 年高中数学课堂、《潮汐假日》的夏日海滩、《秋山鹿鸣》的深秋山林，左右拖动逐件观看。" />
+<meta name="description" content="幻想藏品 · 横向藏品长廊：八件可交互的 WebGL 微缩藏品——《瓶中沧海》的暮色海洋、《雪落索菲亚》的哈尔滨雪夜、《一盏山河》的青瓷茶中山水、《灯下长安》的纸灯笼上元灯市、《幻灯年代》的 1998 年高中数学课堂、《潮汐假日》的夏日海滩、《秋山鹿鸣》的深秋山林、《铃响之前》的校园课间球赛，左右拖动逐件观看。" />
 <link rel="preload" as="image" href="bottle-sea/poster.jpg" />
 <link rel="preload" as="image" href="snow-sophia/poster.jpg" />
 <link rel="preload" as="image" href="tea-mountain/poster.jpg" />
@@ -13,6 +13,7 @@
 <link rel="preload" as="image" href="classroom-80s/poster.jpg" />
 <link rel="preload" as="image" href="tide-holiday/poster.jpg" />
 <link rel="preload" as="image" href="autumn-forest/poster.jpg" />
+<link rel="preload" as="image" href="recess-football/poster.jpg" />
 <style>
   @property --accent{
     syntax: "<color>";
@@ -505,6 +506,17 @@
   }
   .card-seal--autumn::before{border-color:rgba(255,230,200,.24);}
   .card-seal--autumn small{color:rgba(255,230,200,.55);}
+  .card-seal--recess{
+    color:rgba(245,250,230,.94);
+    background:
+      radial-gradient(circle at 36% 30%, #8ba16c, #5c7148 52%, #35422c 100%);
+    box-shadow:
+      0 10px 22px rgba(0,0,0,.46),
+      inset 0 1px 1px rgba(240,250,224,.3),
+      inset 0 -6px 14px rgba(12,24,10,.5);
+  }
+  .card-seal--recess::before{border-color:rgba(234,246,214,.24);}
+  .card-seal--recess small{color:rgba(234,246,214,.55);}
 
   .card-bottom{
     position:absolute;
@@ -829,18 +841,18 @@
       <span>幻想藏品 · Atelier<br>Fantasy Collections</span>
     </a>
     <div class="top-meta">
-      <span class="meta-label">横向长廊</span><i aria-hidden="true"></i><span><b>No. 01—07</b> / 2026</span>
+      <span class="meta-label">横向长廊</span><i aria-hidden="true"></i><span><b>No. 01—08</b> / 2026</span>
     </div>
   </header>
 
   <section class="shell intro" aria-labelledby="pageTitle">
     <div class="intro-left">
-      <p class="eyebrow">Fantasy Collections · Vol. 01—07</p>
+      <p class="eyebrow">Fantasy Collections · Vol. 01—08</p>
       <h1 id="pageTitle">幻想藏品</h1>
       <p class="latin">The Fantasy Collections</p>
     </div>
     <div class="intro-right">
-      <p class="intro-note">七件可交互的幻想微缩藏品，<br>挂在同一条横向长廊上。</p>
+      <p class="intro-note">八件可交互的幻想微缩藏品，<br>挂在同一条横向长廊上。</p>
       <p class="drag-hint"><i aria-hidden="true"></i>按住拖动 · 点击进入</p>
     </div>
   </section>
@@ -992,10 +1004,31 @@
         <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">秋山鹿鸣</span></span>
       </span>
     </a>
+
+    <a class="card" href="recess-football/" draggable="false"
+       style="--card-accent:#b8cf92;--pos:50% 52%"
+       data-no="08" data-title="铃响之前" data-en="Before the Bell"
+       data-note="五分钟的课间球赛，铃声一响就跑回教学楼。"
+       data-accent="#b8cf92" aria-label="进入《铃响之前》">
+      <span class="card-media"><img src="recess-football/poster.jpg" draggable="false" alt="玻璃钟罩里的青禾小学操场，红蓝两队孩子进行课间足球赛，教学楼与铃声" width="1200" height="1800" /></span>
+      <span class="card-frame" aria-hidden="true"></span>
+      <span class="card-top">
+        <span class="card-meta"><span class="card-no">No. 08</span><span class="card-phase">校园 · 课间 10:05</span></span>
+        <span class="card-seal card-seal--recess" aria-hidden="true">课间<small>RECESS · FOOTBALL · 08</small></span>
+      </span>
+      <span class="card-bottom">
+        <span class="card-copy">
+          <span class="card-en">Before the Bell</span>
+          <span class="card-note">五分钟的课间球赛，铃声一响就跑回教学楼。</span>
+          <span class="card-enter">进入这件藏品 <b aria-hidden="true">↗</b></span>
+        </span>
+        <span class="card-title-wrap"><i class="card-title-line" aria-hidden="true"></i><span class="card-title">铃响之前</span></span>
+      </span>
+    </a>
   </div>
 
   <section class="shell caption" aria-live="polite">
-    <div class="cap-no"><span id="capNo">01</span><small>/ 07</small></div>
+    <div class="cap-no"><span id="capNo">01</span><small>/ 08</small></div>
     <div class="cap-main">
       <h2><span id="capTitle">瓶中沧海</span><em id="capEn">A Sea in a Bottle</em></h2>
       <p id="capNote">帆船、灯塔与一场被装进瓶里的风暴。</p>
