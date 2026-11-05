@@ -216,7 +216,7 @@
 </aside>
 
 <div class="side-mark">NO. 07 / AUTUMN RIDGE / 2026</div>
-<p class="hint-note" id="hintNote">风一过，整座山的叶子都在轻轻响。</p>
+<p class="hint-note" id="hintNote">风过叶响，落下的果子，来客会来尝。</p>
 
 <div class="hintbar">
   <span><b>拖拽</b>环绕</span><i></i>
@@ -583,9 +583,74 @@ function cone(parent, radius, height, mat, x = 0, y = 0, z = 0, rx = 0, ry = 0, 
   parent.add(m);
   return m;
 }
-function curveTube(parent, points, radius, mat, segments = 18, radial = 8){
+const SIDE_AXIS = new THREE.Vector3(1, 0, 0);
+function furTail(parent, points, radii, baseColor, tipColor, segments = 26, radial = 11){
   const curve = new THREE.CatmullRomCurve3(points);
-  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, radial, false), mat);
+  const pos = [], cols = [], idx = [];
+  const cA = new THREE.Color(baseColor), cB = new THREE.Color(tipColor), c = new THREE.Color();
+  const tvec = new THREE.Vector3(), n = new THREE.Vector3(), b = new THREE.Vector3();
+  let lastN = null, lastB = null;
+  const pushRing = (p, nn, bb, r, color) => {
+    for (let j = 0; j < radial; j++){
+      const a = j / radial * TAU, ca = Math.cos(a), sa = Math.sin(a);
+      pos.push(
+        p.x + (nn.x * ca + bb.x * sa) * r,
+        p.y + (nn.y * ca + bb.y * sa) * r,
+        p.z + (nn.z * ca + bb.z * sa) * r
+      );
+      cols.push(color.r, color.g, color.b);
+    }
+  };
+  for (let i = 0; i <= segments; i++){
+    const t = i / segments;
+    const p = curve.getPoint(t);
+    curve.getTangent(t, tvec).normalize();
+    n.copy(SIDE_AXIS).addScaledVector(tvec, -tvec.dot(SIDE_AXIS));
+    if (n.lengthSq() < .0001) n.set(0, 0, 1);
+    n.normalize();
+    b.crossVectors(tvec, n).normalize();
+    const f = t * (radii.length - 1);
+    const ri = Math.min(radii.length - 2, Math.floor(f));
+    const r = radii[ri] * (1 - (f - ri)) + radii[ri + 1] * (f - ri);
+    c.copy(cA).lerp(cB, smooth(.62, .84, t));
+    pushRing(p, n, b, r, c);
+    lastN = n.clone();
+    lastB = b.clone();
+  }
+  // rounded, integrated cream tip cap
+  const tipP = curve.getPoint(1);
+  const tipT = curve.getTangent(1).normalize();
+  const tipR = radii[radii.length - 1];
+  const capSteps = 3;
+  for (let k = 1; k <= capSteps; k++){
+    const phi = k / (capSteps + 1) * Math.PI / 2;
+    const p = tipP.clone().addScaledVector(tipT, tipR * Math.sin(phi));
+    pushRing(p, lastN, lastB, tipR * Math.cos(phi), cB);
+  }
+  const tipCenter = pos.length / 3;
+  pos.push(tipP.x + tipT.x * tipR, tipP.y + tipT.y * tipR, tipP.z + tipT.z * tipR);
+  cols.push(cB.r, cB.g, cB.b);
+  const ringCount = segments + 1 + capSteps;
+  for (let i = 0; i < ringCount - 1; i++){
+    for (let j = 0; j < radial; j++){
+      const a = i * radial + j;
+      const b1 = (i + 1) * radial + j;
+      const c1 = i * radial + (j + 1) % radial;
+      const d = (i + 1) * radial + (j + 1) % radial;
+      idx.push(a, b1, c1, b1, d, c1);
+    }
+  }
+  const lastStart = (ringCount - 1) * radial;
+  for (let j = 0; j < radial; j++){
+    idx.push(lastStart + j, tipCenter, lastStart + (j + 1) % radial);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .9 });
+  const m = new THREE.Mesh(geo, mat);
   m.castShadow = true;
   m.receiveShadow = true;
   parent.add(m);
@@ -1146,7 +1211,7 @@ for (let i = 0; i < fruitHome.length; i++){
   stem.position.y = .075;
   g.add(stem);
   const leaf = block(g, .055, .008, .028, M.fruitLeaf, .018, .085, 0, 0, .5, .2, false);
-  fruits.push({ group: g, home: fruitHome[i].clone(), state: 'hanging', vy: 0, ground: 0, timer: 0, bounces: 0 });
+  fruits.push({ group: g, home: fruitHome[i].clone(), state: 'hanging', vy: 0, ground: 0, timer: 0, bounces: 0, targeted: false });
 }
 
 // tree hit area
@@ -1286,7 +1351,7 @@ const leafGeo = new THREE.ShapeGeometry(leafShape, 4);
 const leafMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, toneMapped: true });
 const groundLeafMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, toneMapped: true });
 
-const groundLeafCount = 310;
+const groundLeafCount = 217;
 const groundLeafMesh = new THREE.InstancedMesh(leafGeo, groundLeafMat, groundLeafCount);
 groundLeafMesh.receiveShadow = true;
 groundLeafMesh.castShadow = false;
@@ -1308,7 +1373,7 @@ for (let i = 0; i < groundLeafCount; i++){
 groundLeafMesh.instanceMatrix.needsUpdate = true;
 if (groundLeafMesh.instanceColor) groundLeafMesh.instanceColor.needsUpdate = true;
 
-const FALLING_LEAVES = 150;
+const FALLING_LEAVES = 105;
 const leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, FALLING_LEAVES);
 leafMesh.frustumCulled = false;
 leafMesh.castShadow = false;
@@ -1405,6 +1470,7 @@ function dropFruit(n = 1){
     f.vz = rand(-.05, .05);
     f.bounces = 0;
     f.timer = 0;
+    f.targeted = false;
     dropped++;
   }
   return dropped;
@@ -1439,9 +1505,27 @@ function updateFruits(dt, time){
         }
       }
     } else if (f.state === 'ground'){
-      f.timer += dt;
+      if (!f.targeted) f.timer += dt;
       if (f.timer > 9){
         f.state = 'fade';
+        f.timer = 0;
+      }
+    } else if (f.state === 'eaten'){
+      f.timer += dt;
+      if (f.timer < .45){
+        f.group.scale.setScalar(Math.max(.001, 1 - f.timer / .45));
+      } else {
+        f.group.visible = false;
+      }
+      if (f.timer > 5.4){
+        f.group.visible = true;
+        jarRig.remove(f.group);
+        f.group.scale.setScalar(.001);
+        f.group.position.copy(f.home);
+        f.group.rotation.set(0, 0, 0);
+        f.targeted = false;
+        heroTree.add(f.group);
+        f.state = 'grow';
         f.timer = 0;
       }
     } else if (f.state === 'fade'){
@@ -1453,6 +1537,7 @@ function updateFruits(dt, time){
         f.group.scale.setScalar(1);
         f.group.position.copy(f.home);
         f.group.rotation.set(0, 0, 0);
+        f.targeted = false;
         heroTree.add(f.group);
         f.state = 'grow';
         f.timer = 0;
@@ -1485,7 +1570,7 @@ function setWindLabel(text){
   if (windStateEl) windStateEl.textContent = text;
   if (hintNoteEl) hintNoteEl.textContent = text === '起风'
     ? '山风起了，整座山都在沙沙响。'
-    : '风一过，整座山的叶子都在轻轻响。';
+    : '风过叶响，落下的果子，来客会来尝。';
 }
 function triggerGust(strength = 1, drop = true){
   wind.gust = Math.max(wind.gust, strength);
@@ -1659,20 +1744,19 @@ function makeFox(){
     orb(head, .012, .013, .012, M.black, side * .042, .022, .058);
   }
   const tail = new THREE.Group();
-  tail.position.set(0, .24, -.2);
+  tail.position.set(0, .22, -.275);
+  tail.scale.setScalar(.95);
   root.add(tail);
   const tailBase = new THREE.Group();
-  tailBase.rotation.y = .5;
+  tailBase.rotation.y = .55;
   tail.add(tailBase);
-  curveTube(tailBase, [
-    new THREE.Vector3(0, .01, 0),
-    new THREE.Vector3(.02, .04, -.11),
-    new THREE.Vector3(.06, .09, -.21),
-    new THREE.Vector3(.09, .15, -.29),
-    new THREE.Vector3(.1, .21, -.33)
-  ], .068, M.fox, 20, 9);
-  orb(tailBase, .06, .06, .07, M.fox, 0, .01, -.02, -.5, 0, 0);
-  orb(tailBase, .04, .04, .055, M.foxLight, .1, .22, -.34, -.1, 0, 0);
+  furTail(tailBase, [
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(.01, .035, -.085),
+    new THREE.Vector3(.035, .08, -.16),
+    new THREE.Vector3(.06, .11, -.215),
+    new THREE.Vector3(.072, .125, -.265)
+  ], [.036, .072, .095, .085, .05], 0xc46838, 0xefe0c5);
   parts.head = head;
   parts.tail = tail;
   root.castShadow = true;
@@ -1708,20 +1792,20 @@ function makeSquirrel(){
     cone(head, .012, .035, M.squirrelLight, side * .045, .075, .004, 0, 0, side * .14);
   }
   const tail = new THREE.Group();
-  tail.position.set(0, .17, -.07);
+  tail.position.set(0, .15, -.095);
+  tail.scale.setScalar(.88);
   root.add(tail);
   const tailBase = new THREE.Group();
-  tailBase.rotation.y = .42;
+  tailBase.rotation.y = .36;
   tail.add(tailBase);
-  curveTube(tailBase, [
+  furTail(tailBase, [
     new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0, .06, -.09),
-    new THREE.Vector3(.015, .14, -.16),
-    new THREE.Vector3(.03, .22, -.2),
-    new THREE.Vector3(.035, .295, -.16)
-  ], .064, M.squirrel, 22, 9);
-  orb(tailBase, .05, .05, .05, M.squirrel, 0, .01, -.02, 0, 0, 0);
-  orb(tailBase, .032, .04, .03, M.squirrelLight, .035, .3, -.155, 0, 0, 0);
+    new THREE.Vector3(.005, .05, -.06),
+    new THREE.Vector3(.02, .11, -.105),
+    new THREE.Vector3(.04, .15, -.105),
+    new THREE.Vector3(.055, .185, -.075),
+    new THREE.Vector3(.055, .21, -.035)
+  ], [.03, .056, .078, .076, .056, .043], 0xa85d34, 0xe1ba8e);
   parts.head = head;
   parts.tail = tail;
   root.castShadow = true;
@@ -1762,6 +1846,22 @@ const spots = [
 let active = null;
 let animalTimer = 0;
 let lastKind = null;
+function clearFruitTarget(a){
+  if (!a || !a.fruitTarget) return;
+  a.fruitTarget.targeted = false;
+  a.fruitTarget = null;
+}
+function groundFruitNear(a){
+  let best = null, bestD = 1.6;
+  for (const f of fruits){
+    if (f.state !== 'ground' || f.targeted) continue;
+    const dx = f.group.position.x - a.root.position.x;
+    const dz = f.group.position.z - a.root.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d < bestD){ bestD = d; best = f; }
+  }
+  return best;
+}
 function setVisitorLabel(text){
   if (visitorStateEl) visitorStateEl.textContent = text;
 }
@@ -1769,9 +1869,14 @@ function placeAnimal(a, x, z){
   a.root.position.set(x, terrainH(x, z) + .005, z);
 }
 function spawnAnimal(kind, initial = false){
-  if (active) active.root.visible = false;
+  if (active){
+    clearFruitTarget(active);
+    active.root.visible = false;
+  }
   const a = animalModels[kind];
   a.root.visible = true;
+  a.fruitTarget = null;
+  a.fruitCooldown = rand(.6, 1.3);
   a.root.scale.setScalar(kind === 'deer' ? 1.16 : 1);
   a.root.rotation.set(0, 0, 0);
   a.reaction = 0;
@@ -1785,6 +1890,7 @@ function spawnAnimal(kind, initial = false){
     a.state = 'stay';
     a.timer = 11;
     a.stayTarget = null;
+    a.fruitCooldown = rand(.8, 1.5);
     a.root.rotation.y = s.ry;
   } else {
     let idx = Math.floor(Math.random() * entryPoints.length);
@@ -1809,17 +1915,38 @@ function updateAnimal(dt, time){
     return;
   }
   const a = active;
+  if (a.state === 'seek' && (!a.fruitTarget || a.fruitTarget.state !== 'ground')){
+    clearFruitTarget(a);
+    a.state = 'stay';
+    a.timer = 1.5;
+    a.fruitCooldown = 1.2;
+    setVisitorLabel(animalNames[a.kind]);
+  }
   const speed = a.speed;
-  if (a.state === 'enter' || a.state === 'leave'){
-    const tx = a.state === 'enter' ? a.target.x : a.exit.x;
-    const tz = a.state === 'enter' ? a.target.z : a.exit.y;
+  if (a.state === 'enter' || a.state === 'leave' || a.state === 'seek'){
+    const tx = a.state === 'enter' ? a.target.x : a.state === 'seek' ? a.fruitTarget.group.position.x : a.exit.x;
+    const tz = a.state === 'enter' ? a.target.z : a.state === 'seek' ? a.fruitTarget.group.position.z : a.exit.y;
     const dx = tx - a.root.position.x, dz = tz - a.root.position.z;
     const dist = Math.hypot(dx, dz);
     if (dist < .04){
       if (a.state === 'enter'){
         a.state = 'stay';
         a.timer = 4.5 + Math.random() * 3.5;
+        a.fruitCooldown = rand(.4, 1.2);
+        setVisitorLabel(animalNames[a.kind]);
+      } else if (a.state === 'seek'){
+        const f = a.fruitTarget;
+        a.state = 'eat';
+        a.timer = 1.8;
+        if (f){
+          f.targeted = false;
+          f.state = 'eaten';
+          f.timer = 0;
+        }
+        a.fruitTarget = null;
+        setVisitorLabel(animalNames[a.kind] + ' · 吃果');
       } else {
+        clearFruitTarget(a);
         a.root.visible = false;
         active = null;
         animalTimer = 2.5 + Math.random() * 3.5;
@@ -1838,19 +1965,45 @@ function updateAnimal(dt, time){
   } else if (a.state === 'stay'){
     a.timer -= dt;
     a.walkPhase += dt * 1.2;
-    if (a.timer <= 0){
+    a.fruitCooldown = Math.max(0, a.fruitCooldown - dt);
+    if (a.fruitCooldown <= 0 && a.timer > 1.0){
+      const f = groundFruitNear(a);
+      if (f){
+        a.fruitTarget = f;
+        f.targeted = true;
+        a.state = 'seek';
+        a.timer = 0;
+        setVisitorLabel(animalNames[a.kind] + ' · 觅果');
+      } else {
+        a.fruitCooldown = .8;
+      }
+    }
+    if (a.state === 'stay' && a.timer <= 0){
       a.state = 'leave';
       a.exit = entryPoints[Math.floor(Math.random() * entryPoints.length)];
+      a.fruitCooldown = 0;
+      setVisitorLabel(animalNames[a.kind]);
+    }
+  } else if (a.state === 'eat'){
+    a.timer -= dt;
+    a.walkPhase += dt * 1.2;
+    if (a.timer <= 0){
+      a.state = 'stay';
+      a.timer = 1.8;
+      a.fruitCooldown = rand(2.5, 4.5);
+      setVisitorLabel(animalNames[a.kind]);
     }
   }
   if (a.reaction > 0) a.reaction = Math.max(0, a.reaction - dt);
-  const walking = a.state === 'enter' || a.state === 'leave';
+  const walking = a.state === 'enter' || a.state === 'leave' || a.state === 'seek';
   const legSwing = walking ? Math.sin(a.walkPhase) * .38 : Math.sin(time * 1.1 + a.walkPhase) * .02;
   for (let i = 0; i < a.legs.length; i++){
     a.legs[i].rotation.x = legSwing * (i % 2 ? -1 : 1);
   }
   const react = a.reaction > 0 ? Math.sin(a.reaction * 8) * .06 : 0;
-  a.head.rotation.x = (walking ? Math.sin(a.walkPhase * 2) * .02 : Math.sin(time * 1.2 + a.walkPhase) * .03) - react * .5;
+  let headPitch = (walking ? Math.sin(a.walkPhase * 2) * .02 : Math.sin(time * 1.2 + a.walkPhase) * .03) - react * .5;
+  if (a.state === 'eat') headPitch = -.28 + Math.sin(time * 8) * .08;
+  a.head.rotation.x = headPitch;
   a.head.rotation.z = react * .12;
   a.tail.rotation.y = Math.sin(time * (walking ? 7 : 2.2) + a.walkPhase) * (a.kind === 'squirrel' ? .22 : .12);
   if (a.kind === 'squirrel'){
@@ -1861,7 +2014,6 @@ function updateAnimal(dt, time){
     a.root.rotation.z = walking ? Math.sin(a.walkPhase) * .025 : 0;
   }
 }
-
 // initial deer in the clearing for the first impression
 spawnAnimal('deer', true);
 
