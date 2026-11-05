@@ -30,10 +30,10 @@
     --serif:"Iowan Old Style","Baskerville","Palatino Linotype","Songti SC","STSong","Noto Serif CJK SC",serif;
     --sans:"Avenir Next","Helvetica Neue","PingFang SC","Hiragino Sans GB",sans-serif;
     --accent:#d8a66a;
-    --card-h:clamp(360px,56vh,660px);
-    --card-h:clamp(360px,56svh,660px);
+    --card-h:clamp(340px,43vh,500px);
+    --card-h:clamp(340px,43svh,500px);
     --card-w:calc(var(--card-h) * 2 / 3);
-    --rail-gap:clamp(20px,3vw,42px);
+    --rail-gap:clamp(18px,2vw,30px);
     transition:--accent .8s ease;
   }
   *{box-sizing:border-box;}
@@ -1172,8 +1172,9 @@
 
   requestAnimationFrame(() => {
     measure();
-    setActive(0);
-    rail.scrollLeft = 0;
+    const start = rail.clientWidth / step >= 4.9 ? Math.min(2, cards.length - 1) : 0;
+    setActive(start);
+    rail.scrollLeft = start * step;
     requestAnimationFrame(() => document.body.classList.add('is-ready'));
   });
 })();
