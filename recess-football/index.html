@@ -1941,30 +1941,23 @@ function makeKid(team, index, role, baseX, baseZ){
   headPivot.add(earR);
 
   const cap = new THREE.Mesh(HAIR_CAP_GEO, hair);
-  cap.scale.set(.032, .021, .032);
-  cap.position.y = .018;
+  cap.scale.set(.033, .026, .033);
+  cap.position.y = .017;
   cap.castShadow = true;
   headPivot.add(cap);
-  const style = index % 4;
+  // the ten players are all boys: short crops, fringes and side sweeps only
+  const style = index % 3;
   if (style === 1){
     const fringe = new THREE.Mesh(BOX, hair);
     fringe.scale.set(.048, .012, .028);
     fringe.position.set(0, .025, .019);
     headPivot.add(fringe);
   } else if (style === 2){
-    const tail = new THREE.Mesh(SMALL_GEO, hair);
-    tail.scale.set(.014, .021, .016);
-    tail.position.set(.025, -.006, -.019);
-    headPivot.add(tail);
-    const tie = new THREE.Mesh(SMALL_GEO, M.red);
-    tie.scale.setScalar(.007);
-    tie.position.set(.025, .01, -.021);
-    headPivot.add(tie);
-  } else if (style === 3){
-    const bun = new THREE.Mesh(SMALL_GEO, hair);
-    bun.scale.setScalar(.016);
-    bun.position.set(0, .036, -.012);
-    headPivot.add(bun);
+    const sweep = new THREE.Mesh(BOX, hair);
+    sweep.scale.set(.038, .010, .026);
+    sweep.position.set(-.009, .024, .021);
+    sweep.rotation.z = .14;
+    headPivot.add(sweep);
   }
 
   for (const ex of [-.011, .011]){
@@ -2032,19 +2025,21 @@ function makeSpectator(def){
   const hair = kidMat(HAIR_TONES[def.hair % HAIR_TONES.length]);
   const top = kidMat(def.top);
   const lower = kidMat(def.lower);
-  const shoe = M.dark;
+  const shoe = def.shoe != null ? kidMat(def.shoe) : M.dark;
+  const thighMat = def.girl && !def.long ? skin : lower;
+  const shinMat = def.long ? lower : def.girl ? M.cream : lower;
 
   const legs = [];
   for (const side of [-1, 1]){
     const pivot = new THREE.Group();
     pivot.position.set(side * .016, .09, 0);
     body.add(pivot);
-    const thigh = new THREE.Mesh(BOX, def.girl ? skin : lower);
+    const thigh = new THREE.Mesh(BOX, thighMat);
     thigh.scale.set(.018, .034, .019);
     thigh.position.y = -.017;
     thigh.castShadow = true;
     pivot.add(thigh);
-    const lowerLeg = new THREE.Mesh(BOX, def.girl ? M.cream : lower);
+    const lowerLeg = new THREE.Mesh(BOX, shinMat);
     lowerLeg.scale.set(.017, .032, .018);
     lowerLeg.position.y = -.049;
     lowerLeg.castShadow = true;
@@ -2076,22 +2071,62 @@ function makeSpectator(def){
   torso.castShadow = true;
   torso.receiveShadow = true;
   body.add(torso);
-  const collar = new THREE.Mesh(BOX, M.cream);
+  if (def.stripes != null){
+    for (const y of [.142, .168]){
+      const stripe = new THREE.Mesh(BOX, kidMat(def.stripes));
+      stripe.scale.set(.0605, .007, .0363);
+      stripe.position.y = y;
+      body.add(stripe);
+    }
+  }
+  if (def.jacket != null){
+    const jacketMat = kidMat(def.jacket);
+    const hem = new THREE.Mesh(BOX, jacketMat);
+    hem.scale.set(.061, .013, .037);
+    hem.position.y = .124;
+    body.add(hem);
+    const zip = new THREE.Mesh(BOX, kidMat(def.zip || 0xeadfc8));
+    zip.scale.set(.006, .068, .005);
+    zip.position.set(0, .16, .0185);
+    body.add(zip);
+  }
+  const collar = new THREE.Mesh(BOX, def.collar != null ? kidMat(def.collar) : M.cream);
   collar.scale.set(.028, .009, .038);
   collar.position.y = .198;
   body.add(collar);
+  if (def.scarf != null){
+    const scarfMat = kidMat(def.scarf);
+    const wrap = new THREE.Mesh(BOX, scarfMat);
+    wrap.scale.set(.047, .013, .041);
+    wrap.position.y = .198;
+    body.add(wrap);
+    const end = new THREE.Mesh(BOX, scarfMat);
+    end.scale.set(.013, .034, .012);
+    end.position.set(.012, .178, .021);
+    end.rotation.z = .16;
+    body.add(end);
+  }
+  if (def.backpack != null){
+    const pack = new THREE.Mesh(BOX, kidMat(def.backpack));
+    pack.scale.set(.044, .055, .019);
+    pack.position.set(0, .152, -.032);
+    pack.castShadow = true;
+    body.add(pack);
+  }
 
+  const sleeveMat = def.jacket != null ? kidMat(def.jacket) : top;
+  const forearmMat = def.jacket != null || def.longSleeve ? sleeveMat : skin;
   const arms = [];
   for (const side of [-1, 1]){
     const pivot = new THREE.Group();
     pivot.position.set(side * .033, .182, 0);
     body.add(pivot);
-    const sleeve = new THREE.Mesh(BOX, top);
+    const sleeve = new THREE.Mesh(BOX, sleeveMat);
     sleeve.scale.set(.019, .032, .021);
     sleeve.position.y = -.016;
     sleeve.castShadow = true;
     pivot.add(sleeve);
-    const forearm = new THREE.Mesh(BOX, skin);
+    const forearm = new THREE.Mesh(BOX, forearmMat);
     forearm.scale.set(.014, .034, .016);
     forearm.position.y = -.044;
     forearm.castShadow = true;
@@ -2118,24 +2153,85 @@ function makeSpectator(def){
   head.castShadow = true;
   headPivot.add(head);
   const cap = new THREE.Mesh(HAIR_CAP_GEO, hair);
-  cap.scale.set(.032, .021, .032);
-  cap.position.y = .018;
+  cap.scale.set(.033, .026, .033);
+  cap.position.y = .017;
   cap.castShadow = true;
   headPivot.add(cap);
   if (def.girl){
-    const tail = new THREE.Mesh(SMALL_GEO, hair);
-    tail.scale.set(.014, .022, .016);
-    tail.position.set(.025, -.005, -.019);
-    headPivot.add(tail);
-    const tie = new THREE.Mesh(SMALL_GEO, M.red);
-    tie.scale.setScalar(.007);
-    tie.position.set(.025, .011, -.021);
-    headPivot.add(tie);
+    const hs = def.hairStyle || 1;
+    if (hs === 2){
+      const back = new THREE.Mesh(BOX, hair);
+      back.scale.set(.034, .062, .018);
+      back.position.set(0, -.022, -.021);
+      back.castShadow = true;
+      headPivot.add(back);
+    } else if (hs === 3){
+      for (const side of [-1, 1]){
+        const tail = new THREE.Mesh(SMALL_GEO, hair);
+        tail.scale.set(.014, .022, .016);
+        tail.position.set(side * .031, -.006, -.008);
+        headPivot.add(tail);
+        const tie = new THREE.Mesh(SMALL_GEO, def.tie != null ? kidMat(def.tie) : M.red);
+        tie.scale.setScalar(.007);
+        tie.position.set(side * .031, .009, -.01);
+        headPivot.add(tie);
+      }
+    } else if (hs === 4){
+      const bun = new THREE.Mesh(SMALL_GEO, hair);
+      bun.scale.setScalar(.018);
+      bun.position.set(0, .038, -.014);
+      headPivot.add(bun);
+    } else {
+      const tail = new THREE.Mesh(SMALL_GEO, hair);
+      tail.scale.set(.014, .022, .016);
+      tail.position.set(.025, -.005, -.019);
+      headPivot.add(tail);
+      const tie = new THREE.Mesh(SMALL_GEO, def.tie != null ? kidMat(def.tie) : M.red);
+      tie.scale.setScalar(.007);
+      tie.position.set(.025, .011, -.021);
+      headPivot.add(tie);
+    }
   } else if (def.style === 1){
     const fringe = new THREE.Mesh(BOX, hair);
     fringe.scale.set(.048, .012, .028);
     fringe.position.set(0, .025, .019);
     headPivot.add(fringe);
+  } else if (def.style === 2){
+    const sweep = new THREE.Mesh(BOX, hair);
+    sweep.scale.set(.038, .010, .026);
+    sweep.position.set(-.009, .024, .021);
+    sweep.rotation.z = .14;
+    headPivot.add(sweep);
+  }
+  if (def.hat === 'cap'){
+    const hatMat = kidMat(def.hatColor != null ? def.hatColor : 0xc0563f);
+    const crown = new THREE.Mesh(BOX, hatMat);
+    crown.scale.set(.054, .016, .050);
+    crown.position.y = .041;
+    crown.castShadow = true;
+    headPivot.add(crown);
+    const brim = new THREE.Mesh(BOX, hatMat);
+    brim.scale.set(.048, .005, .029);
+    brim.position.set(0, .033, .034);
+    brim.castShadow = true;
+    headPivot.add(brim);
+  } else if (def.hat === 'beanie'){
+    const hatMat = kidMat(def.hatColor != null ? def.hatColor : 0x8b6f5a);
+    const crown = new THREE.Mesh(HAIR_CAP_GEO, hatMat);
+    crown.scale.set(.035, .028, .035);
+    crown.position.y = .021;
+    crown.castShadow = true;
+    headPivot.add(crown);
+    const pom = new THREE.Mesh(SMALL_GEO, kidMat(def.pom != null ? def.pom : 0xefe3cd));
+    pom.scale.setScalar(.009);
+    pom.position.y = .053;
+    headPivot.add(pom);
+  }
+  if (def.glasses){
+    const frame = new THREE.Mesh(BOX, M.dark);
+    frame.scale.set(.039, .0035, .004);
+    frame.position.set(0, .008, .032);
+    headPivot.add(frame);
   }
   for (const ex of [-.011, .011]){
     const eye = new THREE.Mesh(SMALL_GEO, M.dark);
@@ -2151,6 +2247,8 @@ function makeSpectator(def){
   const s = {
     root, body, legs, arms, headPivot, def,
     phase: rand(0, TAU), reaction: 0, cheer: 0, baseY: 0,
+    energy: def.energy || rand(.82, 1.18),
+    speed: def.speed || rand(.55, .72),
     baseX: def.x, baseZ: def.z, baseRy: def.ry || 0, walkPhase: rand(0, TAU)
   };
   proxy.userData.spectator = s;
@@ -2158,10 +2256,21 @@ function makeSpectator(def){
 }
 
 const spectators = [
-  makeSpectator({ x: -1.02, z: -.5, ry: .12, skin: 0, hair: 3, top: 0xe7c46e, lower: 0xb87563, girl: true, say: '扎马尾的女同学把辫子甩到肩后，朝你挥了挥手。' }),
-  makeSpectator({ x: -.56, z: -.54, ry: .2, skin: 2, hair: 1, top: 0xb59ab7, lower: 0x7e8f6a, girl: true, style: 2, say: '她捂着嘴笑，悄悄指了指红队的前锋。' }),
-  makeSpectator({ x: .56, z: -.54, ry: -.16, skin: 1, hair: 0, top: 0x6f9a9b, lower: 0x4e5868, girl: false, style: 1, say: '男同学举着水壶喊了一声“加油”，又赶紧咽回去。' }),
-  makeSpectator({ x: 1.02, z: -.48, ry: -.1, skin: 3, hair: 2, top: 0xc4785e, lower: 0x6c7d8b, girl: true, say: '女同学踮起脚，脑袋跟着足球来回转。' })
+  // along the building hedge, deliberately uneven
+  makeSpectator({ x: -1.28, z: -.48, ry: .2, skin: 0, hair: 3, top: 0xe7c46e, lower: 0xb87563, girl: true, hairStyle: 3, scarf: 0x8a5a4a, say: '扎双马尾的女同学把辫子甩到肩后，朝你挥了挥手。' }),
+  makeSpectator({ x: -.72, z: -.62, ry: .05, skin: 2, hair: 0, top: 0x6f9a9b, lower: 0x4e5868, girl: false, style: 1, hat: 'cap', hatColor: 0xc0563f, say: '戴红帽子的男同学把帽檐一转，冲场上吹了声口哨。' }),
+  makeSpectator({ x: -.12, z: -.52, ry: -.04, skin: 1, hair: 1, top: 0xb59ab7, lower: 0x7e8f6a, girl: true, hairStyle: 2, long: true, glasses: true, say: '她扶着眼镜，认真数着红队传了几脚球。' }),
+  makeSpectator({ x: .58, z: -.6, ry: -.12, skin: 3, hair: 2, top: 0x6f9a9b, lower: 0x3f4c5c, girl: false, stripes: 0xeadfc8, longSleeve: true, say: '穿条纹衫的男同学举着水壶喊了一声“加油”，又赶紧咽回去。' }),
+  makeSpectator({ x: 1.25, z: -.42, ry: -.24, skin: 0, hair: 1, top: 0xc4785e, lower: 0x6c7d8b, girl: true, hairStyle: 1, say: '女同学踮起脚，脑袋跟着足球来回转。' }),
+  // behind the left goal
+  makeSpectator({ x: -1.52, z: .38, ry: 1.2, skin: 1, hair: 1, top: 0x8fae7e, lower: 0x4e5868, girl: false, style: 2, backpack: 0x9c6b4c, long: true, say: '背书包的男同学把书包往地上一放，说这场肯定有进球。' }),
+  makeSpectator({ x: -1.48, z: .98, ry: 1.32, skin: 3, hair: 0, top: 0xcfa6b8, lower: 0xefe3cd, girl: true, hairStyle: 4, tie: 0x547f9e, say: '扎丸子头的女同学捂着嘴笑，悄悄指了指红队的前锋。' }),
+  // behind the right goal
+  makeSpectator({ x: 1.5, z: .55, ry: -1.18, skin: 2, hair: 3, top: 0xe0a04f, lower: 0x4e5868, girl: false, style: 1, hat: 'cap', hatColor: 0x547f9e, say: '戴蓝帽子的男同学蹲下又站起，比场上的人还着急。' }),
+  makeSpectator({ x: 1.56, z: .82, ry: -1.3, skin: 0, hair: 2, top: 0xa8c4d4, lower: 0x6c7d8b, girl: true, hairStyle: 2, hat: 'beanie', hatColor: 0x8b6f5a, pom: 0xefe3cd, say: '戴毛线帽的女同学把手缩进袖子，只露出眼睛看球。' }),
+  // the two smallest kids squeeze in at the front corners
+  makeSpectator({ x: -1.02, z: 1.5, ry: .55, skin: 2, hair: 0, top: 0xd9b45c, lower: 0x7e8f6a, girl: false, style: 2, scale: 1.0, say: '个子最小的男同学挤到最前面，仰着头追着球看。' }),
+  makeSpectator({ x: .86, z: 1.48, ry: -.5, skin: 1, hair: 1, top: 0x9bbfae, lower: 0xb87563, girl: true, hairStyle: 3, tie: 0xe7c46e, scale: 1.02, say: '双马尾的女同学一边跳一边数着比分。' })
 ];
 
 const clickables = [];
@@ -2175,7 +2284,7 @@ for (const p of players){
 for (const s of spectators){
   clickables.push(s.root.children.find(c => c.userData.spectator));
 }
-const boardProxy = new THREE.Mesh(new THREE.SphereGeometry(.24, 6, 5), INVISIBLE_MAT);
+const boardProxy = new THREE.Mesh(new THREE.BoxGeometry(.42, .31, .05), INVISIBLE_MAT);
 boardProxy.position.set(0, .3, .02);
 boardProxy.userData.board = true;
 board.add(boardProxy);
@@ -3810,11 +3919,11 @@ function updateSpectators(dt, time){
         sp.root.visible = false;
         continue;
       }
-      const step = Math.min(d, .62 * dt);
+      const step = Math.min(d, sp.speed * dt);
       sp.root.position.x += dx / d * step;
       sp.root.position.z += dz / d * step;
       sp.root.rotation.y = Math.atan2(dx, dz);
-      sp.walkPhase += dt * 9;
+      sp.walkPhase += dt * (7.6 + sp.energy * 1.8);
       sp.legs[0].rotation.x = Math.sin(sp.walkPhase) * .5;
       sp.legs[1].rotation.x = -Math.sin(sp.walkPhase) * .5;
       sp.body.position.y = Math.abs(Math.sin(sp.walkPhase)) * .006;
@@ -3824,14 +3933,14 @@ function updateSpectators(dt, time){
     sp.reaction = Math.max(0, sp.reaction - dt);
     sp.cheer = Math.max(0, sp.cheer - dt);
     const excited = sp.cheer > 0 || sp.reaction > 0;
-    const jump = excited ? Math.max(0, Math.sin(time * 10 + sp.phase)) * .032 : 0;
+    const jump = excited ? Math.max(0, Math.sin(time * (8.5 + sp.energy * 1.5) + sp.phase)) * .032 * sp.energy : 0;
     sp.body.position.y = jump + Math.sin(time * 1.1 + sp.phase) * .003;
-    sp.body.rotation.z = excited ? Math.sin(time * 8 + sp.phase) * .045 : Math.sin(time * .8 + sp.phase) * .018;
-    const wave = excited ? 2.25 + Math.sin(time * 12 + sp.phase) * .18 : .07;
+    sp.body.rotation.z = excited ? Math.sin(time * 8 + sp.phase) * .045 * sp.energy : Math.sin(time * .8 + sp.phase) * .018 * sp.energy;
+    const wave = excited ? 2.25 + Math.sin(time * (11 + sp.energy * 2) + sp.phase) * .18 : .07;
     sp.arms[0].rotation.z = -wave;
     sp.arms[1].rotation.z = wave;
-    sp.arms[0].rotation.x = excited ? Math.sin(time * 11 + sp.phase) * .16 : 0;
-    sp.arms[1].rotation.x = excited ? -Math.sin(time * 11 + sp.phase) * .16 : 0;
+    sp.arms[0].rotation.x = excited ? Math.sin(time * 11 + sp.phase) * .16 * sp.energy : 0;
+    sp.arms[1].rotation.x = excited ? -Math.sin(time * 11 + sp.phase) * .16 * sp.energy : 0;
     sp.legs[0].rotation.x = 0;
     sp.legs[1].rotation.x = 0;
     const look = Math.atan2(ball.pos.x - sp.root.position.x, ball.pos.z - sp.root.position.z) - sp.root.rotation.y;
