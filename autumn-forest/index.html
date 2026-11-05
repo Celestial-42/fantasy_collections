@@ -1715,11 +1715,11 @@ function spawnAnimal(kind, initial = false){
     let idx = Math.floor(Math.random() * entryPoints.length);
     const e = entryPoints[idx];
     const s = spots[Math.floor(Math.random() * spots.length)];
-    placeAnimal(a, e.x, e.z);
+    placeAnimal(a, e.x, e.y);
     a.state = 'enter';
     a.target = new THREE.Vector3(s.x, 0, s.z);
     a.exit = entryPoints[(idx + 1 + Math.floor(Math.random() * 3)) % entryPoints.length];
-    a.root.rotation.y = Math.atan2(s.x - e.x, s.z - e.z);
+    a.root.rotation.y = Math.atan2(s.x - e.x, s.z - e.y);
     a.timer = 0;
   }
   return a;
